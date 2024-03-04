@@ -1,0 +1,26 @@
+{
+  "name": "ngx-material-intl-tel-input-lib",
+  "$schema": "../../node_modules/nx/schemas/project-schema.json",
+  "sourceRoot": "libs/ngx-material-intl-tel-input-lib/src",
+  "prefix": "ngx-material-intl-tel-input",
+  "tags": [],
+  "projectType": "library",
+  "targets": {
+    "build": {
+      "executor": "@nx/angular:package",
+      "outputs": ["{workspaceRoot}/dist/{projectRoot}"],
+      "options": {
+        "project": "libs/ngx-material-intl-tel-input-lib/ng-package.json"
+      },
+      "configurations": {
+        "production": {
+          "tsConfig": "libs/ngx-material-intl-tel-input-lib/tsconfig.lib.prod.json"
+        },
+        "development": {
+          "tsConfig": "libs/ngx-material-intl-tel-input-lib/tsconfig.lib.json"
+        }
+      },
+      "defaultConfiguration": "production"
+    }
+  }
+}

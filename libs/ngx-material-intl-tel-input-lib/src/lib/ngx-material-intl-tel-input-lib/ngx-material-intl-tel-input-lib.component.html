@@ -1,0 +1,94 @@
+<section>
+  <mat-label>Phone number</mat-label>
+  <form [formGroup]="telForm" [ngClass]="{ 'is-focused': isFocused }">
+    <mat-form-field appearance="fill" class="prefix-form-field">
+      <mat-select
+        formControlName="prefixCtrl"
+        placeholder="Code"
+        #singleSelect
+        panelClass="tel-mat-select-panel"
+        [required]="required"
+      >
+        <mat-select-trigger>
+          <div class="country-option">
+            <div class="iti__flag-box">
+              <div
+                class="iti__flag"
+                [ngClass]="prefixCtrl.value?.flagClass"
+              ></div>
+            </div>
+            <div>+{{ prefixCtrl.value?.dialCode || '' }}</div>
+          </div>
+        </mat-select-trigger>
+
+        <mat-option>
+          <ngx-mat-select-search
+            [formControl]="prefixFilterCtrl"
+            [placeholderLabel]="'Search'"
+            [noEntriesFoundLabel]="'No countries found'"
+          ></ngx-mat-select-search>
+        </mat-option>
+
+        @for (country of filteredCountries | async; track $index) {
+        <mat-option [value]="country">
+          <div
+            class="country-option"
+            style="display: flex; align-items: center; font-size: 14px"
+          >
+            <div class="iti__flag-box">
+              <div class="iti__flag" [ngClass]="country.flagClass"></div>
+            </div>
+            <div>{{ country.name }}</div>
+          </div>
+        </mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field appearance="fill" class="number-form-field">
+      <mat-label>Number label</mat-label>
+      <input
+        matInput
+        type="tel"
+        formControlName="numberControl"
+        [placeholder]="prefixCtrl.value?.placeHolder"
+        autocomplete="off"
+        (focus)="onInputFocus()"
+        (blur)="onInputBlur()"
+        [required]="required"
+      />
+
+      <mat-icon matSuffix>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          class="icon icon-tabler icon-tabler-phone"
+          width="24"
+          height="24"
+          viewBox="0 0 24 24"
+          stroke-width="1.5"
+          stroke="currentColor"
+          fill="none"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+          <path
+            d="M5 4h4l2 5l-2.5 1.5a11 11 0 0 0 5 5l1.5 -2.5l5 2v4a2 2 0 0 1 -2 2a16 16 0 0 1 -15 -15a2 2 0 0 1 2 -2"
+          />
+        </svg>
+      </mat-icon>
+    </mat-form-field>
+  </form>
+
+  <!-- TODO Add hint -->
+  <mat-hint>
+    {{ formControl.value }}
+  </mat-hint>
+
+  @if(formControl.hasError('invalidNumber'))
+  {
+  <mat-error> Number is <strong>not valid</strong> </mat-error>
+  } @if(formControl.hasError('required')) {
+  <mat-error> Number is <strong>required</strong> </mat-error>
+  }
+</section>

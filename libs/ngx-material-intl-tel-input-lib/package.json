@@ -1,0 +1,16 @@
+{
+  "name": "ngx-material-intl-tel-input",
+  "version": "0.0.1",
+  "peerDependencies": {
+    "@angular/common": "^17.2.0",
+    "@angular/core": "^17.2.0"
+  },
+  "dependencies": {
+    "@angular/cdk": "^17.2.1",
+    "@angular/material": "^17.2.1",
+    "google-libphonenumber": "^3.2.34",
+    "ngx-mat-select-search": "^7.0.5",
+    "tslib": "^2.3.0"
+  },
+  "sideEffects": false
+}
