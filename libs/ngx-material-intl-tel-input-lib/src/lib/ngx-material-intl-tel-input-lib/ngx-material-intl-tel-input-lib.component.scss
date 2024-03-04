@@ -1,16 +1,21 @@
 :host {
   box-sizing: border-box;
   display: block;
+  width: 100%;
   section {
     display: flex;
     flex-direction: column;
-    width: fit-content;
+    width: 100%;
+    .title-label {
+      padding: 2px 0;
+      font-size: 14px;
+    }
     form {
       display: flex;
       justify-content: center;
       align-items: center;
       width: 100%;
-      border-radius: 4px;
+      border-radius: 8px;
       border: 1px solid rgb(158, 222, 239);
       background-color: rgb(245, 245, 245);
       &.is-focused {
@@ -22,17 +27,19 @@
           display: none;
         }
         &.prefix-form-field {
+          min-width: 120px;
           width: 120px;
           &::ng-deep .mat-mdc-text-field-wrapper {
             border-right: none;
-            border-radius: 0;
+            border-radius: 8px 0 0 8px;
           }
         }
 
         &.number-form-field {
+          width:100%;
           &::ng-deep .mat-mdc-text-field-wrapper {
             border-left: none;
-            border-radius: 0;
+            border-radius: 0 8px 8px 0;
           }
           input {
             &::placeholder {
@@ -56,6 +63,9 @@
           }
         }
       }
+    }
+    mat-hint, mat-error {
+      font-size: 12px;
     }
   }
 
