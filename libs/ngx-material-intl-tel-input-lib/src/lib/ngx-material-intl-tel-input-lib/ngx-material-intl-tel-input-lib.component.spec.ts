@@ -1,16 +1,16 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
-import { NgxMaterialIntlTelInputLibComponent } from './ngx-material-intl-tel-input-lib.component';
+import { NgxMaterialIntlTelInputComponent } from './ngx-material-intl-tel-input-lib.component';
 
-describe('NgxMaterialIntlTelInputLibComponent', () => {
-  let component: NgxMaterialIntlTelInputLibComponent;
-  let fixture: ComponentFixture<NgxMaterialIntlTelInputLibComponent>;
+describe('NgxMaterialIntlTelInputComponent', () => {
+  let component: NgxMaterialIntlTelInputComponent;
+  let fixture: ComponentFixture<NgxMaterialIntlTelInputComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [NgxMaterialIntlTelInputLibComponent],
+      imports: [NgxMaterialIntlTelInputComponent],
     }).compileComponents();
 
-    fixture = TestBed.createComponent(NgxMaterialIntlTelInputLibComponent);
+    fixture = TestBed.createComponent(NgxMaterialIntlTelInputComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

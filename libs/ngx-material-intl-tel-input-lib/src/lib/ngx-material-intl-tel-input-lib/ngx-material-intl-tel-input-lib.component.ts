@@ -58,7 +58,7 @@ import { GeoData } from '../types/geo.type';
   templateUrl: './ngx-material-intl-tel-input-lib.component.html',
   styleUrl: './ngx-material-intl-tel-input-lib.component.scss',
 })
-export class NgxMaterialIntlTelInputLibComponent
+export class NgxMaterialIntlTelInputComponent
   implements OnInit, AfterViewInit, OnDestroy
 {
   /** control for the selected country prefix */
