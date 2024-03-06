@@ -1,0 +1,31 @@
+{
+  "projectName": "ngx-material-intl-tel-input",
+  "projectOwner": "juanjotorres90",
+  "repoType": "github",
+  "repoHost": "https://github.com",
+  "files": ["README.md"],
+  "imageSize": 100,
+  "commit": false,
+  "contributors": [
+    {
+      "login": "juanjotorres90",
+      "name": "Juanjo Torres",
+      "avatar_url": "https://avatars3.githubusercontent.com/u/49198908?v=4",
+      "profile": "https://github.com/juanjotorres90",
+      "contributions": [
+        "design",
+        "code",
+        "doc",
+        "ideas",
+        "question",
+        "infra",
+        "example",
+        "maintenance",
+        "review",
+        "test"
+      ]
+    }
+  ],
+  "contributorsPerLine": 7,
+  "skipCi": true
+}

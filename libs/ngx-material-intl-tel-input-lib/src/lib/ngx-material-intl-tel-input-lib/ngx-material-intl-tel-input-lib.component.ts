@@ -91,7 +91,7 @@ export class NgxMaterialIntlTelInputComponent
   });
 
   @Input() formControl = new FormControl('');
-  @Input() required = true;
+  @Input() required = false;
   @Input() disabled = false;
   @Input() enablePlaceholder = true;
   @Input() autoIpLookup = true;
@@ -115,7 +115,11 @@ export class NgxMaterialIntlTelInputComponent
     private geoIpService: GeoIpService
   ) {}
 
-  ngOnInit() {
+  /**
+   * Initialize the component and perform necessary setup tasks.
+   *
+   */
+  ngOnInit(): void {
     this.fetchCountryData();
     if (this.required) {
       this.formControl.addValidators(Validators.required);
@@ -138,6 +142,9 @@ export class NgxMaterialIntlTelInputComponent
     this.setInitialTelValue();
   }
 
+  /**
+   * Fetches country data and populates the allCountries array.
+   */
   protected fetchCountryData(): void {
     this.allCountries = [];
 
@@ -164,6 +171,12 @@ export class NgxMaterialIntlTelInputComponent
     });
   }
 
+  /**
+   * Retrieves the placeholder for a phone number based on the given country code.
+   *
+   * @param {string} countryCode - The country code for the phone number.
+   * @return {string} The placeholder for the phone number.
+   */
   protected getPhoneNumberPlaceHolder(countryCode: string): string {
     try {
       return this.phoneNumberUtil.format(
@@ -178,15 +191,27 @@ export class NgxMaterialIntlTelInputComponent
     }
   }
 
+  /**
+   * A lifecycle hook that is called after Angular has fully initialized a component's view.
+   *
+   * @return {void}
+   */
   ngAfterViewInit(): void {
     this.setInitialPrefixValue();
   }
 
+  /**
+   * Method called when the component is destroyed.
+   *
+   */
   ngOnDestroy(): void {
     this._onDestroy.next();
     this._onDestroy.complete();
   }
 
+  /**
+   * Performs a geo IP lookup and sets the prefix control value based on the country retrieved.
+   */
   geoIpLookup(): void {
     this.geoIpService.geoIpLookup().subscribe({
       next: (data: GeoData) => {
@@ -209,7 +234,7 @@ export class NgxMaterialIntlTelInputComponent
   /**
    * Sets the initial value after the filteredCountries are loaded initially
    */
-  protected setInitialPrefixValue() {
+  protected setInitialPrefixValue(): void {
     this.filteredCountries
       .pipe(take(1), takeUntil(this._onDestroy))
       .subscribe(() => {
@@ -223,7 +248,11 @@ export class NgxMaterialIntlTelInputComponent
       });
   }
 
-  protected filterCountries() {
+  /**
+   * Method to filter the list of countries based on a search keyword.
+   *
+   */
+  protected filterCountries(): void {
     if (!this.allCountries) {
       return;
     }
@@ -243,14 +272,24 @@ export class NgxMaterialIntlTelInputComponent
     );
   }
 
+  /**
+   * A method that handles the focus event for the input.
+   *
+   */
   onInputFocus(): void {
     this.isFocused = true;
   }
 
+  /**
+   * A method that handles the blur event for the input.
+   */
   onInputBlur(): void {
     this.isFocused = false;
   }
 
+  /**
+   * Listens for changes in the telForm value and updates the formControl accordingly.
+   */
   startTelFormValueChangesListener(): void {
     this.telForm.valueChanges
       .pipe(takeUntil(this._onDestroy))
@@ -276,6 +315,9 @@ export class NgxMaterialIntlTelInputComponent
       });
   }
 
+  /**
+   * Sets the initial telephone value based on the initial value.
+   */
   setInitialTelValue(): void {
     if (!this.initialValue) {
       // set initial selection
