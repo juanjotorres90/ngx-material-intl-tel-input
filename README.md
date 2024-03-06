@@ -4,7 +4,7 @@
 
 # NgxMaterialIntlTelInput
 
-An Angular library for entering and validating international telephone numbers. It adds searchable material select to search for country codes, detects the user's country, displays a relevant placeholder and provides formatting/validation methods.
+An Angular library for entering and validating international telephone numbers. It adds searchable material select to look for country codes, detects the user's country, displays a relevant placeholder and provides formatting/validation methods.
 
 <img src="assets/preview.png" alt="preview" width="500"/>
 
