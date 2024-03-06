@@ -8,6 +8,7 @@ tmp
 # dependencies
 node_modules
 package-lock.json
+bun.lockb
 
 # IDEs and editors
 /.idea

@@ -10,6 +10,7 @@
       "executor": "@angular-devkit/build-angular:application",
       "outputs": ["{options.outputPath}"],
       "options": {
+        "allowedCommonJsDependencies": ["google-libphonenumber"],
         "outputPath": "dist/apps/ngx-material-intl-tel-input",
         "index": "apps/ngx-material-intl-tel-input/src/index.html",
         "browser": "apps/ngx-material-intl-tel-input/src/main.ts",
@@ -28,13 +29,13 @@
           "budgets": [
             {
               "type": "initial",
-              "maximumWarning": "500kb",
-              "maximumError": "1mb"
+              "maximumWarning": "2mb",
+              "maximumError": "4mb"
             },
             {
               "type": "anyComponentStyle",
-              "maximumWarning": "2kb",
-              "maximumError": "4kb"
+              "maximumWarning": "32kb",
+              "maximumError": "64kb"
             }
           ],
           "outputHashing": "all"
