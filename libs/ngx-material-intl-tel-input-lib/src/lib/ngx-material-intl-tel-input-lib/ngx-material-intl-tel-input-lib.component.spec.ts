@@ -1,5 +1,6 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NgxMaterialIntlTelInputComponent } from './ngx-material-intl-tel-input-lib.component';
+import {NoopAnimationsModule} from '@angular/platform-browser/animations';
 
 describe('NgxMaterialIntlTelInputComponent', () => {
   let component: NgxMaterialIntlTelInputComponent;
@@ -7,7 +8,7 @@ describe('NgxMaterialIntlTelInputComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [NgxMaterialIntlTelInputComponent],
+      imports: [NgxMaterialIntlTelInputComponent, NoopAnimationsModule],
     }).compileComponents();
 
     fixture = TestBed.createComponent(NgxMaterialIntlTelInputComponent);

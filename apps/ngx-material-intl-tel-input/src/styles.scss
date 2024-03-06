@@ -8,49 +8,119 @@
 // Be sure that you only ever include this mixin once!
 @include mat.core();
 
+$main-color-palette: (
+  50: #e4f3ff,
+  100: #bce2fe,
+  200: #90cffe,
+  300: #63bcfd,
+  400: #41adfc,
+  500: #209ffc,
+  600: #1c97fc,
+  700: #188dfb,
+  800: #1383fb,
+  900: #0b72fa,
+  A100: #ffffff,
+  A200: #f1f6ff,
+  A400: #bed7ff,
+  A700: #a4c7ff,
+  contrast: (
+    50: rgba(#000, 0.87),
+    100: rgba(#000, 0.87),
+    200: rgba(#000, 0.87),
+    300: #fff,
+    400: #fff,
+    500: #fff,
+    600: #fff,
+    700: #fff,
+    800: #fff,
+    900: #fff,
+    A100: rgba(#000, 0.87),
+    A200: rgba(#000, 0.87),
+    A400: rgba(#000, 0.87),
+    A700: rgba(#000, 0.87)
+  )
+);
+
+$secondary-color-palette: (
+  50: #e1e7ee,
+  100: #b3c3d4,
+  200: #819cb8,
+  300: #4e749c,
+  400: #285686,
+  500: #023871,
+  600: #023269,
+  700: #012b5e,
+  800: #012454,
+  900: #011742,
+  A100: #7798ff,
+  A200: #4471ff,
+  A400: #114aff,
+  A700: #003bf6,
+  contrast: (
+    50: rgba(#000, 0.87),
+    100: rgba(#000, 0.87),
+    200: rgba(#000, 0.87),
+    300: #fff,
+    400: #fff,
+    500: #fff,
+    600: #fff,
+    700: #fff,
+    800: #fff,
+    900: #fff,
+    A100: rgba(#000, 0.87),
+    A200: #fff,
+    A400: #fff,
+    A700: #fff
+  )
+);
+
 // Define the palettes for your theme using the Material Design palettes available in palette.scss
 // (imported above). For each palette, you can optionally specify a default, lighter, and darker
 // hue. Available color palettes: https://material.io/design/color/
-$ngx-material-intl-tel-input-primary: mat.define-palette(mat.$indigo-palette);
-$ngx-material-intl-tel-input-accent: mat.define-palette(
-  mat.$pink-palette,
-  A200,
-  A100,
-  A400
-);
+$theme-primary: mat.define-palette($main-color-palette);
+$theme-accent: mat.define-palette($secondary-color-palette, A200, A100, A400);
 
 // The warn palette is optional (defaults to red).
-$ngx-material-intl-tel-input-warn: mat.define-palette(mat.$red-palette);
+$theme-warn: mat.define-palette(mat.$red-palette);
 
 // Create the theme object. A theme consists of configurations for individual
 // theming systems such as "color" or "typography".
-$ngx-material-intl-tel-input-theme: mat.define-light-theme(
+$theme: mat.define-light-theme(
   (
     color: (
-      primary: $ngx-material-intl-tel-input-primary,
-      accent: $ngx-material-intl-tel-input-accent,
-      warn: $ngx-material-intl-tel-input-warn,
+      primary: $theme-primary,
+      accent: $theme-accent,
+      warn: $theme-warn
     ),
+    typography: mat.define-typography-config()
   )
 );
 
 // Include theme styles for core and each component used in your app.
 // Alternatively, you can import and @include the theme mixins for each component
 // that you are using.
-@include mat.all-component-themes($ngx-material-intl-tel-input-theme);
+@include mat.all-component-themes($theme);
 
 //TODO Test import individual components
 // @include mat.form-field-theme($ngx-material-intl-tel-input-theme);
-
 // @include mat.select-theme($ngx-material-intl-tel-input-theme);
-
 // @include mat.core-theme($ngx-material-intl-tel-input-theme);
-
 // @include mat.option-theme($ngx-material-intl-tel-input-theme);
-
 // @include mat.autocomplete-theme($ngx-material-intl-tel-input-theme);
-
 // @include mat.input-theme($ngx-material-intl-tel-input-theme);
+
+// Angular Material variables
+:root {
+  --mdc-theme-primary: #209ffc;
+  --mdc-theme-secondary: #023871;
+  --mdc-theme-error: #f44336;
+  --mdc-typography-font-family: Roboto, 'Helvetica Neue', sans-serif;
+  --mdc-theme-primary-rgb: 32, 159, 252;
+  --mat-option-selected-state-label-text-color: #209ffc;
+  --mat-select-focused-arrow-color: #209ffc;
+  --mdc-outlined-text-field-focus-outline-color: #209ffc;
+}
+
 
 /* You can add global styles to this file, and also import other style files */
 
@@ -62,3 +132,123 @@ body {
   margin: 0;
   font-family: Roboto, 'Helvetica Neue', sans-serif;
 }
+
+
+
+
+//! Material 3 Experimental Test
+// https://material.angular.io/guide/material-3
+// https://m3.material.io/theme-builder
+// https://blog.angular.io/material-3-experimental-support-in-angular-17-2-8e681dde650e
+
+// This must be imported first, on top of this file after @use '@angular/material' as mat;
+// @use '@angular/material-experimental' as matx;
+
+// $test-theme: matx.define-theme();
+
+// html {
+//   @include mat.all-component-themes($test-theme);
+
+//   // This should be removed when the migration is completed(specially for color="primary" references)
+//   @include matx.color-variants-back-compat($test-theme);
+// }
+
+// There still missing hues in the palette
+// $test-palette: (
+//   0: #000000,
+//   10: #410000,
+//   20: #690100,
+//   25: #7e0100,
+//   30: #930100,
+//   35: #a90100,
+//   40: #c00100,
+//   50: #ef0000,
+//   60: #ff5540,
+//   70: #ff8a78,
+//   80: #ffb4a8,
+//   90: #ffdad4,
+//   95: #ffedea,
+//   98: #fff8f6,
+//   99: #fffbff,
+//   100: #ffffff,
+//   secondary: (
+//     0: #000000,
+//     10: #2c1512,
+//     20: #442925,
+//     25: #513430,
+//     30: #5d3f3b,
+//     35: #6a4b46,
+//     40: #775651,
+//     50: #926f69,
+//     60: #ae8882,
+//     70: #caa29c,
+//     80: #e7bdb6,
+//     90: #ffdad4,
+//     95: #ffedea,
+//     98: #fff8f6,
+//     99: #fffbff,
+//     100: #ffffff,
+//   ),
+//   neutral: (
+//     0: #000000,
+//     10: #201a19,
+//     20: #362f2e,
+//     25: #413a38,
+//     30: #4d4544,
+//     35: #59504f,
+//     40: #655c5b,
+//     50: #7f7573,
+//     60: #998e8d,
+//     70: #b4a9a7,
+//     80: #d0c4c2,
+//     90: #ede0dd,
+//     95: #fbeeec,
+//     98: #fff8f6,
+//     99: #fffbff,
+//     100: #ffffff,
+//   ),
+//   neutral-variant: (
+//     0: #000000,
+//     10: #251917,
+//     20: #3b2d2b,
+//     25: #473836,
+//     30: #534341,
+//     35: #5f4f4c,
+//     40: #6c5a58,
+//     50: #857370,
+//     60: #a08c89,
+//     70: #bca7a3,
+//     80: #d8c2be,
+//     90: #f5ddda,
+//     95: #ffedea,
+//     98: #fff8f6,
+//     99: #fffbff,
+//     100: #ffffff,
+//   ),
+// );
+
+// // Light and dark themes test
+// $m3-dark-theme: matx.define-theme((
+//   color: (
+//     theme-type: dark,
+//     primary: matx.$m3-indigo-palette,
+//     tertiary: matx.$m3-blue-palette,
+//   )
+// ));
+
+// $m3-light-theme: matx.define-theme((
+//   color: (
+//     primary: matx.$m3-indigo-palette,
+//     tertiary: matx.$m3-blue-palette,
+//     )
+// ));
+
+// .dark-theme {
+//   @include mat.all-component-themes($m3-dark-theme);
+// }
+
+// .light-theme {
+//   @include mat.all-component-themes($m3-light-theme);
+// }
+
+

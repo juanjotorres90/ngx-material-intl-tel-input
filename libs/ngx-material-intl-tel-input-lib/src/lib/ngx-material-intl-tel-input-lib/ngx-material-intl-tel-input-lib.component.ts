@@ -1,22 +1,22 @@
-import { AsyncPipe, NgClass } from '@angular/common';
+import { AsyncPipe, NgClass, NgTemplateOutlet } from '@angular/common';
 import {
   AfterViewInit,
   Component,
   Input,
   OnDestroy,
   OnInit,
-  ViewChild,
+  ViewChild
 } from '@angular/core';
 import {
   FormControl,
   FormGroup,
   ReactiveFormsModule,
-  Validators,
+  Validators
 } from '@angular/forms';
 import {
   MAT_SELECT_CONFIG,
   MatSelect,
-  MatSelectModule,
+  MatSelectModule
 } from '@angular/material/select';
 import { NgxMatSelectSearchModule } from 'ngx-mat-select-search';
 import { ReplaySubject, Subject, take, takeUntil } from 'rxjs';
@@ -25,7 +25,7 @@ import { Country } from '../types/country.model';
 import {
   PhoneNumberFormat,
   PhoneNumberType,
-  PhoneNumberUtil,
+  PhoneNumberUtil
 } from 'google-libphonenumber';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -33,6 +33,7 @@ import TelValidators from '../validators/tel.validators';
 import { GeoIpService } from '../services/geo-ip/geo-ip.service';
 import { HttpClientModule } from '@angular/common/http';
 import { GeoData } from '../types/geo.type';
+import { TextLabels } from '../types/text-labels.type';
 
 @Component({
   selector: 'ngx-material-intl-tel-input',
@@ -46,26 +47,30 @@ import { GeoData } from '../types/geo.type';
     MatFormFieldModule,
     MatInputModule,
     HttpClientModule,
+    NgTemplateOutlet
   ],
   providers: [
     CountryCode,
     {
       provide: MAT_SELECT_CONFIG,
-      useValue: { overlayPanelClass: 'tel-mat-select-pane' },
+      useValue: { overlayPanelClass: 'tel-mat-select-pane' }
     },
-    GeoIpService,
+    GeoIpService
   ],
   templateUrl: './ngx-material-intl-tel-input-lib.component.html',
-  styleUrl: './ngx-material-intl-tel-input-lib.component.scss',
+  styleUrl: './ngx-material-intl-tel-input-lib.component.scss'
 })
 export class NgxMaterialIntlTelInputComponent
   implements OnInit, AfterViewInit, OnDestroy
 {
   /** control for the selected country prefix */
-  public prefixCtrl: FormControl<any> = new FormControl<any>(null);
+  public prefixCtrl: FormControl<Country | null> =
+    new FormControl<Country | null>(null);
 
   /** control for the MatSelect filter keyword */
-  public prefixFilterCtrl: FormControl<string> = new FormControl<any>('');
+  public prefixFilterCtrl: FormControl<string | null> = new FormControl<
+    string | null
+  >('');
 
   /** list of countries filtered by search keyword */
   public filteredCountries: ReplaySubject<Country[]> = new ReplaySubject<
@@ -82,7 +87,7 @@ export class NgxMaterialIntlTelInputComponent
 
   telForm = new FormGroup({
     prefixCtrl: this.prefixCtrl,
-    numberControl: new FormControl(''),
+    numberControl: new FormControl('')
   });
 
   @Input() formControl = new FormControl('');
@@ -90,7 +95,18 @@ export class NgxMaterialIntlTelInputComponent
   @Input() disabled = false;
   @Input() enablePlaceholder = true;
   @Input() autoIpLookup = true;
+  @Input() iconMakeCall = true;
   @Input() initialValue = '';
+  @Input() textLabels: TextLabels = {
+    mainLabel: 'Phone number',
+    codePlaceholder: 'Code',
+    searchPlaceholderLabel: 'Search',
+    noEntriesFoundLabel: 'No countries found',
+    nationalNumberLabel: 'Number',
+    hintLabel: 'Select country and type your phone number',
+    invalidNumberError: 'Number is not valid',
+    requiredError: 'This field is required'
+  };
 
   isFocused = false;
 
@@ -135,7 +151,7 @@ export class NgxMaterialIntlTelInputComponent
         areaCodes: (c[4] as string[]) || undefined,
         htmlId: `iti-0__item-${c[1].toString()}`,
         flagClass: `iti__${c[1].toString().toLocaleLowerCase()}`,
-        placeHolder: '',
+        placeHolder: ''
       };
 
       if (this.enablePlaceholder) {
@@ -174,14 +190,19 @@ export class NgxMaterialIntlTelInputComponent
   geoIpLookup(): void {
     this.geoIpService.geoIpLookup().subscribe({
       next: (data: GeoData) => {
-        const country = this.allCountries?.find(
-          (c) => c.iso2 === data.country_code?.toLowerCase()
-        );
-        this.prefixCtrl.setValue(country);
+        const country =
+          this.allCountries?.find(
+            (c) => c.iso2 === data.country_code?.toLowerCase()
+          ) || null;
+        if (country) {
+          this.prefixCtrl.setValue(country);
+        } else {
+          this.prefixCtrl.setValue(this.allCountries[202]);
+        }
       },
       error: () => {
         this.prefixCtrl.setValue(this.allCountries[202]);
-      },
+      }
     });
   }
 
@@ -207,7 +228,7 @@ export class NgxMaterialIntlTelInputComponent
       return;
     }
     // get the search keyword
-    let search = this.prefixFilterCtrl.value;
+    let search = this.prefixFilterCtrl.value || '';
     if (!search) {
       this.filteredCountries.next(this.allCountries.slice());
       return;

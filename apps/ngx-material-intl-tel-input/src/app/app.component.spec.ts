@@ -9,15 +9,6 @@ describe('AppComponent', () => {
     }).compileComponents();
   });
 
-  it('should render title', () => {
-    const fixture = TestBed.createComponent(AppComponent);
-    fixture.detectChanges();
-    const compiled = fixture.nativeElement as HTMLElement;
-    expect(compiled.querySelector('h1')?.textContent).toContain(
-      'Welcome ngx-material-intl-tel-input'
-    );
-  });
-
   it(`should have as title 'ngx-material-intl-tel-input'`, () => {
     const fixture = TestBed.createComponent(AppComponent);
     const app = fixture.componentInstance;
