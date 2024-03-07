@@ -1,6 +1,6 @@
 {
   "name": "ngx-material-intl-tel-input",
-  "version": "0.0.3",
+  "version": "17.2.0",
   "license": "MIT",
 	"repository": {
 		"type": "git",
@@ -20,7 +20,8 @@
 		"validation",
     "international telephone input",
     "angular material",
-    "material"
+    "material",
+    "telephone"
 	],
 	"bugs": {
 		"url": "https://github.com/juanjotorres90/ngx-material-intl-tel-input/issues"

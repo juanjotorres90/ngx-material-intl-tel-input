@@ -2,7 +2,11 @@
   @if (textLabels.mainLabel) {
     <mat-label class="main-label">{{ textLabels.mainLabel }}</mat-label>
   }
-  <form [formGroup]="telForm" [ngClass]="{ 'is-focused': isFocused }">
+  <div
+    class="tel-form"
+    [formGroup]="telForm"
+    [ngClass]="{ 'is-focused': isFocused }"
+  >
     <mat-form-field appearance="fill" class="prefix-form-field">
       <mat-select
         formControlName="prefixCtrl"
@@ -81,8 +85,8 @@
       />
 
       <mat-icon matSuffix>
-        @if (iconMakeCall && formControl.valid && formControl.value) {
-          <a href="tel:{{ formControl.value }}">
+        @if (iconMakeCall && fieldControl.valid && fieldControl.value) {
+          <a href="tel:{{ fieldControl.value }}">
             <ng-container *ngTemplateOutlet="phoneIcon"> </ng-container>
           </a>
         } @else {
@@ -90,7 +94,7 @@
         }
       </mat-icon>
     </mat-form-field>
-  </form>
+  </div>
 
   <ng-template #phoneIcon>
     <svg
@@ -115,10 +119,16 @@
   @if (textLabels.hintLabel) {
     <mat-hint>{{ textLabels.hintLabel }}</mat-hint>
   }
-  @if (formControl.hasError('invalidNumber') && textLabels.invalidNumberError) {
-    <mat-error>{{ textLabels.invalidNumberError }}</mat-error>
-  }
-  @if (formControl.hasError('required') && textLabels.requiredError) {
+  @if (
+    fieldControl.hasError('required') &&
+    textLabels.requiredError &&
+    fieldControl.dirty
+  ) {
     <mat-error>{{ textLabels.requiredError }}</mat-error>
+  }
+  @if (
+    fieldControl.hasError('invalidNumber') && textLabels.invalidNumberError
+  ) {
+    <mat-error>{{ textLabels.invalidNumberError }}</mat-error>
   }
 </section>

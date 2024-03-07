@@ -90,7 +90,7 @@ export class NgxMaterialIntlTelInputComponent
     numberControl: new FormControl('')
   });
 
-  @Input() formControl = new FormControl('');
+  @Input() fieldControl = new FormControl('');
   @Input() required = false;
   @Input() disabled = false;
   @Input() enablePlaceholder = true;
@@ -122,13 +122,13 @@ export class NgxMaterialIntlTelInputComponent
   ngOnInit(): void {
     this.fetchCountryData();
     if (this.required) {
-      this.formControl.addValidators(Validators.required);
+      this.fieldControl.addValidators(Validators.required);
     }
     if (this.disabled) {
       this.telForm.disable();
-      this.formControl.disable();
+      this.fieldControl.disable();
     }
-    this.formControl.addValidators(TelValidators.isValidNumber(this.telForm));
+    this.fieldControl.addValidators(TelValidators.isValidNumber(this.telForm));
 
     // load the initial countries list
     this.filteredCountries.next(this.allCountries.slice());
@@ -139,7 +139,9 @@ export class NgxMaterialIntlTelInputComponent
         this.filterCountries();
       });
     this.startTelFormValueChangesListener();
-    this.setInitialTelValue();
+    setTimeout(() => {
+      this.setInitialTelValue();
+    });
   }
 
   /**
@@ -288,13 +290,14 @@ export class NgxMaterialIntlTelInputComponent
   }
 
   /**
-   * Listens for changes in the telForm value and updates the formControl accordingly.
+   * Listens for changes in the telForm value and updates the fieldControl accordingly.
    */
   startTelFormValueChangesListener(): void {
     this.telForm.valueChanges
       .pipe(takeUntil(this._onDestroy))
       .subscribe((data) => {
         if (data?.prefixCtrl?.dialCode && data?.numberControl) {
+          this.fieldControl?.markAsDirty();
           const value = '+' + data?.prefixCtrl?.dialCode + data?.numberControl;
           try {
             const parsed = this.phoneNumberUtil.parse(
@@ -305,12 +308,12 @@ export class NgxMaterialIntlTelInputComponent
               parsed,
               PhoneNumberFormat.INTERNATIONAL
             );
-            this.formControl.setValue(formatted);
+            this.fieldControl.setValue(formatted);
           } catch (error) {
-            this.formControl.setValue(value);
+            this.fieldControl.setValue(value);
           }
         } else {
-          this.formControl.setValue('');
+          this.fieldControl.setValue('');
         }
       });
   }
@@ -343,7 +346,8 @@ export class NgxMaterialIntlTelInputComponent
         }
       } catch {
         this.telForm.get('numberControl')?.setValue(this.initialValue);
-        this.formControl.setValue(this.initialValue);
+        this.fieldControl.setValue(this.initialValue);
+        this.fieldControl?.markAsDirty();
       }
     }
   }

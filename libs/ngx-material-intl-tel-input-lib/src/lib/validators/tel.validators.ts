@@ -1,8 +1,6 @@
 import { AbstractControl, FormGroup, ValidatorFn } from '@angular/forms';
 import { PhoneNumberFormat, PhoneNumberUtil } from 'google-libphonenumber';
 
-let isDirty = false;
-
 export default class TelValidators {
   static isValidNumber(telForm: FormGroup): ValidatorFn {
     return (control: AbstractControl): { [key: string]: boolean } | null => {
@@ -29,17 +27,14 @@ export default class TelValidators {
         const isValidNumber = phoneNumberUtil.isValidNumber(parsed);
         if (!isValidNumber) {
           return {
-            invalidNumber: true,
-            isDirty: isDirty,
+            invalidNumber: true
           };
         } else {
-          isDirty = true;
           return null;
         }
       } catch {
         return {
-          invalidNumber: true,
-          isDirty: isDirty,
+          invalidNumber: true
         };
       }
     };

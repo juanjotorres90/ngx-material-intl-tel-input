@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [17.2.0] - 2024-03-07
+
+🎉🚀 First stable release 🚀🎉
+
+### Added
+
+- Export "TextLabels" type.
+
+### Fixed
+
+- Remove telephone form to avoid hydration issues.
+- Rename main FormControl from "formControl" to "fieldControl" to avoid errors.
+- Show field required error only when the field control is dirty.
+
 ## [0.0.3] - 2024-03-07
 
 - Update library README image preview.

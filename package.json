@@ -1,30 +1,31 @@
 {
   "name": "@ngx-material-intl-tel-input/source",
-  "version": "0.0.3",
+  "version": "17.2.0",
   "license": "MIT",
-	"repository": {
-		"type": "git",
-		"url": "git+https://github.com/juanjotorres90/ngx-material-intl-tel-input"
-	},
-	"author": {
-		"name": "Juanjo Torres",
-		"email": "juanjotorres90@gmail.com",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/juanjotorres90/ngx-material-intl-tel-input"
+  },
+  "author": {
+    "name": "Juanjo Torres",
+    "email": "juanjotorres90@gmail.com",
     "url": "https://github.com/juanjotorres90"
-	},
-	"keywords": [
-		"angular",
-		"angular 17",
+  },
+  "keywords": [
+    "angular",
+    "angular 17",
     "ngx",
-		"intl-tel-input",
-		"phone number",
-		"validation",
+    "intl-tel-input",
+    "phone number",
+    "validation",
     "international telephone input",
     "angular material",
-    "material"
-	],
-	"bugs": {
-		"url": "https://github.com/juanjotorres90/ngx-material-intl-tel-input/issues"
-	},
+    "material",
+    "telephone"
+  ],
+  "bugs": {
+    "url": "https://github.com/juanjotorres90/ngx-material-intl-tel-input/issues"
+  },
   "description": "Angular Material international telephone input",
   "scripts": {
     "prepare": "husky",

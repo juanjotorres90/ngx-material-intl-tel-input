@@ -24,6 +24,13 @@
         "review",
         "test"
       ]
+    },
+    {
+      "login": "whegar",
+      "name": "Rafa Hernández",
+      "avatar_url": "https://avatars3.githubusercontent.com/u/5524772?v=4",
+      "profile": "https://github.com/whegar",
+      "contributions": ["ideas", "question", "infra", "maintenance", "review"]
     }
   ],
   "contributorsPerLine": 7,

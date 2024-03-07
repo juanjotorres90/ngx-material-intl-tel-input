@@ -1,8 +1,12 @@
-[![All Contributors](https://img.shields.io/badge/all_contributors-1-orange.svg?style=flat-square)](#contributors)
+[![All Contributors](https://img.shields.io/badge/all_contributors-2-orange.svg?style=flat-square)](#contributors)
 
-[![Build Status](https://travis-ci.org/juanjotorres90/ngx-material-intl-tel-input.svg?branch=master)](https://travis-ci.org/juanjotorres90/ngx-material-intl-tel-input) [![npm version](https://badge.fury.io/js/ngx-material-intl-tel-input.svg)](https://badge.fury.io/js/ngx-material-intl-tel-input) [![npm](https://img.shields.io/npm/dm/localeval.svg)](https://www.npmjs.com/package/ngx-material-intl-tel-input)
+[![npm version](https://img.shields.io/npm/v/ngx-material-intl-tel-input.svg?style=flat-square)](https://www.npmjs.com/package/ngx-material-intl-tel-input)
+[![npm downloads total](https://img.shields.io/npm/dt/ngx-material-intl-tel-input.svg?style=flat-square)](https://www.npmjs.com/package/ngx-material-intl-tel-input)
+[![npm downloads monthly](https://img.shields.io/npm/dm/ngx-material-intl-tel-input.svg?style=flat-square)](https://www.npmjs.com/package/ngx-material-intl-tel-input)
 
 # NgxMaterialIntlTelInput
+
+[https://github.com/juanjotorres90/ngx-material-intl-tel-input](https://github.com/juanjotorres90/ngx-material-intl-tel-input)
 
 An Angular library for entering and validating international telephone numbers. It adds searchable material select to look for country codes, detects the user's country, displays a relevant placeholder and provides formatting/validation methods.
 
@@ -10,7 +14,7 @@ An Angular library for entering and validating international telephone numbers. 
 
 **Compatibility:**
 
-Validation with [google-libphonenumber](https://github.com/ruimarinho/google-libphonenumber)
+Validation with [google-libphonenumber](https://github.com/google/libphonenumber)
 
 | ngx-material-intl-tel-input | Angular   |
 | --------------------------- | --------- |
@@ -38,7 +42,7 @@ imports: [NgxMaterialIntlTelInputComponent];
 
 ```html
 <form [formGroup]="formGroup">
-  <ngx-material-intl-tel-input [formControl]="formControl" [required]="true" [autoIpLookup]="false"> </ngx-material-intl-tel-input>
+  <ngx-material-intl-tel-input [fieldControl]="control" [required]="true" [autoIpLookup]="false"> </ngx-material-intl-tel-input>
 </form>
 ```
 
@@ -46,7 +50,7 @@ imports: [NgxMaterialIntlTelInputComponent];
 
 | Options           | Type          | Default                                                                                                                                                                                                                                                                                                        | Description                                               |
 | ----------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| formControl       | `FormControl` | `FormControl('')`                                                                                                                                                                                                                                                                                              | Form control required to retrieve the value.              |
+| fieldControl      | `FormControl` | `FormControl('')`                                                                                                                                                                                                                                                                                              | Form control required to retrieve the value.              |
 | required          | `boolean`     | `false`                                                                                                                                                                                                                                                                                                        | Telephone field input required.                           |
 | disabled          | `boolean`     | `false`                                                                                                                                                                                                                                                                                                        | Telephone field input disabled.                           |
 | autoIpLookup      | `boolean`     | `true`                                                                                                                                                                                                                                                                                                         | Sets initial country code based on user's ip.             |
@@ -76,7 +80,7 @@ To start your development once you have cloned this project, you must execute:
 Node 20 is required.
 
 ```bash
-npm install --legacy-peer-deps
+npm install
 ```
 
 - Using bun:
@@ -88,11 +92,15 @@ bun install
 
 ## Start the application
 
-Run `npx nx serve ngx-material-intl-tel-input` to start the development server. Happy coding!
+Run `npx nx serve ngx-material-intl-tel-input` to start the development server.
+
+Happy coding! 💻🚀
 
 ## Build for production
 
 Run `npx nx build ngx-material-intl-tel-input-lib` to build the library. The build artifacts are stored in the output directory (e.g. `dist/` or `build/`), ready to be deployed.
+
+This project follows conventional commits specification.
 
 ## Contributors
 
@@ -104,6 +112,7 @@ Thanks goes to these wonderful people:
 <table>
   <tr>
     <td align="center"><a href="https://github.com/juanjotorres90"><img src="https://avatars3.githubusercontent.com/u/49198908?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Juanjo Torres</b></sub></a><br /><a href="#design-juanjotorres90" title="Design">🎨</a> <a href="https://github.com/juanjotorres90/ngx-material-intl-tel-input/commits?author=juanjotorres90" title="Code">💻</a> <a href="https://github.com/juanjotorres90/ngx-material-intl-tel-input/commits?author=juanjotorres90" title="Documentation">📖</a> <a href="#ideas-juanjotorres90" title="Ideas, Planning, & Feedback">🤔</a> <a href="#question-juanjotorres90" title="Answering Questions">💬</a> <a href="#infra-juanjotorres90" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a> <a href="#example-juanjotorres90" title="Examples">💡</a> <a href="#maintenance-juanjotorres90" title="Maintenance">🚧</a> <a href="https://github.com/juanjotorres90/ngx-material-intl-tel-input/pulls?q=is%3Apr+reviewed-by%3Ajuanjotorres90" title="Reviewed Pull Requests">👀</a> <a href="https://github.com/juanjotorres90/ngx-material-intl-tel-input/commits?author=juanjotorres90" title="Tests">⚠️</a></td>
+    <td align="center"><a href="https://github.com/whegar"><img src="https://avatars3.githubusercontent.com/u/5524772?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Rafa Hernández</b></sub></a><br /> <a href="https://github.com/juanjotorres90/ngx-material-intl-tel-input/commits?author=whegar" title="Code">💻</a> <a href="#ideas-whegar" title="Ideas, Planning, & Feedback">🤔</a> <a href="#question-whegar" title="Answering Questions">💬</a> <a href="#infra-whegar" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a> <a href="#maintenance-whegar" title="Maintenance">🚧</a> <a href="https://github.com/juanjotorres90/ngx-material-intl-tel-input/pulls?q=is%3Apr+reviewed-by%whegar" title="Reviewed Pull Requests">👀</a></td>
 </table>
 
 <!-- markdownlint-restore -->

@@ -10,7 +10,7 @@
       padding: 2px 0;
       font-size: 14px;
     }
-    form {
+    .tel-form {
       display: flex;
       justify-content: center;
       align-items: center;
@@ -55,6 +55,9 @@
             border-bottom: none !important;
             background-color: transparent !important;
           }
+        }
+        &::ng-deep .mat-mdc-text-field-wrapper:hover {
+          background-color: #f5f5f5 !important;
         }
         &.prefix-form-field {
           min-width: 120px;
@@ -126,6 +129,9 @@
 
 ::ng-deep .tel-mat-select-pane {
   width: 240px !important;
+  .mdc-list-item__primary-text {
+    line-height: 16px !important;
+  }
 }
 
 @import '../assets/css/flags.css';
