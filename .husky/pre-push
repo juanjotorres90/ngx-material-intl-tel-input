@@ -1,1 +1,1 @@
-npm run build:all
+npm run lint:all && npm run unit-tests:all && npm run build:all
