@@ -22,11 +22,7 @@ import { NgxMatSelectSearchModule } from 'ngx-mat-select-search';
 import { ReplaySubject, Subject, take, takeUntil } from 'rxjs';
 import { CountryCode } from '../data/country-code';
 import { Country } from '../types/country.model';
-import {
-  PhoneNumberFormat,
-  PhoneNumberType,
-  PhoneNumberUtil
-} from 'google-libphonenumber';
+import { PhoneNumberFormat, PhoneNumberUtil } from 'google-libphonenumber';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import TelValidators from '../validators/tel.validators';
@@ -34,6 +30,8 @@ import { GeoIpService } from '../services/geo-ip/geo-ip.service';
 import { HttpClientModule } from '@angular/common/http';
 import { GeoData } from '../types/geo.type';
 import { TextLabels } from '../types/text-labels.type';
+import { CountryISO } from '../enums/country-iso.enum';
+import { CountryDataService } from '../services/country-data/country-data.service';
 
 @Component({
   selector: 'ngx-material-intl-tel-input',
@@ -55,7 +53,8 @@ import { TextLabels } from '../types/text-labels.type';
       provide: MAT_SELECT_CONFIG,
       useValue: { overlayPanelClass: 'tel-mat-select-pane' }
     },
-    GeoIpService
+    GeoIpService,
+    CountryDataService
   ],
   templateUrl: './ngx-material-intl-tel-input-lib.component.html',
   styleUrl: './ngx-material-intl-tel-input-lib.component.scss'
@@ -95,8 +94,13 @@ export class NgxMaterialIntlTelInputComponent
   @Input() disabled = false;
   @Input() enablePlaceholder = true;
   @Input() autoIpLookup = true;
+  @Input() autoSelectCountry = true;
+  @Input() autoSelectedCountry: CountryISO | string = '';
+  @Input() numberValidation = true;
   @Input() iconMakeCall = true;
   @Input() initialValue = '';
+  @Input() preferredCountries: (CountryISO | string)[] = [];
+  @Input() visibleCountries: (CountryISO | string)[] = [];
   @Input() textLabels: TextLabels = {
     mainLabel: 'Phone number',
     codePlaceholder: 'Code',
@@ -109,10 +113,12 @@ export class NgxMaterialIntlTelInputComponent
   };
 
   isFocused = false;
+  isLoading = true;
 
   constructor(
     private countryCodeData: CountryCode,
-    private geoIpService: GeoIpService
+    private geoIpService: GeoIpService,
+    private countryDataService: CountryDataService
   ) {}
 
   /**
@@ -128,8 +134,11 @@ export class NgxMaterialIntlTelInputComponent
       this.telForm.disable();
       this.fieldControl.disable();
     }
-    this.fieldControl.addValidators(TelValidators.isValidNumber(this.telForm));
-
+    if (this.numberValidation) {
+      this.fieldControl.addValidators(
+        TelValidators.isValidNumber(this.telForm)
+      );
+    }
     // load the initial countries list
     this.filteredCountries.next(this.allCountries.slice());
     // listen for search field value changes
@@ -148,49 +157,13 @@ export class NgxMaterialIntlTelInputComponent
    * Fetches country data and populates the allCountries array.
    */
   protected fetchCountryData(): void {
-    this.allCountries = [];
-
-    //TODO Add to service
-    this.countryCodeData.allCountries.forEach((c) => {
-      const country: Country = {
-        name: c[0].toString(),
-        iso2: c[1].toString(),
-        dialCode: c[2].toString(),
-        priority: +c[3] || 0,
-        areaCodes: (c[4] as string[]) || undefined,
-        htmlId: `iti-0__item-${c[1].toString()}`,
-        flagClass: `iti__${c[1].toString().toLocaleLowerCase()}`,
-        placeHolder: ''
-      };
-
-      if (this.enablePlaceholder) {
-        country.placeHolder = this.getPhoneNumberPlaceHolder(
-          country.iso2.toUpperCase()
-        );
-      }
-
-      this.allCountries.push(country);
-    });
-  }
-
-  /**
-   * Retrieves the placeholder for a phone number based on the given country code.
-   *
-   * @param {string} countryCode - The country code for the phone number.
-   * @return {string} The placeholder for the phone number.
-   */
-  protected getPhoneNumberPlaceHolder(countryCode: string): string {
-    try {
-      return this.phoneNumberUtil.format(
-        this.phoneNumberUtil.getExampleNumberForType(
-          countryCode,
-          PhoneNumberType.MOBILE
-        ),
-        PhoneNumberFormat.NATIONAL
-      );
-    } catch (e) {
-      return '';
-    }
+    const processedCountries = this.countryDataService.processCountries(
+      this.countryCodeData,
+      this.enablePlaceholder,
+      this.visibleCountries,
+      this.preferredCountries
+    );
+    this.allCountries = processedCountries;
   }
 
   /**
@@ -224,11 +197,14 @@ export class NgxMaterialIntlTelInputComponent
         if (country) {
           this.prefixCtrl.setValue(country);
         } else {
-          this.prefixCtrl.setValue(this.allCountries[202]);
+          this.setAutoSelectedCountry();
         }
       },
       error: () => {
-        this.prefixCtrl.setValue(this.allCountries[202]);
+        this.setAutoSelectedCountry();
+      },
+      complete: () => {
+        this.isLoading = false;
       }
     });
   }
@@ -296,9 +272,14 @@ export class NgxMaterialIntlTelInputComponent
     this.telForm.valueChanges
       .pipe(takeUntil(this._onDestroy))
       .subscribe((data) => {
-        if (data?.prefixCtrl?.dialCode && data?.numberControl) {
+        if (data?.numberControl) {
           this.fieldControl?.markAsDirty();
-          const value = '+' + data?.prefixCtrl?.dialCode + data?.numberControl;
+          let value = '';
+          if (data?.prefixCtrl?.dialCode) {
+            value = '+' + data.prefixCtrl.dialCode + data.numberControl;
+          } else {
+            value = data.numberControl;
+          }
           try {
             const parsed = this.phoneNumberUtil.parse(
               value,
@@ -324,10 +305,15 @@ export class NgxMaterialIntlTelInputComponent
   setInitialTelValue(): void {
     if (!this.initialValue) {
       // set initial selection
-      if (this.autoIpLookup) {
-        this.geoIpLookup();
+      if (this.autoSelectCountry) {
+        if (this.autoIpLookup) {
+          this.geoIpLookup();
+        } else {
+          this.setAutoSelectedCountry();
+          this.isLoading = false;
+        }
       } else {
-        this.prefixCtrl.setValue(this.allCountries[202]);
+        this.isLoading = false;
       }
     } else {
       try {
@@ -348,6 +334,30 @@ export class NgxMaterialIntlTelInputComponent
         this.telForm.get('numberControl')?.setValue(this.initialValue);
         this.fieldControl.setValue(this.initialValue);
         this.fieldControl?.markAsDirty();
+      } finally {
+        this.isLoading = false;
+      }
+    }
+  }
+
+  /**
+   * Set the auto selected country based on the specified criteria.
+   *
+   */
+  setAutoSelectedCountry(): void {
+    const autoSelectedCountry = this.allCountries?.find(
+      (country) => country?.iso2 === this.autoSelectedCountry
+    );
+    if (autoSelectedCountry) {
+      this.prefixCtrl.setValue(autoSelectedCountry);
+    } else {
+      const defaultCountry = this.allCountries?.find(
+        (country) => country?.iso2 === CountryISO.Spain
+      );
+      if (defaultCountry) {
+        this.prefixCtrl.setValue(defaultCountry);
+      } else {
+        this.prefixCtrl.setValue(this.allCountries?.[0]);
       }
     }
   }

@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [17.2.1] - 2024-03-10
+
+### Added
+
+- Add 'autoSelectCountry' option to enable auto selecting a country on initialization.
+- Add 'autoSelectedCountry' option to set the country to be auto selected.
+- Add 'numberValidation' option to disable phone number validation.
+- Add 'preferredCountries' option to show them on top of the country list.
+- Add 'visibleCountries' option to only show the specified countries.
+- Export "CountryISO" type.
+
+### Changed
+
+- Fetch country data refactor. Now a service handles all the logic.
+
+### Removed
+
+- Remove unused css.
+
 ## [17.2.0] - 2024-03-07
 
 🎉🚀 First stable release 🚀🎉

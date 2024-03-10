@@ -24,7 +24,8 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: ${{ matrix.node-version }}
-          cache: 'npm'
+          # cache: 'npm'
+          # cache-dependency-path: package.json
       - run: npm ci
       - run: npm run build:all --if-present
     # - run: npm test

@@ -1,6 +1,6 @@
 {
   "name": "@ngx-material-intl-tel-input/source",
-  "version": "17.2.0",
+  "version": "17.2.1",
   "license": "MIT",
   "repository": {
     "type": "git",
@@ -98,4 +98,3 @@
     "validate-branch-name": "^1.3.0"
   }
 }
-
