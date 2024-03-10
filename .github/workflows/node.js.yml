@@ -26,6 +26,6 @@ jobs:
           node-version: ${{ matrix.node-version }}
           # cache: 'npm'
           # cache-dependency-path: package.json
-      - run: npm ci
+      - run: npm i
       - run: npm run build:all --if-present
     # - run: npm test
