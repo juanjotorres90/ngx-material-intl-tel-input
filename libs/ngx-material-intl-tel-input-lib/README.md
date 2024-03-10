@@ -8,7 +8,9 @@
 
 [https://github.com/juanjotorres90/ngx-material-intl-tel-input](https://github.com/juanjotorres90/ngx-material-intl-tel-input)
 
-An Angular library for entering and validating international telephone numbers. It adds searchable material select to look for country codes, detects the user's country, displays a relevant placeholder and provides formatting/validation methods.
+Introducing an Angular library designed to streamline the input and validation of international telephone numbers. Integrates a searchable material select component for convenient country code selection. Moreover, it automatically detects the user's country, dynamically presenting a relevant placeholder for enhanced user experience. With built-in formatting and validation functionalities, this library ensures accuracy and consistency in handling telephone numbers across diverse global contexts.
+
+Check out the [Demo](https://juanjotorres.net/projects/ngx-material-intl-tel-input)
 
 <img width="490" alt="preview" src="https://github.com/juanjotorres90/ngx-material-intl-tel-input/assets/49198908/770096e5-55f7-433f-a36d-046028196145">
 
@@ -24,15 +26,15 @@ Validation with [google-libphonenumber](https://github.com/google/libphonenumber
 
 `$ npm install ngx-material-intl-tel-input --save`
 
-Make sure to add `provideAnimations()` in the providers array of your main.ts to bootstrap your application [Angular Docs](https://angular.io/api/platform-browser/animations/provideAnimations).
+Ensure to include `provideAnimations()` in the providers array of your main.ts file to initialize your application with animations. Refer to the [Angular Docs](https://angular.io/api/platform-browser/animations/provideAnimations) for detailed instructions.
 
-An Angular Material theme is required, the necessary css must be imported [Angular Material Theming](https://material.angular.io/guide/theming).
+Additionally, it's essential to incorporate an Angular Material theme by importing the necessary CSS for styling. Please consult the [Angular Material Theming guide](https://material.angular.io/guide/theming) for instructions on how to set up the theme.
 
 ## Usage
 
 ### Import
 
-Add the `NgxMaterialIntlTelInputComponent` to your imports array in the standalone component where it is going to be used.
+Include the NgxMaterialIntlTelInputComponent in the imports array of the standalone component where you intend to utilize it.
 
 ```typescript
 imports: [NgxMaterialIntlTelInputComponent];
@@ -48,16 +50,21 @@ imports: [NgxMaterialIntlTelInputComponent];
 
 ## Options
 
-| Options           | Type          | Default                                                                                                                                                                                                                                                                                                        | Description                                               |
-| ----------------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------- |
-| fieldControl      | `FormControl` | `FormControl('')`                                                                                                                                                                                                                                                                                              | Form control required to retrieve the value.              |
-| required          | `boolean`     | `false`                                                                                                                                                                                                                                                                                                        | Telephone field input required.                           |
-| disabled          | `boolean`     | `false`                                                                                                                                                                                                                                                                                                        | Telephone field input disabled.                           |
-| autoIpLookup      | `boolean`     | `true`                                                                                                                                                                                                                                                                                                         | Sets initial country code based on user's ip.             |
-| enablePlaceholder | `boolean`     | `true`                                                                                                                                                                                                                                                                                                         | Input placeholder text for every country national number. |
-| iconMakeCall      | `boolean`     | `true`                                                                                                                                                                                                                                                                                                         | Click on phone icon to trigger call action.               |
-| initialValue      | `string`      | ``                                                                                                                                                                                                                                                                                                             | Sets initial telephone number value                       |
-| textLabels        | `TextLabels`  | `{mainLabel: 'Phone number', codePlaceholder: 'Code', searchPlaceholderLabel: 'Search', noEntriesFoundLabel: 'No countries found', nationalNumberLabel: 'Number', hintLabel: 'Select country and type your phone number', invalidNumberError: 'Number is not valid', requiredError: 'This field is required`}` | Overrides all component text labels                       |
+| Options             | Type                       | Default                                                                                                                                                                                                                                                                                                      | Description                                                     |
+| ------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------- |
+| fieldControl        | `FormControl`              | `FormControl('')`                                                                                                                                                                                                                                                                                            | Form control required to retrieve the value.                    |
+| required            | `boolean`                  | `false`                                                                                                                                                                                                                                                                                                      | Telephone field input required.                                 |
+| disabled            | `boolean`                  | `false`                                                                                                                                                                                                                                                                                                      | Telephone field input disabled.                                 |
+| autoIpLookup        | `boolean`                  | `true`                                                                                                                                                                                                                                                                                                       | Sets initial country code based on user's ip.                   |
+| autoSelectCountry   | `boolean`                  | `true`                                                                                                                                                                                                                                                                                                       | Enables or disables auto selecting a country on initialization. |
+| autoSelectedCountry | `CountryISO \| string`     | `''`                                                                                                                                                                                                                                                                                                         | Sets the country to be auto selected.                           |
+| numberValidation    | `boolean`                  | `true`                                                                                                                                                                                                                                                                                                       | Enables or disables phone number validation.                    |
+| preferredCountries  | `(CountryISO \| string)[]` | `[]`                                                                                                                                                                                                                                                                                                         | Shows the specified countries on top of the list.               |
+| visibleCountries    | `(CountryISO \| string)[]` | `[]`                                                                                                                                                                                                                                                                                                         | Shows only the specified countries.                             |
+| enablePlaceholder   | `boolean`                  | `true`                                                                                                                                                                                                                                                                                                       | Input placeholder text for every country national number.       |
+| iconMakeCall        | `boolean`                  | `true`                                                                                                                                                                                                                                                                                                       | Click on phone icon to trigger call action.                     |
+| initialValue        | `string`                   | `''`                                                                                                                                                                                                                                                                                                         | Sets initial telephone number value                             |
+| textLabels          | `TextLabels`               | {mainLabel: 'Phone number', codePlaceholder: 'Code', searchPlaceholderLabel: 'Search', noEntriesFoundLabel: 'No countries found', nationalNumberLabel: 'Number', hintLabel: 'Select country and type your phone number', invalidNumberError: 'Number is not valid', requiredError: 'This field is required'} | Overrides all component text labels                             |
 
 ## Contributors
 
@@ -74,7 +81,6 @@ Thanks goes to these wonderful people:
 
 <!-- markdownlint-restore -->
 <!-- prettier-ignore-end -->
-
 <!-- ALL-CONTRIBUTORS-LIST:END -->
 
 This project follows the [all-contributors](https://github.com/all-contributors/all-contributors) specification. Contributions of any kind are welcome!

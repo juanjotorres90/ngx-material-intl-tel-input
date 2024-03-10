@@ -10,16 +10,16 @@
     <mat-form-field appearance="fill" class="prefix-form-field">
       <mat-select
         formControlName="prefixCtrl"
-        [placeholder]="textLabels.codePlaceholder || ''"
+        [placeholder]="(!isLoading && textLabels.codePlaceholder) || ''"
         #singleSelect
         panelClass="tel-mat-select-panel"
         [required]="required"
       >
         <mat-select-trigger>
           <div class="country-option">
-            <div class="iti__flag-box">
+            <div class="country-option-flag-container">
               <div
-                class="iti__flag"
+                class="country-option-flag"
                 [ngClass]="prefixCtrl.value?.flagClass"
               ></div>
             </div>
@@ -59,8 +59,11 @@
               class="country-option"
               style="display: flex; align-items: center; font-size: 14px"
             >
-              <div class="iti__flag-box">
-                <div class="iti__flag" [ngClass]="country.flagClass"></div>
+              <div class="country-option-flag-container">
+                <div
+                  class="country-option-flag"
+                  [ngClass]="country.flagClass"
+                ></div>
               </div>
               <div>{{ country.name }}</div>
             </div>
