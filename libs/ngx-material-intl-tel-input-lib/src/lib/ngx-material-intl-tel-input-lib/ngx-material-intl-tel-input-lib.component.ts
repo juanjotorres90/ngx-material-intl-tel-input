@@ -99,8 +99,10 @@ export class NgxMaterialIntlTelInputComponent
   @Input() numberValidation = true;
   @Input() iconMakeCall = true;
   @Input() initialValue = '';
+  @Input() enableSearch = true;
   @Input() preferredCountries: (CountryISO | string)[] = [];
   @Input() visibleCountries: (CountryISO | string)[] = [];
+  @Input() excludedCountries: (CountryISO | string)[] = [];
   @Input() textLabels: TextLabels = {
     mainLabel: 'Phone number',
     codePlaceholder: 'Code',
@@ -161,7 +163,8 @@ export class NgxMaterialIntlTelInputComponent
       this.countryCodeData,
       this.enablePlaceholder,
       this.visibleCountries,
-      this.preferredCountries
+      this.preferredCountries,
+      this.excludedCountries
     );
     this.allCountries = processedCountries;
   }

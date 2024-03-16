@@ -97,23 +97,30 @@ export class CountryDataService {
    * @param {boolean} enablePlaceholder - flag to enable placeholder
    * @param {(CountryISO | string)[]} [visibleCountries] - optional array of visible country ISO codes or country names
    * @param {(CountryISO | string)[]} [preferredCountries] - optional array of preferred country ISO codes or country names
+   * @param {(CountryISO | string)[]} [excludedCountries] - optional array of excluded country ISO codes or country names
    * @return {Country[]} the processed and sorted list of countries
    */
   processCountries(
     countryCodeData: CountryCode,
     enablePlaceholder: boolean,
     visibleCountries?: (CountryISO | string)[],
-    preferredCountries?: (CountryISO | string)[]
+    preferredCountries?: (CountryISO | string)[],
+    excludedCountries?: (CountryISO | string)[]
   ): Country[] {
     const allCountries: Country[] = countryCodeData.allCountries.map(
       (countryData: CountryData) =>
         this.getCountryObject(countryData, enablePlaceholder)
     );
-    const filteredCountries = visibleCountries?.length
+    const filteredVisibleCountries = visibleCountries?.length
       ? allCountries.filter((country) =>
           visibleCountries.includes(country.iso2)
         )
       : allCountries;
+    const filteredCountries = excludedCountries?.length
+      ? filteredVisibleCountries.filter(
+          (country) => !excludedCountries.includes(country.iso2)
+        )
+      : filteredVisibleCountries;
     const sortedCountries = this.sortCountries(
       filteredCountries,
       preferredCountries

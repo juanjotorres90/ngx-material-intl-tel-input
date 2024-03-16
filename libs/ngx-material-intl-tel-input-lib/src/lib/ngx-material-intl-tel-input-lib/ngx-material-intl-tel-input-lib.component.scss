@@ -66,6 +66,10 @@
             border-right: none;
             border-radius: 8px 0 0 8px;
           }
+          &::ng-deep .mat-mdc-form-field-infix {
+            padding-top: 16px;
+            padding-bottom: 0;
+          }
         }
 
         &.number-form-field {
@@ -81,9 +85,15 @@
           }
           mat-icon {
             padding: 0 8px;
+            svg {
+              color: #909090;
+            }
             a {
               text-decoration: none;
               color: var(--mdc-theme-primary, #209ffc);
+              svg {
+                color: var(--mdc-theme-primary, #209ffc);
+              }
             }
           }
         }
@@ -129,6 +139,12 @@
 
 ::ng-deep .tel-mat-select-pane {
   width: 240px !important;
+  .mat-mdc-select-panel {
+    box-shadow: none !important;
+    border-radius: 8px !important;
+    border: 1px solid #d8d8d8 !important;
+    margin: 8px 0 !important;
+  }
   .mdc-list-item__primary-text {
     line-height: 16px !important;
   }
