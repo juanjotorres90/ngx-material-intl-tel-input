@@ -12,7 +12,7 @@ Introducing an Angular library designed to streamline the input and validation o
 
 Check out the [Demo](https://juanjotorres.net/projects/ngx-material-intl-tel-input)
 
-<img width="490" alt="preview" src="https://github.com/juanjotorres90/ngx-material-intl-tel-input/assets/49198908/770096e5-55f7-433f-a36d-046028196145">
+<img width="490" alt="preview" src="https://github.com/juanjotorres90/ngx-material-intl-tel-input/assets/49198908/d0714418-c1bf-45af-a98c-8c54f3eb9144">
 
 **Compatibility:**
 
@@ -20,7 +20,7 @@ Validation with [google-libphonenumber](https://github.com/google/libphonenumber
 
 | ngx-material-intl-tel-input | Angular   |
 | --------------------------- | --------- |
-| 0.0.1 - 17.2.1              | >= 17.2.0 |
+| 0.0.1 - 17.3.0              | >= 17.2.0 |
 
 ## Installation
 
@@ -59,8 +59,10 @@ imports: [NgxMaterialIntlTelInputComponent];
 | autoSelectCountry   | `boolean`                  | `true`                                                                                                                                                                                                                                                                                                       | Enables or disables auto selecting a country on initialization. |
 | autoSelectedCountry | `CountryISO \| string`     | `''`                                                                                                                                                                                                                                                                                                         | Sets the country to be auto selected.                           |
 | numberValidation    | `boolean`                  | `true`                                                                                                                                                                                                                                                                                                       | Enables or disables phone number validation.                    |
+| enableSearch        | `boolean`                  | `true`                                                                                                                                                                                                                                                                                                       | Enables or disables country search.                             |
 | preferredCountries  | `(CountryISO \| string)[]` | `[]`                                                                                                                                                                                                                                                                                                         | Shows the specified countries on top of the list.               |
 | visibleCountries    | `(CountryISO \| string)[]` | `[]`                                                                                                                                                                                                                                                                                                         | Shows only the specified countries.                             |
+| excludedCountries   | `(CountryISO \| string)[]` | `[]`                                                                                                                                                                                                                                                                                                         | Exclude the specified countries from the list.                  |
 | enablePlaceholder   | `boolean`                  | `true`                                                                                                                                                                                                                                                                                                       | Input placeholder text for every country national number.       |
 | iconMakeCall        | `boolean`                  | `true`                                                                                                                                                                                                                                                                                                       | Click on phone icon to trigger call action.                     |
 | initialValue        | `string`                   | `''`                                                                                                                                                                                                                                                                                                         | Sets initial telephone number value                             |

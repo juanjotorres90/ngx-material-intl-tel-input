@@ -30,6 +30,7 @@ describe('NgxMaterialIntlTelInputComponent', () => {
     expect(component.required).toBe(false);
     expect(component.disabled).toBe(false);
     expect(component.enablePlaceholder).toBe(true);
+    expect(component.enableSearch).toBe(true);
     expect(component.autoIpLookup).toBe(true);
     expect(component.autoSelectCountry).toBe(true);
     expect(component.autoSelectedCountry).toBe('');
@@ -38,6 +39,7 @@ describe('NgxMaterialIntlTelInputComponent', () => {
     expect(component.initialValue).toBe('');
     expect(component.preferredCountries).toEqual([]);
     expect(component.visibleCountries).toEqual([]);
+    expect(component.excludedCountries).toEqual([]);
     expect(component.textLabels).toEqual({
       mainLabel: 'Phone number',
       codePlaceholder: 'Code',
