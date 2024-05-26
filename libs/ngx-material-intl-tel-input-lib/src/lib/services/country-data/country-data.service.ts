@@ -21,7 +21,8 @@ export class CountryDataService {
    */
   private getCountryObject(
     countryData: CountryData,
-    enablePlaceholder: boolean
+    enablePlaceholder: boolean,
+    includeDialCode: boolean
   ): Country {
     const country: Country = {
       name: countryData[0].toString(),
@@ -33,7 +34,8 @@ export class CountryDataService {
       flagClass: `country-code__${countryData[1].toString().toLocaleLowerCase()}`,
       placeHolder: enablePlaceholder
         ? this.getPhoneNumberPlaceholder(
-            countryData[1].toString().toUpperCase()
+            countryData[1].toString().toUpperCase(),
+            includeDialCode
           )
         : ''
     };
@@ -76,14 +78,19 @@ export class CountryDataService {
    * @param {string} countryCode - The country code for the phone number.
    * @return {string} The formatted phone number placeholder.
    */
-  protected getPhoneNumberPlaceholder(countryCode: string): string {
+  protected getPhoneNumberPlaceholder(
+    countryCode: string,
+    includeDialCode: boolean
+  ): string {
     try {
       return this.phoneNumberUtil.format(
         this.phoneNumberUtil.getExampleNumberForType(
           countryCode,
           PhoneNumberType.MOBILE
         ),
-        PhoneNumberFormat.NATIONAL
+        includeDialCode || countryCode === 'MP'
+          ? PhoneNumberFormat.INTERNATIONAL
+          : PhoneNumberFormat.NATIONAL
       );
     } catch (e) {
       return '';
@@ -103,13 +110,14 @@ export class CountryDataService {
   processCountries(
     countryCodeData: CountryCode,
     enablePlaceholder: boolean,
+    includeDialCode: boolean,
     visibleCountries?: (CountryISO | string)[],
     preferredCountries?: (CountryISO | string)[],
     excludedCountries?: (CountryISO | string)[]
   ): Country[] {
     const allCountries: Country[] = countryCodeData.allCountries.map(
       (countryData: CountryData) =>
-        this.getCountryObject(countryData, enablePlaceholder)
+        this.getCountryObject(countryData, enablePlaceholder, includeDialCode)
     );
     const filteredVisibleCountries = visibleCountries?.length
       ? allCountries.filter((country) =>

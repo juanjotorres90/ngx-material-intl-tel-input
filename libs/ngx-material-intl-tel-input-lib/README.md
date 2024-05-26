@@ -20,13 +20,14 @@ Validation with [google-libphonenumber](https://github.com/google/libphonenumber
 
 | ngx-material-intl-tel-input | Angular   |
 | --------------------------- | --------- |
+| 18.0.0                      | >= 18.0.0 |
 | 0.0.1 - 17.3.0              | >= 17.2.0 |
 
 ## Installation
 
 `$ npm install ngx-material-intl-tel-input --save`
 
-Ensure to include `provideAnimations()` in the providers array of your main.ts file to initialize your application with animations. Refer to the [Angular Docs](https://angular.io/api/platform-browser/animations/provideAnimations) for detailed instructions.
+Ensure to include `provideAnimations()` and `provideHttpClient()` in the providers array of your main.ts file to initialize your application with animations and auto getting country code capabilities. Refer to the Angular Docs [provideAnimations](https://angular.dev/api/platform-browser/animations/provideAnimations#) and [provideHttpClient](https://angular.dev/api/common/http/provideHttpClient#) for detailed instructions.
 
 Additionally, it's essential to incorporate an Angular Material theme by importing the necessary CSS for styling. Please consult the [Angular Material Theming guide](https://material.angular.io/guide/theming) for instructions on how to set up the theme.
 
@@ -60,6 +61,7 @@ imports: [NgxMaterialIntlTelInputComponent];
 | autoSelectedCountry | `CountryISO \| string`     | `''`                                                                                                                                                                                                                                                                                                         | Sets the country to be auto selected.                           |
 | numberValidation    | `boolean`                  | `true`                                                                                                                                                                                                                                                                                                       | Enables or disables phone number validation.                    |
 | enableSearch        | `boolean`                  | `true`                                                                                                                                                                                                                                                                                                       | Enables or disables country search.                             |
+| includeDialCode     | `boolean`                  | `false`                                                                                                                                                                                                                                                                                                      | Includes the dial code in the phone number input.               |
 | preferredCountries  | `(CountryISO \| string)[]` | `[]`                                                                                                                                                                                                                                                                                                         | Shows the specified countries on top of the list.               |
 | visibleCountries    | `(CountryISO \| string)[]` | `[]`                                                                                                                                                                                                                                                                                                         | Shows only the specified countries.                             |
 | excludedCountries   | `(CountryISO \| string)[]` | `[]`                                                                                                                                                                                                                                                                                                         | Exclude the specified countries from the list.                  |
@@ -67,6 +69,12 @@ imports: [NgxMaterialIntlTelInputComponent];
 | iconMakeCall        | `boolean`                  | `true`                                                                                                                                                                                                                                                                                                       | Click on phone icon to trigger call action.                     |
 | initialValue        | `string`                   | `''`                                                                                                                                                                                                                                                                                                         | Sets initial telephone number value                             |
 | textLabels          | `TextLabels`               | {mainLabel: 'Phone number', codePlaceholder: 'Code', searchPlaceholderLabel: 'Search', noEntriesFoundLabel: 'No countries found', nationalNumberLabel: 'Number', hintLabel: 'Select country and type your phone number', invalidNumberError: 'Number is not valid', requiredError: 'This field is required'} | Overrides all component text labels                             |
+
+## Events
+
+| Event        | Type     | Default | Description                                  |
+| ------------ | -------- | ------- | -------------------------------------------- |
+| currentValue | `string` | `''`    | Emitted when the value of the input changes. |
 
 ## Contributors
 

@@ -1,11 +1,16 @@
 import { AsyncPipe, NgClass, NgTemplateOutlet } from '@angular/common';
 import {
   AfterViewInit,
+  ChangeDetectionStrategy,
   Component,
-  Input,
+  ElementRef,
   OnDestroy,
   OnInit,
-  ViewChild
+  effect,
+  input,
+  output,
+  signal,
+  viewChild
 } from '@angular/core';
 import {
   FormControl,
@@ -27,7 +32,6 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import TelValidators from '../validators/tel.validators';
 import { GeoIpService } from '../services/geo-ip/geo-ip.service';
-import { HttpClientModule } from '@angular/common/http';
 import { GeoData } from '../types/geo.type';
 import { TextLabels } from '../types/text-labels.type';
 import { CountryISO } from '../enums/country-iso.enum';
@@ -36,6 +40,8 @@ import { CountryDataService } from '../services/country-data/country-data.servic
 @Component({
   selector: 'ngx-material-intl-tel-input',
   standalone: true,
+  templateUrl: './ngx-material-intl-tel-input-lib.component.html',
+  styleUrl: './ngx-material-intl-tel-input-lib.component.scss',
   imports: [
     AsyncPipe,
     MatSelectModule,
@@ -44,7 +50,6 @@ import { CountryDataService } from '../services/country-data/country-data.servic
     NgClass,
     MatFormFieldModule,
     MatInputModule,
-    HttpClientModule,
     NgTemplateOutlet
   ],
   providers: [
@@ -56,8 +61,7 @@ import { CountryDataService } from '../services/country-data/country-data.servic
     GeoIpService,
     CountryDataService
   ],
-  templateUrl: './ngx-material-intl-tel-input-lib.component.html',
-  styleUrl: './ngx-material-intl-tel-input-lib.component.scss'
+  changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class NgxMaterialIntlTelInputComponent
   implements OnInit, AfterViewInit, OnDestroy
@@ -76,7 +80,8 @@ export class NgxMaterialIntlTelInputComponent
     Country[]
   >(1);
 
-  @ViewChild('singleSelect', { static: true }) singleSelect!: MatSelect;
+  singleSelect = viewChild<MatSelect>('singleSelect');
+  numberInput = viewChild<ElementRef>('numberInput');
 
   /** Subject that emits when the component has been destroyed. */
   protected _onDestroy = new Subject<void>();
@@ -89,21 +94,22 @@ export class NgxMaterialIntlTelInputComponent
     numberControl: new FormControl('')
   });
 
-  @Input() fieldControl = new FormControl('');
-  @Input() required = false;
-  @Input() disabled = false;
-  @Input() enablePlaceholder = true;
-  @Input() autoIpLookup = true;
-  @Input() autoSelectCountry = true;
-  @Input() autoSelectedCountry: CountryISO | string = '';
-  @Input() numberValidation = true;
-  @Input() iconMakeCall = true;
-  @Input() initialValue = '';
-  @Input() enableSearch = true;
-  @Input() preferredCountries: (CountryISO | string)[] = [];
-  @Input() visibleCountries: (CountryISO | string)[] = [];
-  @Input() excludedCountries: (CountryISO | string)[] = [];
-  @Input() textLabels: TextLabels = {
+  fieldControl = input<FormControl>(new FormControl(''));
+  required = input<boolean>(false);
+  disabled = input<boolean>(false);
+  enablePlaceholder = input<boolean>(true);
+  autoIpLookup = input<boolean>(true);
+  autoSelectCountry = input<boolean>(true);
+  autoSelectedCountry = input<CountryISO | string>('');
+  numberValidation = input<boolean>(true);
+  iconMakeCall = input<boolean>(true);
+  initialValue = input<string>('');
+  enableSearch = input<boolean>(true);
+  includeDialCode = input<boolean>(false);
+  preferredCountries = input<(CountryISO | string)[]>([]);
+  visibleCountries = input<(CountryISO | string)[]>([]);
+  excludedCountries = input<(CountryISO | string)[]>([]);
+  textLabels = input<TextLabels>({
     mainLabel: 'Phone number',
     codePlaceholder: 'Code',
     searchPlaceholderLabel: 'Search',
@@ -112,16 +118,21 @@ export class NgxMaterialIntlTelInputComponent
     hintLabel: 'Select country and type your phone number',
     invalidNumberError: 'Number is not valid',
     requiredError: 'This field is required'
-  };
-
-  isFocused = false;
-  isLoading = true;
+  });
+  currentValue = output<string>();
+  isFocused = signal<boolean>(false);
+  isLoading = signal<boolean>(true);
 
   constructor(
     private countryCodeData: CountryCode,
     private geoIpService: GeoIpService,
     private countryDataService: CountryDataService
-  ) {}
+  ) {
+    effect(() => {
+      this.setRequiredValidators();
+      this.setDisabledState();
+    });
+  }
 
   /**
    * Initialize the component and perform necessary setup tasks.
@@ -129,18 +140,7 @@ export class NgxMaterialIntlTelInputComponent
    */
   ngOnInit(): void {
     this.fetchCountryData();
-    if (this.required) {
-      this.fieldControl.addValidators(Validators.required);
-    }
-    if (this.disabled) {
-      this.telForm.disable();
-      this.fieldControl.disable();
-    }
-    if (this.numberValidation) {
-      this.fieldControl.addValidators(
-        TelValidators.isValidNumber(this.telForm)
-      );
-    }
+    this.addValidations();
     // load the initial countries list
     this.filteredCountries.next(this.allCountries.slice());
     // listen for search field value changes
@@ -150,6 +150,7 @@ export class NgxMaterialIntlTelInputComponent
         this.filterCountries();
       });
     this.startTelFormValueChangesListener();
+    this.startPrefixValueChangesListener();
     setTimeout(() => {
       this.setInitialTelValue();
     });
@@ -161,12 +162,60 @@ export class NgxMaterialIntlTelInputComponent
   protected fetchCountryData(): void {
     const processedCountries = this.countryDataService.processCountries(
       this.countryCodeData,
-      this.enablePlaceholder,
-      this.visibleCountries,
-      this.preferredCountries,
-      this.excludedCountries
+      this.enablePlaceholder(),
+      this.includeDialCode(),
+      this.visibleCountries(),
+      this.preferredCountries(),
+      this.excludedCountries()
     );
     this.allCountries = processedCountries;
+  }
+
+  /**
+   * Adds validations to the form field based on the current configuration.
+   * It sets required validators and disabled state, and if number validation is enabled,
+   * it adds a custom validator to check the validity of the phone number.
+   */
+  private addValidations(): void {
+    this.setRequiredValidators();
+    this.setDisabledState();
+    if (this.numberValidation()) {
+      this.fieldControl().addValidators(
+        TelValidators.isValidNumber(
+          this.telForm,
+          this.includeDialCode(),
+          this.allCountries
+        )
+      );
+    }
+  }
+
+  /**
+   * Sets the required validators for the field control based on the 'required' input property.
+   * If 'required' is true, adds a 'Validators.required' validator to the field control.
+   * If 'required' is false, removes the 'Validators.required' validator from the field control.
+   */
+  setRequiredValidators(): void {
+    if (this.required()) {
+      this.fieldControl()?.addValidators(Validators.required);
+    } else {
+      this.fieldControl()?.removeValidators(Validators.required);
+    }
+  }
+
+  /**
+   * Sets the disabled state of the telForm and fieldControl based on the 'disabled' input property.
+   * If 'disabled' is true, both telForm and fieldControl are disabled.
+   * If 'disabled' is false, both telForm and fieldControl are enabled.
+   */
+  setDisabledState(): void {
+    if (this.disabled()) {
+      this.telForm?.disable();
+      this.fieldControl()?.disable();
+    } else {
+      this.telForm?.enable();
+      this.fieldControl()?.enable();
+    }
   }
 
   /**
@@ -190,7 +239,7 @@ export class NgxMaterialIntlTelInputComponent
   /**
    * Performs a geo IP lookup and sets the prefix control value based on the country retrieved.
    */
-  geoIpLookup(): void {
+  private geoIpLookup(): void {
     this.geoIpService.geoIpLookup().subscribe({
       next: (data: GeoData) => {
         const country =
@@ -207,7 +256,7 @@ export class NgxMaterialIntlTelInputComponent
         this.setAutoSelectedCountry();
       },
       complete: () => {
-        this.isLoading = false;
+        this.isLoading.set(false);
       }
     });
   }
@@ -224,7 +273,8 @@ export class NgxMaterialIntlTelInputComponent
         // the form control (i.e. _initializeSelection())
         // this needs to be done after the filteredCountries are loaded initially
         // and after the mat-option elements are available
-        this.singleSelect.compareWith = (a: Country, b: Country) =>
+        const singleSelectInstance = this.singleSelect() as MatSelect;
+        singleSelectInstance.compareWith = (a: Country, b: Country) =>
           a && b && a.iso2 === b.iso2;
       });
   }
@@ -258,27 +308,31 @@ export class NgxMaterialIntlTelInputComponent
    *
    */
   onInputFocus(): void {
-    this.isFocused = true;
+    this.isFocused.set(true);
   }
 
   /**
    * A method that handles the blur event for the input.
    */
   onInputBlur(): void {
-    this.isFocused = false;
+    this.isFocused.set(false);
   }
 
   /**
    * Listens for changes in the telForm value and updates the fieldControl accordingly.
    */
-  startTelFormValueChangesListener(): void {
+  private startTelFormValueChangesListener(): void {
     this.telForm.valueChanges
       .pipe(takeUntil(this._onDestroy))
       .subscribe((data) => {
         if (data?.numberControl) {
-          this.fieldControl?.markAsDirty();
+          this.fieldControl()?.markAsDirty();
           let value = '';
-          if (data?.prefixCtrl?.dialCode) {
+          if (
+            data?.prefixCtrl?.dialCode &&
+            !this.includeDialCode() &&
+            data?.prefixCtrl?.iso2 !== 'mp'
+          ) {
             value = '+' + data.prefixCtrl.dialCode + data.numberControl;
           } else {
             value = data.numberControl;
@@ -292,12 +346,35 @@ export class NgxMaterialIntlTelInputComponent
               parsed,
               PhoneNumberFormat.INTERNATIONAL
             );
-            this.fieldControl.setValue(formatted);
+            this.fieldControl().setValue(formatted);
           } catch (error) {
-            this.fieldControl.setValue(value);
+            this.fieldControl().setValue(value);
           }
         } else {
-          this.fieldControl.setValue('');
+          this.fieldControl().setValue('');
+        }
+        this.currentValue?.emit(this.fieldControl()?.value);
+      });
+  }
+
+  /**
+   * Listens for changes in the prefix control value and updates the number control accordingly.
+   * If includeDialCode is true and the data contains a dialCode, sets the number control value with the dial code.
+   * If isLoading is false, focuses on the number input element after a timeout.
+   */
+  private startPrefixValueChangesListener(): void {
+    this.prefixCtrl.valueChanges
+      .pipe(takeUntil(this._onDestroy))
+      .subscribe((data) => {
+        if (this.includeDialCode() && data?.dialCode) {
+          this.telForm
+            .get('numberControl')
+            ?.setValue('+' + data?.dialCode, { emitEvent: false });
+        }
+        if (!this.isLoading()) {
+          setTimeout(() => {
+            this.numberInput()?.nativeElement?.focus();
+          });
         }
       });
   }
@@ -305,22 +382,22 @@ export class NgxMaterialIntlTelInputComponent
   /**
    * Sets the initial telephone value based on the initial value.
    */
-  setInitialTelValue(): void {
-    if (!this.initialValue) {
+  private setInitialTelValue(): void {
+    if (!this.initialValue()) {
       // set initial selection
-      if (this.autoSelectCountry) {
-        if (this.autoIpLookup) {
+      if (this.autoSelectCountry()) {
+        if (this.autoIpLookup()) {
           this.geoIpLookup();
         } else {
           this.setAutoSelectedCountry();
-          this.isLoading = false;
+          this.isLoading.set(false);
         }
       } else {
-        this.isLoading = false;
+        this.isLoading.set(false);
       }
     } else {
       try {
-        const parsedNumber = this.phoneNumberUtil.parse(this.initialValue);
+        const parsedNumber = this.phoneNumberUtil.parse(this.initialValue());
         const countryCode = parsedNumber.getCountryCode();
         const country = this.allCountries?.find(
           (c) => c.dialCode === `${countryCode}`
@@ -334,11 +411,11 @@ export class NgxMaterialIntlTelInputComponent
           this.telForm.get('numberControl')?.setValue(nationalNumber);
         }
       } catch {
-        this.telForm.get('numberControl')?.setValue(this.initialValue);
-        this.fieldControl.setValue(this.initialValue);
-        this.fieldControl?.markAsDirty();
+        this.telForm.get('numberControl')?.setValue(this.initialValue());
+        this.fieldControl().setValue(this.initialValue());
+        this.fieldControl()?.markAsDirty();
       } finally {
-        this.isLoading = false;
+        this.isLoading.set(false);
       }
     }
   }
@@ -347,9 +424,9 @@ export class NgxMaterialIntlTelInputComponent
    * Set the auto selected country based on the specified criteria.
    *
    */
-  setAutoSelectedCountry(): void {
+  private setAutoSelectedCountry(): void {
     const autoSelectedCountry = this.allCountries?.find(
-      (country) => country?.iso2 === this.autoSelectedCountry
+      (country) => country?.iso2 === this.autoSelectedCountry()
     );
     if (autoSelectedCountry) {
       this.prefixCtrl.setValue(autoSelectedCountry);

@@ -1,2 +1,10 @@
-<ngx-material-intl-tel-input></ngx-material-intl-tel-input>
+<ngx-material-intl-tel-input
+  (currentValue)="getValue($event)"
+></ngx-material-intl-tel-input>
+
+@if (currentPhoneValue()) {
+  <div>Returned value: {{ currentPhoneValue() }}</div>
+} @else {
+  <div>No value returned</div>
+}
 <router-outlet></router-outlet>

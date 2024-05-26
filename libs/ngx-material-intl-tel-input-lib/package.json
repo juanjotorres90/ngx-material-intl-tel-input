@@ -1,6 +1,6 @@
 {
   "name": "ngx-material-intl-tel-input",
-  "version": "17.3.0",
+  "version": "18.0.0",
   "license": "MIT",
 	"repository": {
 		"type": "git",
@@ -13,7 +13,7 @@
 	},
 	"keywords": [
 		"angular",
-		"angular 17",
+		"angular 18",
     "ngx",
 		"intl-tel-input",
 		"phone number",
@@ -28,16 +28,16 @@
 	},
   "description": "Angular Material international telephone input",
   "peerDependencies": {
-    "@angular/common": "^17.2.0",
-    "@angular/core": "^17.2.0",
-    "@angular/forms": "^17.2.0",
+    "@angular/common": "^18.0.0",
+    "@angular/core": "^18.0.0",
+    "@angular/forms": "^18.0.0",
     "rxjs": "^7.8.0"
   },
   "dependencies": {
-    "@angular/cdk": "^17.2.1",
-    "@angular/material": "^17.2.1",
+    "@angular/cdk": "^18.0.0",
+    "@angular/material": "^18.0.0",
     "google-libphonenumber": "^3.2.34",
-    "ngx-mat-select-search": "^7.0.5",
+    "ngx-mat-select-search": "^7.0.6",
     "tslib": "^2.3.0"
   },
   "devDependencies": {
