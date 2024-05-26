@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [18.0.0] - 2024-05-26
+
+### Added
+
+- Add support for Angular 18.
+- Add 'includeDialCode' option to include the dial code in the phone number input.
+- Auto select number input after changing country code.
+- Add support for Material 3 theming.
+- Use of Signal Inputs to dynamically change the disabled or required state of the phone field.
+- Add 'currentValue' output event to retrieve the current phone number value without using a FormControl.
+
+### Fixed
+
+- Fix Northern Mariana Islands number format.
+
+### Changed
+
+- Upgrade project to nx 19.1.
+- Use of Signal Inputs for component options.
+- The component is now zoneless.
+
 ## [17.3.0] - 2024-03-16
 
 ### Added

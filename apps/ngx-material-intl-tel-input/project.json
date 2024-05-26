@@ -14,7 +14,6 @@
         "outputPath": "dist/apps/ngx-material-intl-tel-input",
         "index": "apps/ngx-material-intl-tel-input/src/index.html",
         "browser": "apps/ngx-material-intl-tel-input/src/main.ts",
-        "polyfills": ["zone.js"],
         "tsConfig": "apps/ngx-material-intl-tel-input/tsconfig.app.json",
         "inlineStyleLanguage": "scss",
         "assets": [

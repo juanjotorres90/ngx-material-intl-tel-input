@@ -1,11 +1,17 @@
 :host {
   display: flex;
+  flex-direction: column;
+  gap: 32px;
   justify-content: center;
   align-items: center;
   width: 100%;
   height: 100%;
-  ngx-material-intl-tel-input {
+  ngx-material-intl-tel-input,
+  div {
     max-width: 400px;
     padding: 16px;
+    box-sizing: border-box;
+    display: block;
+    width: 100%;
   }
 }

@@ -60,8 +60,8 @@
           background-color: #f5f5f5 !important;
         }
         &.prefix-form-field {
-          min-width: 120px;
-          width: 120px;
+          min-width: 106px;
+          width: 106px;
           &::ng-deep .mat-mdc-text-field-wrapper {
             border-right: none;
             border-radius: 8px 0 0 8px;
@@ -70,6 +70,9 @@
             padding-top: 16px;
             padding-bottom: 0;
           }
+          &::ng-deep .mdc-text-field {
+            padding-right: 6px;
+          }
         }
 
         &.number-form-field {
@@ -77,6 +80,9 @@
           &::ng-deep .mat-mdc-text-field-wrapper {
             border-left: none;
             border-radius: 0 8px 8px 0;
+          }
+          &::ng-deep .mdc-text-field {
+            padding-left: 12px;
           }
           input {
             &::placeholder {
@@ -101,6 +107,7 @@
           .country-option {
             display: flex;
             align-items: center;
+            font-size: 14px;
           }
           mat-option {
             &::ng-deep .country-option {
