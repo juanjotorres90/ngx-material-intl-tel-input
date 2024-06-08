@@ -20,7 +20,7 @@ Validation with [google-libphonenumber](https://github.com/google/libphonenumber
 
 | ngx-material-intl-tel-input | Angular   |
 | --------------------------- | --------- |
-| 18.0.0                      | >= 18.0.0 |
+| 18.0.0 - 18.0.1             | >= 18.0.0 |
 | 0.0.1 - 17.3.0              | >= 17.2.0 |
 
 ## Installation
@@ -54,6 +54,7 @@ imports: [NgxMaterialIntlTelInputComponent];
 | Options             | Type                       | Default                                                                                                                                                                                                                                                                                                      | Description                                                     |
 | ------------------- | -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------- |
 | fieldControl        | `FormControl`              | `FormControl('')`                                                                                                                                                                                                                                                                                            | Form control required to retrieve the value.                    |
+| fieldControlName    | `string`                   | `''`                                                                                                                                                                                                                                                                                                         | Form control name to assign the control from a FormGroup.       |
 | required            | `boolean`                  | `false`                                                                                                                                                                                                                                                                                                      | Telephone field input required.                                 |
 | disabled            | `boolean`                  | `false`                                                                                                                                                                                                                                                                                                      | Telephone field input disabled.                                 |
 | autoIpLookup        | `boolean`                  | `true`                                                                                                                                                                                                                                                                                                       | Sets initial country code based on user's ip.                   |
@@ -98,6 +99,12 @@ Node 20.13.1 is required.
 
 ```bash
 npm install
+```
+
+- Using pnpm:
+
+```bash
+pnpm install
 ```
 
 - Using bun:

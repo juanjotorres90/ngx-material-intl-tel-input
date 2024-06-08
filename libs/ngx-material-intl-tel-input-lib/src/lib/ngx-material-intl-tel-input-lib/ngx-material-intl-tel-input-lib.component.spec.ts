@@ -4,6 +4,7 @@ import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { PhoneNumberFormat, PhoneNumberUtil } from 'google-libphonenumber';
 import { Country } from '../types/country.model';
 import { provideHttpClient } from '@angular/common/http';
+import { ControlContainer } from '@angular/forms';
 
 describe('NgxMaterialIntlTelInputComponent', () => {
   let component: NgxMaterialIntlTelInputComponent;
@@ -12,7 +13,7 @@ describe('NgxMaterialIntlTelInputComponent', () => {
   beforeEach(async () => {
     await TestBed.configureTestingModule({
       imports: [NgxMaterialIntlTelInputComponent, NoopAnimationsModule],
-      providers: [provideHttpClient()]
+      providers: [provideHttpClient(), ControlContainer]
     }).compileComponents();
 
     fixture = TestBed.createComponent(NgxMaterialIntlTelInputComponent);
@@ -28,7 +29,7 @@ describe('NgxMaterialIntlTelInputComponent', () => {
     component.ngOnInit();
     expect(component.prefixCtrl.value).toBeNull();
     expect(component.prefixFilterCtrl.value).toBe('');
-    expect(component.fieldControl().value).toBe('');
+    expect(component.fieldControl()?.value).toBe('');
     expect(component.required()).toBe(false);
     expect(component.disabled()).toBe(false);
     expect(component.enablePlaceholder()).toBe(true);
@@ -61,7 +62,7 @@ describe('NgxMaterialIntlTelInputComponent', () => {
     component.ngOnInit();
     const phoneNumber = '678906543';
     component.telForm.get('numberControl')?.setValue(phoneNumber);
-    expect(component.fieldControl().value).toBe(phoneNumber);
+    expect(component.fieldControl()?.value).toBe(phoneNumber);
   });
 
   it('should set fieldControl value to the entered phone number when is valid', () => {
@@ -74,7 +75,7 @@ describe('NgxMaterialIntlTelInputComponent', () => {
       PhoneNumberFormat.INTERNATIONAL
     );
     component.telForm.get('numberControl')?.setValue(phoneNumber);
-    expect(component.fieldControl().value).toBe(formatted);
+    expect(component.fieldControl()?.value).toBe(formatted);
   });
 
   it('should select a country from the dropdown', () => {

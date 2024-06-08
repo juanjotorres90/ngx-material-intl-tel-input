@@ -95,8 +95,8 @@
       />
 
       <mat-icon matSuffix>
-        @if (iconMakeCall() && fieldControl().valid && fieldControl().value) {
-          <a href="tel:{{ fieldControl().value }}">
+        @if (iconMakeCall() && fieldControl()?.valid && fieldControl()?.value) {
+          <a href="tel:{{ fieldControl()?.value }}">
             <ng-container *ngTemplateOutlet="phoneIcon"> </ng-container>
           </a>
         } @else {
@@ -130,14 +130,14 @@
     <mat-hint>{{ textLabels().hintLabel }}</mat-hint>
   }
   @if (
-    fieldControl().hasError('required') &&
+    fieldControl()?.hasError('required') &&
     textLabels().requiredError &&
-    fieldControl().dirty
+    fieldControl()?.dirty
   ) {
     <mat-error>{{ textLabels().requiredError }}</mat-error>
   }
   @if (
-    fieldControl().hasError('invalidNumber') && textLabels().invalidNumberError
+    fieldControl()?.hasError('invalidNumber') && textLabels().invalidNumberError
   ) {
     <mat-error>{{ textLabels().invalidNumberError }}</mat-error>
   }

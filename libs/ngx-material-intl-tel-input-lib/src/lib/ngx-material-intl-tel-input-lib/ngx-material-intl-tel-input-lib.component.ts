@@ -8,12 +8,16 @@ import {
   OnInit,
   effect,
   input,
+  model,
   output,
   signal,
   viewChild
 } from '@angular/core';
 import {
+  AbstractControl,
+  ControlContainer,
   FormControl,
+  FormControlStatus,
   FormGroup,
   ReactiveFormsModule,
   Validators
@@ -24,7 +28,7 @@ import {
   MatSelectModule
 } from '@angular/material/select';
 import { NgxMatSelectSearchModule } from 'ngx-mat-select-search';
-import { ReplaySubject, Subject, take, takeUntil } from 'rxjs';
+import { Observable, ReplaySubject, Subject, take, takeUntil } from 'rxjs';
 import { CountryCode } from '../data/country-code';
 import { Country } from '../types/country.model';
 import { PhoneNumberFormat, PhoneNumberUtil } from 'google-libphonenumber';
@@ -94,16 +98,19 @@ export class NgxMaterialIntlTelInputComponent
     numberControl: new FormControl('')
   });
 
-  fieldControl = input<FormControl>(new FormControl(''));
-  required = input<boolean>(false);
-  disabled = input<boolean>(false);
+  fieldControl = model<
+    FormControl | AbstractControl<string | null, string | null> | null
+  >(new FormControl(''));
+  fieldControlName = input<string>('');
+  required = model<boolean>(false);
+  disabled = model<boolean>(false);
   enablePlaceholder = input<boolean>(true);
   autoIpLookup = input<boolean>(true);
   autoSelectCountry = input<boolean>(true);
   autoSelectedCountry = input<CountryISO | string>('');
   numberValidation = input<boolean>(true);
   iconMakeCall = input<boolean>(true);
-  initialValue = input<string>('');
+  initialValue = model<string>('');
   enableSearch = input<boolean>(true);
   includeDialCode = input<boolean>(false);
   preferredCountries = input<(CountryISO | string)[]>([]);
@@ -126,7 +133,8 @@ export class NgxMaterialIntlTelInputComponent
   constructor(
     private countryCodeData: CountryCode,
     private geoIpService: GeoIpService,
-    private countryDataService: CountryDataService
+    private countryDataService: CountryDataService,
+    private controlContainer: ControlContainer
   ) {
     effect(() => {
       this.setRequiredValidators();
@@ -139,6 +147,7 @@ export class NgxMaterialIntlTelInputComponent
    *
    */
   ngOnInit(): void {
+    this.setFieldControl();
     this.fetchCountryData();
     this.addValidations();
     // load the initial countries list
@@ -154,6 +163,8 @@ export class NgxMaterialIntlTelInputComponent
     setTimeout(() => {
       this.setInitialTelValue();
     });
+    this.startFieldControlValueChangesListener();
+    this.startFieldControlStatusChangesListener();
   }
 
   /**
@@ -180,7 +191,7 @@ export class NgxMaterialIntlTelInputComponent
     this.setRequiredValidators();
     this.setDisabledState();
     if (this.numberValidation()) {
-      this.fieldControl().addValidators(
+      this.fieldControl()?.addValidators(
         TelValidators.isValidNumber(
           this.telForm,
           this.includeDialCode(),
@@ -346,14 +357,13 @@ export class NgxMaterialIntlTelInputComponent
               parsed,
               PhoneNumberFormat.INTERNATIONAL
             );
-            this.fieldControl().setValue(formatted);
+            this.fieldControl()?.setValue(formatted);
           } catch (error) {
-            this.fieldControl().setValue(value);
+            this.fieldControl()?.setValue(value);
           }
         } else {
-          this.fieldControl().setValue('');
+          this.fieldControl()?.setValue('');
         }
-        this.currentValue?.emit(this.fieldControl()?.value);
       });
   }
 
@@ -412,7 +422,7 @@ export class NgxMaterialIntlTelInputComponent
         }
       } catch {
         this.telForm.get('numberControl')?.setValue(this.initialValue());
-        this.fieldControl().setValue(this.initialValue());
+        this.fieldControl()?.setValue(this.initialValue());
         this.fieldControl()?.markAsDirty();
       } finally {
         this.isLoading.set(false);
@@ -439,6 +449,76 @@ export class NgxMaterialIntlTelInputComponent
       } else {
         this.prefixCtrl.setValue(this.allCountries?.[0]);
       }
+    }
+  }
+
+  /**
+   * Listens to changes in the field control value and updates it accordingly.
+   * If the value is valid, it parses and formats it using the phoneNumberUtil.
+   * If the value is not valid, it sets the value as is.
+   * Finally, emits the currentValue signal with the updated field control value.
+   */
+  private startFieldControlValueChangesListener(): void {
+    const valueChanges = this.fieldControl()
+      ?.valueChanges as Observable<string>;
+    valueChanges.pipe(takeUntil(this._onDestroy)).subscribe((data: string) => {
+      if (data) {
+        try {
+          const parsed = this.phoneNumberUtil.parse(
+            data,
+            this.telForm?.value?.prefixCtrl?.iso2
+          );
+          const formatted = this.phoneNumberUtil.format(
+            parsed,
+            PhoneNumberFormat.INTERNATIONAL
+          );
+          this.fieldControl()?.setValue(formatted, { emitEvent: false });
+        } catch {
+          this.fieldControl()?.setValue(data, { emitEvent: false });
+        }
+      }
+      this.currentValue?.emit(this.fieldControl()?.value || data);
+    });
+  }
+
+  /**
+   * Listens to changes in the status of the field control and updates the 'disabled' model accordingly.
+   * If the status is 'DISABLED', sets the 'disabled' model to true; otherwise, sets it to false.
+   */
+  private startFieldControlStatusChangesListener(): void {
+    this.fieldControl()
+      ?.statusChanges.pipe(takeUntil(this._onDestroy))
+      .subscribe((status: FormControlStatus) => {
+        if (status === 'DISABLED') {
+          this.disabled.set(true);
+        } else {
+          this.disabled.set(false);
+        }
+      });
+  }
+
+  /**
+   * Sets the field control based on the provided field control name.
+   * If the field control name exists in the control container, it sets the field control to that value.
+   * Additionally, it checks for the initial value, required validator, and disabled state of the field control.
+   */
+  private setFieldControl(): void {
+    if (
+      this.fieldControlName() &&
+      this.controlContainer?.control?.get(this.fieldControlName())
+    ) {
+      this.fieldControl.set(
+        this.controlContainer.control.get(this.fieldControlName())
+      );
+    }
+    if (this.fieldControl()?.value) {
+      this.initialValue.set(this.fieldControl()?.value);
+    }
+    if (this.fieldControl()?.hasValidator(Validators.required)) {
+      this.required.set(true);
+    }
+    if (this.fieldControl()?.disabled) {
+      this.disabled.set(true);
     }
   }
 }

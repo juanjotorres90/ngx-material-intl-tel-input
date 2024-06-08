@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [18.0.1] - 2024-06-08
+
+### Added
+
+- Add 'fieldControlName' option to get the form control from the parent form group by name.
+- Ability to dynamically change the form field value.
+- Ability to dynamically enable or disable the form field.
+
+### Fixed
+
+- Fix "AbstractControl" not assignable to FieldControl.
+- Fix setting the initial value and status of the phone field control when it was set in the parent form group control.
+
 ## [18.0.0] - 2024-05-26
 
 ### Added
