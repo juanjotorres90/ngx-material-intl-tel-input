@@ -1,17 +1,35 @@
 :host {
   display: flex;
   flex-direction: column;
-  gap: 32px;
   justify-content: center;
   align-items: center;
   width: 100%;
   height: 100%;
-  ngx-material-intl-tel-input,
-  div {
-    max-width: 400px;
-    padding: 16px;
-    box-sizing: border-box;
-    display: block;
-    width: 100%;
+  section {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    justify-content: center;
+    align-items: center;
+    form {
+      button {
+        display: block;
+        margin: 0 auto;
+      }
+    }
+    ngx-material-intl-tel-input,
+    div {
+      max-width: 400px;
+      padding: 16px;
+      box-sizing: border-box;
+      display: block;
+      width: 100%;
+    }
+    & > div {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+    }
   }
 }

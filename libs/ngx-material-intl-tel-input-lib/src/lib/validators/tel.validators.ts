@@ -52,23 +52,18 @@ export default class TelValidators {
           ?.setValue(formattedOnlyNumber, { emitEvent: false });
 
         const isValidNumber = phoneNumberUtil.isValidNumber(parsed);
+        if (
+          parsed.getCountryCode() &&
+          parsed.getCountryCode()?.toString() !==
+            telForm?.value?.prefixCtrl?.dialCode
+        ) {
+          setPrefixControlValue(parsed.getCountryCode(), allCountries, telForm);
+        }
         if (!isValidNumber) {
           return {
             invalidNumber: true
           };
         } else {
-          if (
-            includeDialCode &&
-            parsed.getCountryCode() &&
-            parsed.getCountryCode()?.toString() !==
-              telForm?.value?.prefixCtrl?.dialCode
-          ) {
-            setPrefixControlValue(
-              parsed.getCountryCode(),
-              allCountries,
-              telForm
-            );
-          }
           return null;
         }
       } catch {

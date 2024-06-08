@@ -1,10 +1,24 @@
-<ngx-material-intl-tel-input
-  (currentValue)="getValue($event)"
-></ngx-material-intl-tel-input>
-
-@if (currentPhoneValue()) {
-  <div>Returned value: {{ currentPhoneValue() }}</div>
-} @else {
-  <div>No value returned</div>
-}
-<router-outlet></router-outlet>
+<section>
+  <form [formGroup]="formTestGroup" (ngSubmit)="onSubmit()">
+    <ngx-material-intl-tel-input
+      (currentValue)="getValue($event)"
+      fieldControlName="phone"
+    ></ngx-material-intl-tel-input>
+    <button mat-flat-button type="submit" [disabled]="!formTestGroup.valid">
+      Submit
+    </button>
+  </form>
+  @if (currentPhoneValue()) {
+    <div>
+      Returned value: <br /><mat-chip>{{ currentPhoneValue() }}</mat-chip>
+    </div>
+  } @else {
+    <div>No value returned</div>
+  }
+  @if (submittedPhoneValue()) {
+    <div>
+      Submitted value: <br /><mat-chip>{{ submittedPhoneValue() }}</mat-chip>
+    </div>
+  }
+  <router-outlet></router-outlet>
+</section>
