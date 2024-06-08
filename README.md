@@ -98,7 +98,7 @@ To start your development once you have cloned this project, you must execute:
 Node 20.13.1 is required.
 
 ```bash
-npm install --legacy-peer-deps
+npm install
 ```
 
 - Using pnpm:
