@@ -108,6 +108,10 @@
             display: flex;
             align-items: center;
             font-size: 14px;
+            .flag-emoji {
+              font-size: 22px;
+              vertical-align: middle;
+            }
           }
           mat-option {
             &::ng-deep .country-option {
@@ -154,6 +158,10 @@
   }
   .mdc-list-item__primary-text {
     line-height: 16px !important;
+    .flag-emoji {
+      font-size: 22px;
+      vertical-align: middle;
+    }
   }
 }
 

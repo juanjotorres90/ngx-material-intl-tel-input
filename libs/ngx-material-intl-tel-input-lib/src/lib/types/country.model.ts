@@ -1,6 +1,7 @@
 import { CountryISO } from '../enums/country-iso.enum';
 
 export type Country = {
+  emojiFlag: string;
   name: string;
   iso2: CountryISO | string;
   dialCode: string;
