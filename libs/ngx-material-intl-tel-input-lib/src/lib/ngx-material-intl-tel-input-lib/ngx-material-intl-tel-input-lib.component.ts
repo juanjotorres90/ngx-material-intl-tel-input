@@ -113,6 +113,8 @@ export class NgxMaterialIntlTelInputComponent
   initialValue = model<string>('');
   enableSearch = input<boolean>(true);
   includeDialCode = input<boolean>(false);
+  emojiFlags = input<boolean>(false);
+  hidePhoneIcon = input<boolean>(false);
   preferredCountries = input<(CountryISO | string)[]>([]);
   visibleCountries = input<(CountryISO | string)[]>([]);
   excludedCountries = input<(CountryISO | string)[]>([]);

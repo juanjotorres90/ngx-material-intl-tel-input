@@ -81,6 +81,7 @@ describe('NgxMaterialIntlTelInputComponent', () => {
   it('should select a country from the dropdown', () => {
     component.ngOnInit();
     const country: Country = {
+      emojiFlag: '🇪🇸',
       name: 'Spain (España)',
       iso2: 'es',
       dialCode: '34',

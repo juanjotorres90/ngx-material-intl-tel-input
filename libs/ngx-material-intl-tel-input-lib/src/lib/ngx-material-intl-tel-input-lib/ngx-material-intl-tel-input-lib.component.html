@@ -18,10 +18,18 @@
         <mat-select-trigger>
           <div class="country-option">
             <div class="country-option-flag-container">
-              <div
-                class="country-option-flag"
-                [ngClass]="prefixCtrl.value?.flagClass"
-              ></div>
+              @if (emojiFlags()) {
+                <div>
+                  <span class="flag-emoji">{{
+                    prefixCtrl.value?.emojiFlag
+                  }}</span>
+                </div>
+              } @else {
+                <div
+                  class="country-option-flag"
+                  [ngClass]="prefixCtrl.value?.flagClass"
+                ></div>
+              }
             </div>
             @if (includeDialCode() || prefixCtrl.value?.iso2 === 'mp') {
               <div>{{ prefixCtrl.value?.iso2?.toUpperCase() || '' }}</div>
@@ -66,10 +74,16 @@
               style="display: flex; align-items: center; font-size: 14px"
             >
               <div class="country-option-flag-container">
-                <div
-                  class="country-option-flag"
-                  [ngClass]="country.flagClass"
-                ></div>
+                @if (emojiFlags()) {
+                  <div>
+                    <span class="flag-emoji">{{ country.emojiFlag }}</span>
+                  </div>
+                } @else {
+                  <div
+                    class="country-option-flag"
+                    [ngClass]="country.flagClass"
+                  ></div>
+                }
               </div>
               <div>{{ country.name }}</div>
             </div>
@@ -94,15 +108,19 @@
         #numberInput
       />
 
-      <mat-icon matSuffix>
-        @if (iconMakeCall() && fieldControl()?.valid && fieldControl()?.value) {
-          <a href="tel:{{ fieldControl()?.value }}">
+      @if (!hidePhoneIcon()) {
+        <mat-icon matSuffix>
+          @if (
+            iconMakeCall() && fieldControl()?.valid && fieldControl()?.value
+          ) {
+            <a href="tel:{{ fieldControl()?.value }}">
+              <ng-container *ngTemplateOutlet="phoneIcon"> </ng-container>
+            </a>
+          } @else {
             <ng-container *ngTemplateOutlet="phoneIcon"> </ng-container>
-          </a>
-        } @else {
-          <ng-container *ngTemplateOutlet="phoneIcon"> </ng-container>
-        }
-      </mat-icon>
+          }
+        </mat-icon>
+      }
     </mat-form-field>
   </div>
 

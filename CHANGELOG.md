@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [18.1.0] - 2024-07-13
+
+### Added
+
+- Add 'emojiFlag' option to use standard emoji icons for the country flags.
+- Add 'hidePhoneIcon' option to hide the phone icon.
+
 ## [18.0.1] - 2024-06-08
 
 ### Added

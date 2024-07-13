@@ -25,16 +25,17 @@ export class CountryDataService {
     includeDialCode: boolean
   ): Country {
     const country: Country = {
-      name: countryData[0].toString(),
-      iso2: countryData[1].toString(),
-      dialCode: countryData[2].toString(),
-      priority: (countryData?.[3] && +countryData[3]) || 0,
-      areaCodes: (countryData[4] as string[]) || undefined,
-      htmlId: `country-code__${countryData[1].toString()}`,
-      flagClass: `country-code__${countryData[1].toString().toLocaleLowerCase()}`,
+      emojiFlag: countryData[0].toString(),
+      name: countryData[1].toString(),
+      iso2: countryData[2].toString(),
+      dialCode: countryData[3].toString(),
+      priority: (countryData?.[4] && +countryData[4]) || 0,
+      areaCodes: (countryData[5] as string[]) || undefined,
+      htmlId: `country-code__${countryData[2].toString()}`,
+      flagClass: `country-code__${countryData[2].toString().toLocaleLowerCase()}`,
       placeHolder: enablePlaceholder
         ? this.getPhoneNumberPlaceholder(
-            countryData[1].toString().toUpperCase(),
+            countryData[2].toString().toUpperCase(),
             includeDialCode
           )
         : ''
