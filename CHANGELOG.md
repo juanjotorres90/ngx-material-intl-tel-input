@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [18.1.1] - 2024-07-27
+
+### Added
+
+- Add error border color when the field is invalid, dirty and not focused.
+
+### Fixed
+
+- Fix 'ng-invalid' class not being applied when the field is not valid ([#11](https://github.com/juanjotorres90/ngx-material-intl-tel-input/issues/11)).
+
 ## [18.1.0] - 2024-07-13
 
 ### Added

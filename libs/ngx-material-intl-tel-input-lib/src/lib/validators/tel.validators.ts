@@ -60,13 +60,19 @@ export default class TelValidators {
           setPrefixControlValue(parsed.getCountryCode(), allCountries, telForm);
         }
         if (!isValidNumber) {
+          control.setErrors({ invalidNumber: true });
+          telForm.get('numberControl')?.setErrors({ invalidNumber: true });
           return {
             invalidNumber: true
           };
         } else {
+          control.setErrors(null);
+          telForm.get('numberControl')?.setErrors(null);
           return null;
         }
       } catch {
+        control.setErrors({ invalidNumber: true });
+        telForm.get('numberControl')?.setErrors({ invalidNumber: true });
         return {
           invalidNumber: true
         };

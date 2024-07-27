@@ -23,6 +23,9 @@
         outline: 2px solid rgba(var(--mdc-theme-primary-rgb, 32, 159, 252), 0.3);
         background-color: #fff;
       }
+      &.ng-invalid.ng-dirty:not(.is-focused) {
+        border: 1px solid var(--mdc-theme-error, #f44336);
+      }
       mat-form-field {
         &::ng-deep .mat-mdc-form-field-subscript-wrapper {
           display: none;
