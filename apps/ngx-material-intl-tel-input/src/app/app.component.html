@@ -1,5 +1,10 @@
 <section>
   <form [formGroup]="formTestGroup" (ngSubmit)="onSubmit()">
+    <mat-form-field>
+      <mat-label>Set phone number</mat-label>
+      <input matInput type="text" formControlName="setPhoneTextbox" />
+    </mat-form-field>
+    <button mat-flat-button (click)="setPhone()">Set phone number</button>
     <ngx-material-intl-tel-input
       (currentValue)="getValue($event)"
       fieldControlName="phone"

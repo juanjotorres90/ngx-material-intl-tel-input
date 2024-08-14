@@ -7,6 +7,8 @@ import {
 } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatChipsModule } from '@angular/material/chips';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 import { RouterModule } from '@angular/router';
 import { NgxMaterialIntlTelInputComponent } from 'ngx-material-intl-tel-input';
 
@@ -17,7 +19,9 @@ import { NgxMaterialIntlTelInputComponent } from 'ngx-material-intl-tel-input';
     RouterModule,
     ReactiveFormsModule,
     MatButtonModule,
-    MatChipsModule
+    MatChipsModule,
+    MatFormFieldModule,
+    MatInputModule
   ],
   selector: 'ngx-material-intl-tel-input-root',
   templateUrl: './app.component.html',
@@ -32,7 +36,8 @@ export class AppComponent {
 
   constructor(private fb: FormBuilder) {
     this.formTestGroup = this.fb.group({
-      phone: ['', [Validators.required]]
+      phone: ['', [Validators.required]],
+      setPhoneTextbox: ['']
     });
   }
 
@@ -50,5 +55,11 @@ export class AppComponent {
    */
   onSubmit(): void {
     this.submittedPhoneValue.set(this.formTestGroup.value['phone']);
+  }
+
+  setPhone(): void {
+    this.formTestGroup.controls['phone'].setValue(
+      this.formTestGroup.value['setPhoneTextbox']
+    );
   }
 }
