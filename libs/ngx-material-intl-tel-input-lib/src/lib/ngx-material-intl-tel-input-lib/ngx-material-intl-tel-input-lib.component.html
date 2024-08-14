@@ -7,7 +7,11 @@
     [formGroup]="telForm"
     [ngClass]="{ 'is-focused': isFocused() }"
   >
-    <mat-form-field appearance="fill" class="prefix-form-field">
+    <mat-form-field
+      appearance="fill"
+      class="prefix-form-field"
+      matTooltip="{{ prefixCtrl.value?.name }}"
+    >
       <mat-select
         formControlName="prefixCtrl"
         [placeholder]="(!isLoading() && textLabels().codePlaceholder) || ''"
