@@ -6,6 +6,7 @@ import {
   Validators
 } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
@@ -21,7 +22,8 @@ import { NgxMaterialIntlTelInputComponent } from 'ngx-material-intl-tel-input';
     MatButtonModule,
     MatChipsModule,
     MatFormFieldModule,
-    MatInputModule
+    MatInputModule,
+    MatCheckboxModule
   ],
   selector: 'ngx-material-intl-tel-input-root',
   templateUrl: './app.component.html',
@@ -33,6 +35,7 @@ export class AppComponent {
   currentPhoneValue = signal<string>('');
   submittedPhoneValue = signal<string>('');
   formTestGroup: FormGroup;
+  showSetPhoneInput = signal<boolean>(false);
 
   constructor(private fb: FormBuilder) {
     this.formTestGroup = this.fb.group({
@@ -57,9 +60,19 @@ export class AppComponent {
     this.submittedPhoneValue.set(this.formTestGroup.value['phone']);
   }
 
+  /**
+   * Sets the phone control value to the value entered in the 'setPhoneTextbox' control.
+   */
   setPhone(): void {
     this.formTestGroup.controls['phone'].setValue(
       this.formTestGroup.value['setPhoneTextbox']
     );
+  }
+
+  /**
+   * Toggles the visibility of the set phone input field.
+   */
+  toggleShowSetPhoneInput(): void {
+    this.showSetPhoneInput.set(!this.showSetPhoneInput());
   }
 }

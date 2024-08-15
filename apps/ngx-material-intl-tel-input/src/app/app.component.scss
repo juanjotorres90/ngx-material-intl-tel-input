@@ -12,6 +12,14 @@
     justify-content: center;
     align-items: center;
     form {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      justify-content: center;
+      align-items: center;
+      mat-checkbox {
+        margin-top: 16px;
+      }
       button {
         display: block;
         margin: 0 auto;

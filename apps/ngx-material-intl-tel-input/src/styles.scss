@@ -6,7 +6,6 @@
 @include mat.core();
 
 :root {
-  @include mat.all-component-themes(m3-theme.$light-theme);
   --mdc-theme-primary: #209ffc;
   --mdc-theme-secondary: #023871;
   --mdc-theme-error: #f44336;
@@ -15,6 +14,8 @@
   --mat-option-selected-state-label-text-color: #209ffc;
   --mat-select-focused-arrow-color: #209ffc;
   --mdc-outlined-text-field-focus-outline-color: #209ffc;
+
+  @include mat.all-component-themes(m3-theme.$light-theme);
 }
 
 html,
