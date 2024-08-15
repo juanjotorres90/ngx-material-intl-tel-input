@@ -7,6 +7,19 @@
     <button mat-flat-button type="submit" [disabled]="!formTestGroup.valid">
       Submit
     </button>
+
+    <mat-checkbox (change)="toggleShowSetPhoneInput()"
+      >Show input to change number</mat-checkbox
+    >
+    @if (showSetPhoneInput()) {
+      <mat-form-field>
+        <mat-label>Set phone number</mat-label>
+        <input matInput type="text" formControlName="setPhoneTextbox" />
+      </mat-form-field>
+      <button mat-flat-button (click)="setPhone()" type="button">
+        Set phone number
+      </button>
+    }
   </form>
   @if (currentPhoneValue()) {
     <div>

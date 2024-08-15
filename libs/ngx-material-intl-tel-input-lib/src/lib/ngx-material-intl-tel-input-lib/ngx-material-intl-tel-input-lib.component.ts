@@ -40,6 +40,7 @@ import { GeoData } from '../types/geo.type';
 import { TextLabels } from '../types/text-labels.type';
 import { CountryISO } from '../enums/country-iso.enum';
 import { CountryDataService } from '../services/country-data/country-data.service';
+import { MatTooltipModule } from '@angular/material/tooltip';
 
 @Component({
   selector: 'ngx-material-intl-tel-input',
@@ -54,6 +55,7 @@ import { CountryDataService } from '../services/country-data/country-data.servic
     NgClass,
     MatFormFieldModule,
     MatInputModule,
+    MatTooltipModule,
     NgTemplateOutlet
   ],
   providers: [
