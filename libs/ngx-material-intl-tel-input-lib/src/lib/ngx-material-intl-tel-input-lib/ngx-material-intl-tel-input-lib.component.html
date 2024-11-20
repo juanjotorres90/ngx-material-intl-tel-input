@@ -5,10 +5,10 @@
   <div
     class="tel-form"
     [formGroup]="telForm"
-    [ngClass]="{ 'is-focused': isFocused() }"
+    [ngClass]="{ 'is-focused': isFocused() && appearance() !== 'outline' }"
   >
     <mat-form-field
-      appearance="fill"
+      [appearance]="appearance()"
       class="prefix-form-field"
       matTooltip="{{ prefixCtrl.value?.name }}"
     >
@@ -96,7 +96,7 @@
       </mat-select>
     </mat-form-field>
 
-    <mat-form-field appearance="fill" class="number-form-field">
+    <mat-form-field [appearance]="appearance()" class="number-form-field">
       @if (textLabels().nationalNumberLabel) {
         <mat-label>{{ textLabels().nationalNumberLabel }}</mat-label>
       }
