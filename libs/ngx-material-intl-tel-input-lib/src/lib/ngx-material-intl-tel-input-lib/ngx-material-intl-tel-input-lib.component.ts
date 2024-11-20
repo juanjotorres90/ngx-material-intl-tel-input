@@ -32,7 +32,10 @@ import { Observable, ReplaySubject, Subject, take, takeUntil } from 'rxjs';
 import { CountryCode } from '../data/country-code';
 import { Country } from '../types/country.model';
 import { PhoneNumberFormat, PhoneNumberUtil } from 'google-libphonenumber';
-import { MatFormFieldModule } from '@angular/material/form-field';
+import {
+  MatFormFieldAppearance,
+  MatFormFieldModule
+} from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import TelValidators from '../validators/tel.validators';
 import { GeoIpService } from '../services/geo-ip/geo-ip.service';
@@ -106,6 +109,7 @@ export class NgxMaterialIntlTelInputComponent
   fieldControlName = input<string>('');
   required = model<boolean>(false);
   disabled = model<boolean>(false);
+  appearance = input<MatFormFieldAppearance>('fill');
   enablePlaceholder = input<boolean>(true);
   autoIpLookup = input<boolean>(true);
   autoSelectCountry = input<boolean>(true);
