@@ -3,6 +3,11 @@
     <ngx-material-intl-tel-input
       (currentValue)="getValue($event)"
       fieldControlName="phone"
+      [emojiFlags]="false"
+      [includeDialCode]="false"
+      [useMask]="false"
+      [forceSelectedCountryCode]="false"
+      [showMaskPlaceholder]="true"
     ></ngx-material-intl-tel-input>
     <button mat-flat-button type="submit" [disabled]="!formTestGroup.valid">
       Submit
