@@ -10,4 +10,8 @@ export type Country = {
   htmlId: string;
   flagClass: string;
   placeHolder: string;
+  mask?: {
+    mask: string;
+    lazy?: boolean;
+  };
 };

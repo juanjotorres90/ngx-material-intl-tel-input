@@ -44,10 +44,10 @@ import { TextLabels } from '../types/text-labels.type';
 import { CountryISO } from '../enums/country-iso.enum';
 import { CountryDataService } from '../services/country-data/country-data.service';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { IMaskModule } from 'angular-imask';
 
 @Component({
   selector: 'ngx-material-intl-tel-input',
-  standalone: true,
   templateUrl: './ngx-material-intl-tel-input-lib.component.html',
   styleUrl: './ngx-material-intl-tel-input-lib.component.scss',
   imports: [
@@ -59,7 +59,8 @@ import { MatTooltipModule } from '@angular/material/tooltip';
     MatFormFieldModule,
     MatInputModule,
     MatTooltipModule,
-    NgTemplateOutlet
+    NgTemplateOutlet,
+    IMaskModule
   ],
   providers: [
     CountryCode,
@@ -134,6 +135,9 @@ export class NgxMaterialIntlTelInputComponent
     invalidNumberError: 'Number is not valid',
     requiredError: 'This field is required'
   });
+  useMask = input<boolean>(false);
+  forceSelectedCountryCode = input<boolean>(false);
+  showMaskPlaceholder = input<boolean>(false);
   currentValue = output<string>();
   isFocused = signal<boolean>(false);
   isLoading = signal<boolean>(true);
@@ -185,7 +189,10 @@ export class NgxMaterialIntlTelInputComponent
       this.includeDialCode(),
       this.visibleCountries(),
       this.preferredCountries(),
-      this.excludedCountries()
+      this.excludedCountries(),
+      this.useMask(),
+      this.forceSelectedCountryCode(),
+      this.showMaskPlaceholder()
     );
     this.allCountries = processedCountries;
   }
@@ -366,7 +373,7 @@ export class NgxMaterialIntlTelInputComponent
               PhoneNumberFormat.INTERNATIONAL
             );
             this.fieldControl()?.setValue(formatted);
-          } catch (error) {
+          } catch {
             this.fieldControl()?.setValue(value);
           }
         } else {
