@@ -31,6 +31,35 @@
       "avatar_url": "https://avatars3.githubusercontent.com/u/5524772?v=4",
       "profile": "https://github.com/whegar",
       "contributions": ["ideas", "question", "infra", "maintenance", "review"]
+    },
+    {
+      "login": "ghollingworthh",
+      "name": "Glen Hollingworth",
+      "avatar_url": "https://avatars.githubusercontent.com/u/26550815?v=4?s=100",
+      "profile": "https://github.com/ghollingworthh",
+      "contributions": [
+        "code",
+        "doc",
+        "ideas",
+        "question",
+        "infra",
+        "maintenance",
+        "review"
+      ]
+    },
+    {
+      "login": "EphraimHaber",
+      "name": "EphraimHaber",
+      "avatar_url": "https://avatars.githubusercontent.com/u/61934858?v=4?s=100",
+      "profile": "https://github.com/EphraimHaber",
+      "contributions": [
+        "code",
+        "doc",
+        "ideas",
+        "question",
+        "maintenance",
+        "review"
+      ]
     }
   ],
   "contributorsPerLine": 7,

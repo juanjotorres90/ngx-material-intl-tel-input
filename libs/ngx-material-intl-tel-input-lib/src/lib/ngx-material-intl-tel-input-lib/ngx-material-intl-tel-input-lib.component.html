@@ -110,6 +110,7 @@
         (blur)="onInputBlur()"
         [required]="required()"
         #numberInput
+        [imask]="prefixCtrl.value?.mask"
       />
 
       @if (!hidePhoneIcon()) {
