@@ -20,7 +20,7 @@ Validation with [google-libphonenumber](https://github.com/google/libphonenumber
 
 | ngx-material-intl-tel-input | Angular   |
 | --------------------------- | --------- |
-| 19.0.0                      | >= 19.0.0 |
+| 19.0.0 - 19.1.0             | >= 19.0.0 |
 | 18.0.0 - 18.2.1             | >= 18.0.0 |
 | 0.0.1 - 17.3.0              | >= 17.2.0 |
 
@@ -74,15 +74,17 @@ imports: [NgxMaterialIntlTelInputComponent];
 | iconMakeCall             | `boolean`                  | `true`                                                                                                                                                                                                                                                                                                       | Click on phone icon to trigger call action.                              |
 | initialValue             | `string`                   | `''`                                                                                                                                                                                                                                                                                                         | Sets initial telephone number value                                      |
 | useMask                  | `boolean`                  | `false`                                                                                                                                                                                                                                                                                                      | Use mask for phone number input.                                         |
-| forceSelectedCountryCode | `string`                   | `false`                                                                                                                                                                                                                                                                                                      | If useMask is active it forces the selected country code to be displayed |
-| showMaskPlaceholder      | `string`                   | `false`                                                                                                                                                                                                                                                                                                      | If useMask is active it shows the placeholder for the mask               |
+| forceSelectedCountryCode | `boolean`                  | `false`                                                                                                                                                                                                                                                                                                      | If useMask is active it forces the selected country code to be displayed |
+| showMaskPlaceholder      | `boolean`                  | `false`                                                                                                                                                                                                                                                                                                      | If useMask is active it shows the placeholder for the mask               |
 | textLabels               | `TextLabels`               | {mainLabel: 'Phone number', codePlaceholder: 'Code', searchPlaceholderLabel: 'Search', noEntriesFoundLabel: 'No countries found', nationalNumberLabel: 'Number', hintLabel: 'Select country and type your phone number', invalidNumberError: 'Number is not valid', requiredError: 'This field is required'} | Overrides all component text labels                                      |
 
 ## Events
 
-| Event        | Type     | Default | Description                                  |
-| ------------ | -------- | ------- | -------------------------------------------- |
-| currentValue | `string` | `''`    | Emitted when the value of the input changes. |
+| Event              | Type     | Default | Description                                                          |
+| ------------------ | -------- | ------- | -------------------------------------------------------------------- |
+| currentValue       | `string` | `''`    | Full phone number value emitted when the value of the input changes. |
+| currentCountryCode | `string` | `''`    | Country code value emitted when the value of the input changes.      |
+| currentCountryISO  | `string` | `''`    | Country ISO value emitted when the value of the input changes.       |
 
 ## Contribute and develop locally
 
