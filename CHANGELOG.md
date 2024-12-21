@@ -5,6 +5,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [19.1.0] - 2024-12-21
+
+### Added
+
+- Add 'currentCountryCode' output event to retrieve the current country code number selected ([#30](https://github.com/juanjotorres90/ngx-material-intl-tel-input/issues/30)).
+- Add 'currentCountryISO' output event to retrieve the current country ISO code selected ([#31](https://github.com/juanjotorres90/ngx-material-intl-tel-input/issues/31)).
+
 ## [19.0.0] - 2024-12-07
 
 ### Added
