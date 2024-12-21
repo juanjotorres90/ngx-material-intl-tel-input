@@ -2,6 +2,8 @@
   <form [formGroup]="formTestGroup" (ngSubmit)="onSubmit()">
     <ngx-material-intl-tel-input
       (currentValue)="getValue($event)"
+      (currentCountryCode)="getCountryCode($event)"
+      (currentCountryISO)="getCountryISO($event)"
       fieldControlName="phone"
       [emojiFlags]="false"
       [includeDialCode]="false"
@@ -29,6 +31,18 @@
   @if (currentPhoneValue()) {
     <div>
       Returned value: <br /><mat-chip>{{ currentPhoneValue() }}</mat-chip>
+    </div>
+    <div class="current-country-code-container">
+      @if (currentCountryCode()) {
+        <div>
+          Country code: <br /><mat-chip>{{ currentCountryCode() }}</mat-chip>
+        </div>
+      }
+      @if (currentCountryISO()) {
+        <div>
+          Country ISO: <br /><mat-chip>{{ currentCountryISO() }}</mat-chip>
+        </div>
+      }
     </div>
   } @else {
     <div>No value returned</div>

@@ -32,6 +32,8 @@ import { NgxMaterialIntlTelInputComponent } from 'ngx-material-intl-tel-input';
 export class AppComponent {
   title = 'ngx-material-intl-tel-input';
   currentPhoneValue = signal<string>('');
+  currentCountryCode = signal<string>('');
+  currentCountryISO = signal<string>('');
   submittedPhoneValue = signal<string>('');
   formTestGroup: FormGroup;
   showSetPhoneInput = signal<boolean>(false);
@@ -73,5 +75,23 @@ export class AppComponent {
    */
   toggleShowSetPhoneInput(): void {
     this.showSetPhoneInput.set(!this.showSetPhoneInput());
+  }
+
+  /**
+   * Sets the current country code to the provided value.
+   *
+   * @param value - The new country code to set.
+   */
+  getCountryCode(value: string): void {
+    this.currentCountryCode.set(value);
+  }
+
+  /**
+   * Sets the current country ISO code to the provided value.
+   *
+   * @param value - The new ISO code to set.
+   */
+  getCountryISO(value: string): void {
+    this.currentCountryISO.set(value);
   }
 }

@@ -25,6 +25,18 @@
         margin: 0 auto;
       }
     }
+    .current-country-code-container {
+      display: flex;
+      flex-direction: row;
+      gap: 8px;
+      div {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        flex: 1;
+        width: auto;
+      }
+    }
     ngx-material-intl-tel-input,
     div {
       max-width: 400px;

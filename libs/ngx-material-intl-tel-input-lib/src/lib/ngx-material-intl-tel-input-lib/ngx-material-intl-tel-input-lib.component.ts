@@ -139,6 +139,8 @@ export class NgxMaterialIntlTelInputComponent
   forceSelectedCountryCode = input<boolean>(false);
   showMaskPlaceholder = input<boolean>(false);
   currentValue = output<string>();
+  currentCountryCode = output<string>();
+  currentCountryISO = output<string>();
   isFocused = signal<boolean>(false);
   isLoading = signal<boolean>(true);
 
@@ -493,6 +495,12 @@ export class NgxMaterialIntlTelInputComponent
         }
       }
       this.currentValue?.emit(this.fieldControl()?.value || data);
+      this.currentCountryCode?.emit(
+        this.prefixCtrl.value?.dialCode
+          ? `+${this.prefixCtrl.value?.dialCode}`
+          : ''
+      );
+      this.currentCountryISO?.emit(this.prefixCtrl.value?.iso2 || '');
     });
   }
 
