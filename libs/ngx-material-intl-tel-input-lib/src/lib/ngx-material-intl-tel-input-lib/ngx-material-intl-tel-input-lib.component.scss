@@ -16,14 +16,14 @@
       border-style: solid;
       border-width: var(--mdc-filled-tel-form-outline-width, 1px);
       border-color: var(--mdc-filled-tel-form-outline-color, #d8d8d8);
-      border-radius: var(--mdc-filled-tel-form-container-shape, 4px);
+      border-radius: var(--mdc-filled-tel-form-container-shape, 8px);
       background-color: var(
         --mdc-filled-tel-form-background,
         #fbfbfb
       ) !important;
 
       &.is-focused {
-        border-color: var(--mdc-filled-tel-form-focus-outline-color, #209ffc);
+        border-color: var(--mdc-filled-tel-form-focus-outline-color, var(--mdc-theme-primary, #209ffc));
         outline: 2px solid
           rgba(var(--mdc-filled-tel-form-focus-outline-color, #209ffc), 0.3);
         background-color: var(
@@ -196,7 +196,7 @@
       color: var(--mdc-tel-form-hint-color, #b2b2b2);
     }
     mat-error {
-      color: var(--mdc-tel-form-error-color, var(--mat-sys-error));
+      color: var(--mdc-tel-form-error-color, var(--mat-sys-error, var(--mdc-theme-error, #f44336)));
     }
   }
 
