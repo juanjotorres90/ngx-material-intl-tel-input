@@ -30,7 +30,7 @@
         outline: 2px solid
           var(
             --mdc-filled-tel-form-focus-outline-color,
-            var(--mdc-theme-primary, rgba(32, 159, 252, 0.3))
+            rgba(var(--mdc-theme-primary-rgb, 32, 159, 252), 0.3)
           );
         background-color: var(
           --mdc-filled-tel-form-focus-background,
