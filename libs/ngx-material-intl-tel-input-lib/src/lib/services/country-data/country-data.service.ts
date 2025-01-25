@@ -25,11 +25,13 @@ export class CountryDataService {
     includeDialCode: boolean,
     useMask: boolean,
     forceSelectedCountryCode: boolean,
-    showMaskPlaceholder: boolean
+    showMaskPlaceholder: boolean,
+    outputNumberFormat: PhoneNumberFormat
   ): Country {
     const phoneNumberPlaceholder = this.getPhoneNumberPlaceholder(
       countryData[2].toString().toUpperCase(),
-      includeDialCode
+      includeDialCode,
+      outputNumberFormat
     );
     const country: Country = {
       emojiFlag: countryData[0].toString(),
@@ -95,7 +97,8 @@ export class CountryDataService {
    */
   protected getPhoneNumberPlaceholder(
     countryCode: string,
-    includeDialCode: boolean
+    includeDialCode: boolean,
+    outputNumberFormat: PhoneNumberFormat
   ): string {
     try {
       return this.phoneNumberUtil.format(
@@ -104,7 +107,7 @@ export class CountryDataService {
           PhoneNumberType.MOBILE
         ),
         includeDialCode || countryCode === 'MP'
-          ? PhoneNumberFormat.INTERNATIONAL
+          ? outputNumberFormat
           : PhoneNumberFormat.NATIONAL
       );
     } catch {
@@ -131,7 +134,8 @@ export class CountryDataService {
     excludedCountries?: (CountryISO | string)[],
     useMask = false,
     forceSelectedCountryCode = false,
-    showMaskPlaceholder = false
+    showMaskPlaceholder = false,
+    outputNumberFormat = PhoneNumberFormat.INTERNATIONAL
   ): Country[] {
     const allCountries: Country[] = countryCodeData.allCountries.map(
       (countryData: CountryData) =>
@@ -141,7 +145,8 @@ export class CountryDataService {
           includeDialCode,
           useMask,
           forceSelectedCountryCode,
-          showMaskPlaceholder
+          showMaskPlaceholder,
+          outputNumberFormat
         )
     );
     const filteredVisibleCountries = visibleCountries?.length

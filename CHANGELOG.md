@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [19.2.0] - 2025-01-25
+
+### Added
+
+- Add 'outputNumberFormat' option to set the output number to INTERNATIONAL, E164, or RFC3966 format.
+- Add css variables to customize the input field appearance ([#34](https://github.com/juanjotorres90/ngx-material-intl-tel-input/pull/34)).
+
+### Fixed
+
+- Clear the number input field when a form reset is triggered ([#37](https://github.com/juanjotorres90/ngx-material-intl-tel-input/issues/37)).
+- Fix cursor position when editing the number from the middle or start position ([#37](https://github.com/juanjotorres90/ngx-material-intl-tel-input/issues/37)).
+
 ## [19.1.0] - 2024-12-21
 
 ### Added
