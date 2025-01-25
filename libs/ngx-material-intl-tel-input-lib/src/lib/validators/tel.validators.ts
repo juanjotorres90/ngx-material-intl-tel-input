@@ -6,7 +6,8 @@ export default class TelValidators {
   static isValidNumber(
     telForm: FormGroup,
     includeDialCode = false,
-    allCountries: Country[]
+    allCountries: Country[],
+    outputNumberFormat: PhoneNumberFormat = PhoneNumberFormat.INTERNATIONAL
   ): ValidatorFn {
     return (control: AbstractControl): { [key: string]: boolean } | null => {
       try {
@@ -60,7 +61,7 @@ export default class TelValidators {
         const formattedOnlyNumber = phoneNumberUtil.format(
           parsed,
           includeDialCode || telForm?.value?.prefixCtrl?.iso2 === 'mp'
-            ? PhoneNumberFormat.INTERNATIONAL
+            ? outputNumberFormat
             : PhoneNumberFormat.NATIONAL
         );
         telForm

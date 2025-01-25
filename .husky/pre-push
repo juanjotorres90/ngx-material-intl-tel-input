@@ -1,1 +1,1 @@
-npm run lint:all && npm run unit-tests:all && npm run build:all
+npx nx affected -t lint test build

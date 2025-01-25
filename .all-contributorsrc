@@ -60,6 +60,20 @@
         "maintenance",
         "review"
       ]
+    },
+    {
+      "login": "Kamma31",
+      "name": "Rant",
+      "avatar_url": "https://avatars.githubusercontent.com/u/50776388?v=4?s=100",
+      "profile": "https://github.com/Kamma31",
+      "contributions": [
+        "code",
+        "doc",
+        "ideas",
+        "question",
+        "maintenance",
+        "review"
+      ]
     }
   ],
   "contributorsPerLine": 7,
