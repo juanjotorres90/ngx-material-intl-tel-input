@@ -10,10 +10,13 @@
       [useMask]="false"
       [forceSelectedCountryCode]="false"
       [showMaskPlaceholder]="true"
+      [outputNumberFormat]="PhoneNumberFormat.INTERNATIONAL"
+      [appearance]="'fill'"
     ></ngx-material-intl-tel-input>
     <button mat-flat-button type="submit" [disabled]="!formTestGroup.valid">
       Submit
     </button>
+    <button mat-flat-button (click)="resetForm()" type="button">Reset</button>
 
     <mat-checkbox (change)="toggleShowSetPhoneInput()"
       >Show input to change number</mat-checkbox

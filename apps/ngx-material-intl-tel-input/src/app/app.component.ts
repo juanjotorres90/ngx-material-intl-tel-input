@@ -11,6 +11,7 @@ import { MatChipsModule } from '@angular/material/chips';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { RouterModule } from '@angular/router';
+import { PhoneNumberFormat } from 'google-libphonenumber';
 import { NgxMaterialIntlTelInputComponent } from 'ngx-material-intl-tel-input';
 
 @Component({
@@ -37,6 +38,7 @@ export class AppComponent {
   submittedPhoneValue = signal<string>('');
   formTestGroup: FormGroup;
   showSetPhoneInput = signal<boolean>(false);
+  PhoneNumberFormat = PhoneNumberFormat;
 
   constructor(private fb: FormBuilder) {
     this.formTestGroup = this.fb.group({
@@ -93,5 +95,12 @@ export class AppComponent {
    */
   getCountryISO(value: string): void {
     this.currentCountryISO.set(value);
+  }
+
+  /**
+   * Resets the form group to its initial state, clearing all form controls.
+   */
+  resetForm(): void {
+    this.formTestGroup.reset();
   }
 }

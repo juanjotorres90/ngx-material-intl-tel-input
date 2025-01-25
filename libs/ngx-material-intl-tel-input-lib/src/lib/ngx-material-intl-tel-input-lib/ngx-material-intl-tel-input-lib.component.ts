@@ -31,7 +31,11 @@ import { NgxMatSelectSearchModule } from 'ngx-mat-select-search';
 import { Observable, ReplaySubject, Subject, take, takeUntil } from 'rxjs';
 import { CountryCode } from '../data/country-code';
 import { Country } from '../types/country.model';
-import { PhoneNumberFormat, PhoneNumberUtil } from 'google-libphonenumber';
+import {
+  PhoneNumber,
+  PhoneNumberFormat,
+  PhoneNumberUtil
+} from 'google-libphonenumber';
 import {
   MatFormFieldAppearance,
   MatFormFieldModule
@@ -138,6 +142,11 @@ export class NgxMaterialIntlTelInputComponent
   useMask = input<boolean>(false);
   forceSelectedCountryCode = input<boolean>(false);
   showMaskPlaceholder = input<boolean>(false);
+  outputNumberFormat = input<
+    | PhoneNumberFormat.E164
+    | PhoneNumberFormat.INTERNATIONAL
+    | PhoneNumberFormat.RFC3966
+  >(PhoneNumberFormat.INTERNATIONAL);
   currentValue = output<string>();
   currentCountryCode = output<string>();
   currentCountryISO = output<string>();
@@ -194,7 +203,8 @@ export class NgxMaterialIntlTelInputComponent
       this.excludedCountries(),
       this.useMask(),
       this.forceSelectedCountryCode(),
-      this.showMaskPlaceholder()
+      this.showMaskPlaceholder(),
+      this.outputNumberFormat()
     );
     this.allCountries = processedCountries;
   }
@@ -212,7 +222,8 @@ export class NgxMaterialIntlTelInputComponent
         TelValidators.isValidNumber(
           this.telForm,
           this.includeDialCode(),
-          this.allCountries
+          this.allCountries,
+          this.outputNumberFormat()
         )
       );
     }
@@ -353,7 +364,10 @@ export class NgxMaterialIntlTelInputComponent
     this.telForm.valueChanges
       .pipe(takeUntil(this._onDestroy))
       .subscribe((data) => {
+        const inputElement = this.numberInput()?.nativeElement;
         if (data?.numberControl) {
+          const cursorPosition = inputElement?.selectionStart;
+          const currentValue = data.numberControl;
           this.fieldControl()?.markAsDirty();
           let value = '';
           if (
@@ -372,9 +386,15 @@ export class NgxMaterialIntlTelInputComponent
             );
             const formatted = this.phoneNumberUtil.format(
               parsed,
-              PhoneNumberFormat.INTERNATIONAL
+              this.outputNumberFormat()
             );
             this.fieldControl()?.setValue(formatted);
+            this.setCursorPosition(
+              inputElement,
+              cursorPosition,
+              parsed,
+              currentValue
+            );
           } catch {
             this.fieldControl()?.setValue(value);
           }
@@ -487,12 +507,15 @@ export class NgxMaterialIntlTelInputComponent
           );
           const formatted = this.phoneNumberUtil.format(
             parsed,
-            PhoneNumberFormat.INTERNATIONAL
+            this.outputNumberFormat()
           );
           this.fieldControl()?.setValue(formatted, { emitEvent: false });
         } catch {
           this.fieldControl()?.setValue(data, { emitEvent: false });
         }
+      } else {
+        this.telForm.get('numberControl')?.setValue('', { emitEvent: false });
+        this.fieldControl()?.setValue('', { emitEvent: false });
       }
       this.currentValue?.emit(this.fieldControl()?.value || data);
       this.currentCountryCode?.emit(
@@ -543,5 +566,80 @@ export class NgxMaterialIntlTelInputComponent
     if (this.fieldControl()?.disabled) {
       this.disabled.set(true);
     }
+  }
+
+  /**
+   * Sets the cursor position in the input element after formatting the phone number.
+   *
+   * @param inputElement - The HTML input element where the cursor position is to be set.
+   * @param cursorPosition - The current cursor position in the input element.
+   * @param parsed - The parsed phone number object.
+   * @param currentValue - The current value of the input element.
+   */
+  private setCursorPosition(
+    inputElement: HTMLInputElement,
+    cursorPosition: number,
+    parsed: PhoneNumber,
+    currentValue: string
+  ): void {
+    const nationalNumber = this.phoneNumberUtil.format(
+      parsed,
+      PhoneNumberFormat.NATIONAL
+    );
+    const newCursorPosition = this.adjustCursorPosition(
+      cursorPosition as number,
+      currentValue,
+      nationalNumber
+    );
+    setTimeout(() => {
+      inputElement.setSelectionRange(newCursorPosition, newCursorPosition);
+    }, 0);
+  }
+
+  /**
+   * Adjusts the cursor position in an input field after a value change,
+   * accounting for added or removed spaces in the new value.
+   *
+   * @param originalPosition - The original cursor position before the value change.
+   * @param oldValue - The previous value of the input field.
+   * @param newValue - The new value of the input field.
+   * @returns The adjusted cursor position, ensuring it remains within valid bounds.
+   */
+  private adjustCursorPosition(
+    originalPosition: number,
+    oldValue: string,
+    newValue: string
+  ): number {
+    let cursorPosition = originalPosition;
+    const spaceCountBefore = this.countSpacesBeforePosition(
+      oldValue,
+      originalPosition
+    );
+    const spaceCountAfter = this.countSpacesBeforePosition(
+      newValue,
+      cursorPosition
+    );
+    // Adjust cursor if spaces are added or removed
+    cursorPosition += spaceCountAfter - spaceCountBefore;
+    if (originalPosition === oldValue.length) {
+      return newValue.length;
+    }
+    // Ensure cursor position is within valid bounds
+    cursorPosition = Math.max(0, Math.min(cursorPosition, newValue.length));
+    return cursorPosition;
+  }
+
+  /**
+   * Counts the number of spaces in a string before a specified position.
+   *
+   * @param value - The string to be evaluated.
+   * @param position - The position in the string up to which spaces are counted.
+   * @returns The number of spaces found before the specified position.
+   */
+  private countSpacesBeforePosition(value: string, position: number): number {
+    return value
+      .slice(0, position)
+      .split('')
+      .filter((char) => char === ' ').length;
   }
 }

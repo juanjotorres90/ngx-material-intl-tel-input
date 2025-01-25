@@ -1,4 +1,4 @@
-[![All Contributors](https://img.shields.io/badge/all_contributors-4-orange.svg?style=flat-square)](#contributors)
+[![All Contributors](https://img.shields.io/badge/all_contributors-5-orange.svg?style=flat-square)](#contributors)
 
 [![npm version](https://img.shields.io/npm/v/ngx-material-intl-tel-input.svg?style=flat-square)](https://www.npmjs.com/package/ngx-material-intl-tel-input)
 [![npm downloads total](https://img.shields.io/npm/dt/ngx-material-intl-tel-input.svg?style=flat-square)](https://www.npmjs.com/package/ngx-material-intl-tel-input)
@@ -20,7 +20,7 @@ Validation with [google-libphonenumber](https://github.com/google/libphonenumber
 
 | ngx-material-intl-tel-input | Angular   |
 | --------------------------- | --------- |
-| 19.0.0 - 19.1.0             | >= 19.0.0 |
+| 19.0.0 - 19.2.0             | >= 19.0.0 |
 | 18.0.0 - 18.2.1             | >= 18.0.0 |
 | 0.0.1 - 17.3.0              | >= 17.2.0 |
 
@@ -76,6 +76,7 @@ imports: [NgxMaterialIntlTelInputComponent];
 | useMask                  | `boolean`                  | `false`                                                                                                                                                                                                                                                                                                      | Use mask for phone number input.                                         |
 | forceSelectedCountryCode | `boolean`                  | `false`                                                                                                                                                                                                                                                                                                      | If useMask is active it forces the selected country code to be displayed |
 | showMaskPlaceholder      | `boolean`                  | `false`                                                                                                                                                                                                                                                                                                      | If useMask is active it shows the placeholder for the mask               |
+| outputNumberFormat       | `PhoneNumberFormat`        | `PhoneNumberFormat.INTERNATIONAL`                                                                                                                                                                                                                                                                            | Sets the output number format to INTERNATIONAL, E164, or RFC3966 format  |
 | textLabels               | `TextLabels`               | {mainLabel: 'Phone number', codePlaceholder: 'Code', searchPlaceholderLabel: 'Search', noEntriesFoundLabel: 'No countries found', nationalNumberLabel: 'Number', hintLabel: 'Select country and type your phone number', invalidNumberError: 'Number is not valid', requiredError: 'This field is required'} | Overrides all component text labels                                      |
 
 ## Events
@@ -85,6 +86,69 @@ imports: [NgxMaterialIntlTelInputComponent];
 | currentValue       | `string` | `''`    | Full phone number value emitted when the value of the input changes. |
 | currentCountryCode | `string` | `''`    | Country code value emitted when the value of the input changes.      |
 | currentCountryISO  | `string` | `''`    | Country ISO value emitted when the value of the input changes.       |
+
+# CSS Custom Properties Reference
+
+## 🎨 Component Styling Variables
+
+### Container Styles
+
+- `--mdc-filled-tel-form-outline-width`: Outline width (`default: 1px`)
+- `--mdc-filled-tel-form-outline-color`: Border color (`default: #d8d8d8`)
+- `--mdc-filled-tel-form-background`: Background color (`default: #fbfbfb`)
+- `--mdc-filled-tel-form-container-shape`: Border radius (`default: 8px`)
+
+### Focus States
+
+- `--mdc-filled-tel-form-focus-outline-color`: Focus border color (`default: rgb(32, 159, 252)`)
+- `--mdc-filled-tel-form-focus-background`: Focus background (`default: #fff`)
+
+### Hover States
+
+- `--mdc-filled-tel-form-hover-background`: Hover background (`default: #f5f5f5`)
+- `--mdc-outline-tel-form-hover-background`: Outline variant hover background (`default: #f5f5f5`)
+
+## 📱 Input Field Customization
+
+### Appearance
+
+- `--mdc-outline-tel-form-background`: Outline variant background (`default: #fbfbfb`)
+- `--mdc-tel-form-placeholder-color`: Input placeholder color (`default: #ccc`)
+- `--mdc-tel-form-icon-color`: Action icon color (`default: #909090`)
+
+### Shape Customization
+
+- `--mdc-outlined-tel-form-container-shape`: Outline field border radius (`default: Material system variable`)
+- `--mdc-outlined-text-field-container-shape`: Text field border radius (`default: Material system variable`)
+
+## 🔍 Validation & Feedback
+
+- `--mdc-tel-form-hint-color`: Hint text color (`default: #b2b2b2`)
+- `--mdc-tel-form-error-color`: Error message color (`default: Material system error`)
+- `--mat-sys-error`: Material system error fallback (`default: #f44336`)
+
+## 🖌️ Theme Integration
+
+- `--mdc-theme-primary`: Primary theme color (`default: rgb(32, 159, 252)`)
+- `--mdc-theme-error`: Error state color (`default: #f44336`)
+- `--mat-sys-corner-extra-small`: Material system small corner radius
+
+## Example Configuration
+
+```css
+:root {
+  /* Container Customization */
+  --mdc-filled-tel-form-background: #f8f9fa;
+  --mdc-filled-tel-form-container-shape: 6px;
+
+  /* Theme Colors */
+  --mdc-theme-primary: #2a7de1;
+  --mdc-tel-form-error-color: #dc3545;
+
+  /* Input Styling */
+  --mdc-tel-form-placeholder-color: #a0aec0;
+}
+```
 
 ## Contributors
 
@@ -99,6 +163,7 @@ Thanks goes to these wonderful people:
     <td align="center"><a href="https://github.com/whegar"><img src="https://avatars3.githubusercontent.com/u/5524772?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Rafa Hernández</b></sub></a><br /> <a href="https://github.com/juanjotorres90/ngx-material-intl-tel-input/commits?author=whegar" title="Code">💻</a> <a href="#ideas-whegar" title="Ideas, Planning, & Feedback">🤔</a> <a href="#question-whegar" title="Answering Questions">💬</a> <a href="#infra-whegar" title="Infrastructure (Hosting, Build-Tools, etc)">🚇</a> <a href="#maintenance-whegar" title="Maintenance">🚧</a> <a href="https://github.com/juanjotorres90/ngx-material-intl-tel-input/pulls?q=is%3Apr+reviewed-by%whegar" title="Reviewed Pull Requests">👀</a></td>
     <td align="center"><a href="https://github.com/ghollingworthh"><img src="https://avatars.githubusercontent.com/u/26550815?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Glen Hollingworth</b></sub></a><br /> <a href="https://github.com/juanjotorres90/ngx-material-intl-tel-input/commits?author=ghollingworthh" title="Code">💻</a> <a href="#ideas-ghollingworthh" title="Ideas, Planning, & Feedback">🤔</a> <a href="#question-ghollingworthh" title="Answering Questions">💬</a> <a href="#example-ghollingworthh" title="Examples">💡</a> <a href="#maintenance-ghollingworthh" title="Maintenance">🚧</a> <a href="https://github.com/juanjotorres90/ngx-material-intl-tel-input/pulls?q=is%3Apr+reviewed-by%ghollingworthh" title="Reviewed Pull Requests">👀</a></td>
     <td align="center"><a href="https://github.com/EphraimHaber"><img src="https://avatars.githubusercontent.com/u/61934858?v=4?s=100" width="100px;" alt=""/><br /><sub><b>EphraimHaber</b></sub></a><br /> <a href="https://github.com/juanjotorres90/ngx-material-intl-tel-input/commits?author=EphraimHaber" title="Code">💻</a> <a href="#ideas-EphraimHaber" title="Ideas, Planning, & Feedback">🤔</a> <a href="#question-EphraimHaber" title="Answering Questions">💬</a> <a href="#example-EphraimHaber" title="Examples">💡</a> <a href="#maintenance-EphraimHaber" title="Maintenance">🚧</a> <a href="https://github.com/juanjotorres90/ngx-material-intl-tel-input/pulls?q=is%3Apr+reviewed-by%EphraimHaber" title="Reviewed Pull Requests">👀</a></td>
+    <td align="center"><a href="https://github.com/Kamma31"><img src="https://avatars.githubusercontent.com/u/50776388?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Rant</b></sub></a><br /> <a href="https://github.com/juanjotorres90/ngx-material-intl-tel-input/commits?author=Kamma31" title="Code">💻</a> <a href="#ideas-Kamma31" title="Ideas, Planning, & Feedback">🤔</a> <a href="#question-Kamma31" title="Answering Questions">💬</a> <a href="#example-Kamma31" title="Examples">💡</a> <a href="#maintenance-Kamma31" title="Maintenance">🚧</a> <a href="https://github.com/juanjotorres90/ngx-material-intl-tel-input/pulls?q=is%3Apr+reviewed-by%Kamma31" title="Reviewed Pull Requests">👀</a></td>
 </table>
 
 <!-- markdownlint-restore -->
