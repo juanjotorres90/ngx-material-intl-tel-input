@@ -584,7 +584,9 @@ export class NgxMaterialIntlTelInputComponent
   ): void {
     const nationalNumber = this.phoneNumberUtil.format(
       parsed,
-      PhoneNumberFormat.NATIONAL
+      this.includeDialCode()
+        ? PhoneNumberFormat.INTERNATIONAL
+        : PhoneNumberFormat.NATIONAL
     );
     const newCursorPosition = this.adjustCursorPosition(
       cursorPosition as number,
