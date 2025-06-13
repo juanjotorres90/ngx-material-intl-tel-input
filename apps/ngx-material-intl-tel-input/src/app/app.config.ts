@@ -1,6 +1,6 @@
 import {
   ApplicationConfig,
-  provideExperimentalZonelessChangeDetection
+  provideZonelessChangeDetection
 } from '@angular/core';
 import { provideRouter } from '@angular/router';
 import { appRoutes } from './app.routes';
@@ -15,6 +15,6 @@ export const appConfig: ApplicationConfig = {
     provideRouter(appRoutes),
     provideAnimations(),
     provideHttpClient(withInterceptorsFromDi()),
-    provideExperimentalZonelessChangeDetection()
+    provideZonelessChangeDetection()
   ]
 };

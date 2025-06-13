@@ -1,7 +1,6 @@
 const { FlatCompat } = require('@eslint/eslintrc');
 const js = require('@eslint/js');
 const nxEslintPlugin = require('@nx/eslint-plugin');
-const stylisticPlugin = require('@stylistic/eslint-plugin');
 
 const compat = new FlatCompat({
   baseDirectory: __dirname,
@@ -9,7 +8,7 @@ const compat = new FlatCompat({
 });
 
 module.exports = [
-  { plugins: { '@nx': nxEslintPlugin, '@stylistic': stylisticPlugin } },
+  { plugins: { '@nx': nxEslintPlugin } },
   {
     files: ['**/*.ts', '**/*.tsx', '**/*.js', '**/*.jsx'],
     rules: {
@@ -36,8 +35,7 @@ module.exports = [
       ...config,
       files: ['**/*.ts', '**/*.tsx', '**/*.cts', '**/*.mts'],
       rules: {
-        ...config.rules,
-        '@stylistic/no-extra-semi': 'error'
+        ...config.rules
       }
     })),
   ...compat
@@ -48,8 +46,7 @@ module.exports = [
       ...config,
       files: ['**/*.js', '**/*.jsx', '**/*.cjs', '**/*.mjs'],
       rules: {
-        ...config.rules,
-        '@stylistic/no-extra-semi': 'error'
+        ...config.rules
       }
     })),
   ...compat

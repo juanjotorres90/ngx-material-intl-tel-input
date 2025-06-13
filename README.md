@@ -18,11 +18,12 @@ Check out the [Demo](https://juanjotorres.net/projects/ngx-material-intl-tel-inp
 
 Validation with [google-libphonenumber](https://github.com/google/libphonenumber)
 
-| ngx-material-intl-tel-input | Angular   |
-| --------------------------- | --------- |
-| 19.0.0 - 19.2.0             | >= 19.0.0 |
-| 18.0.0 - 18.2.1             | >= 18.0.0 |
-| 0.0.1 - 17.3.0              | >= 17.2.0 |
+| ngx-material-intl-tel-input | Angular |
+| --------------------------- | ------- |
+| 20.0.0                      | 20      |
+| 19.0.0 - 19.2.1             | 19      |
+| 18.0.0 - 18.2.1             | 18      |
+| 0.0.1 - 17.3.0              | 17      |
 
 ## Installation
 

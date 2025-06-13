@@ -7,4 +7,5 @@ export type TextLabels = {
   hintLabel: string;
   invalidNumberError: string;
   requiredError: string;
-}
+  numberTooLongError?: string;
+};

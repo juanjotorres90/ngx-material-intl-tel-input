@@ -10,14 +10,14 @@
   @include mat.all-component-themes(m3-theme.$light-theme);
 
   & {
-    --mdc-theme-primary: #209ffc;
-    --mdc-theme-secondary: #023871;
-    --mdc-theme-error: #f44336;
-    --mdc-typography-font-family: Roboto, 'Helvetica Neue', sans-serif;
-    --mdc-theme-primary-rgb: 32, 159, 252;
+    --mat-theme-primary: #209ffc;
+    --mat-theme-secondary: #023871;
+    --mat-theme-error: #f44336;
+    --mat-typography-font-family: Roboto, 'Helvetica Neue', sans-serif;
+    --mat-theme-primary-rgb: 32, 159, 252;
     --mat-option-selected-state-label-text-color: #209ffc;
     --mat-select-focused-arrow-color: #209ffc;
-    --mdc-outlined-text-field-focus-outline-color: #209ffc;
+    --mat-form-field-outlined-focus-outline-color: #209ffc;
   }
 }
 
