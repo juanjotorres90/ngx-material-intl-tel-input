@@ -7,6 +7,7 @@ import {
   OnDestroy,
   OnInit,
   effect,
+  inject,
   input,
   model,
   output,
@@ -34,7 +35,8 @@ import { Country } from '../types/country.model';
 import {
   PhoneNumber,
   PhoneNumberFormat,
-  PhoneNumberUtil
+  PhoneNumberUtil,
+  PhoneNumberType
 } from 'google-libphonenumber';
 import {
   MatFormFieldAppearance,
@@ -49,6 +51,7 @@ import { CountryISO } from '../enums/country-iso.enum';
 import { CountryDataService } from '../services/country-data/country-data.service';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { IMaskModule } from 'angular-imask';
+import { getMaxPhoneNumberLength } from '../utils/phone-number.utils';
 
 @Component({
   selector: 'ngx-material-intl-tel-input',
@@ -80,6 +83,11 @@ import { IMaskModule } from 'angular-imask';
 export class NgxMaterialIntlTelInputComponent
   implements OnInit, AfterViewInit, OnDestroy
 {
+  private readonly countryCodeData = inject(CountryCode);
+  private readonly geoIpService = inject(GeoIpService);
+  private readonly countryDataService = inject(CountryDataService);
+  private readonly controlContainer = inject(ControlContainer);
+
   /** control for the selected country prefix */
   public prefixCtrl: FormControl<Country | null> =
     new FormControl<Country | null>(null);
@@ -137,7 +145,8 @@ export class NgxMaterialIntlTelInputComponent
     nationalNumberLabel: 'Number',
     hintLabel: 'Select country and type your phone number',
     invalidNumberError: 'Number is not valid',
-    requiredError: 'This field is required'
+    requiredError: 'This field is required',
+    numberTooLongError: 'Phone number is too long'
   });
   useMask = input<boolean>(false);
   forceSelectedCountryCode = input<boolean>(false);
@@ -147,18 +156,14 @@ export class NgxMaterialIntlTelInputComponent
     | PhoneNumberFormat.INTERNATIONAL
     | PhoneNumberFormat.RFC3966
   >(PhoneNumberFormat.INTERNATIONAL);
+  enableInputMaxLength = input<boolean>(true);
   currentValue = output<string>();
   currentCountryCode = output<string>();
   currentCountryISO = output<string>();
   isFocused = signal<boolean>(false);
   isLoading = signal<boolean>(true);
 
-  constructor(
-    private countryCodeData: CountryCode,
-    private geoIpService: GeoIpService,
-    private countryDataService: CountryDataService,
-    private controlContainer: ControlContainer
-  ) {
+  constructor() {
     effect(() => {
       this.setRequiredValidators();
       this.setDisabledState();
@@ -585,7 +590,7 @@ export class NgxMaterialIntlTelInputComponent
     const nationalNumber = this.phoneNumberUtil.format(
       parsed,
       this.includeDialCode()
-        ? PhoneNumberFormat.INTERNATIONAL
+        ? this.outputNumberFormat()
         : PhoneNumberFormat.NATIONAL
     );
     const newCursorPosition = this.adjustCursorPosition(
@@ -644,4 +649,190 @@ export class NgxMaterialIntlTelInputComponent
       .split('')
       .filter((char) => char === ' ').length;
   }
+
+  /**
+   * Gets the maximum input length for a given country code.
+   * This is used to set the maxlength attribute on the input field.
+   * Dynamically adjusts based on whether the current number is valid/formatted.
+   *
+   * @param countryCode ISO2 country code
+   * @returns Maximum allowed length for the input field
+   */
+  getMaxInputLength = (countryCode?: string): number => {
+    if (!countryCode) {
+      return 25; // Default fallback with generous space
+    }
+
+    try {
+      const baseMaxLength = getMaxPhoneNumberLength(countryCode);
+      const currentValue = this.telForm.get('numberControl')?.value || '';
+
+      // Check if the current number is valid and formatted
+      const isCurrentNumberValid = this.isCurrentNumberValidAndFormatted(
+        currentValue,
+        countryCode
+      );
+
+      if (isCurrentNumberValid) {
+        // For valid numbers, allow full formatting space
+        const formattingBuffer = this.calculateFormattingBuffer(
+          countryCode,
+          baseMaxLength
+        );
+        const safetyMargin = this.calculateSafetyMargin();
+        return baseMaxLength + formattingBuffer + safetyMargin;
+      } else {
+        // For invalid numbers, be more restrictive to prevent overly long input
+        // Only allow the base number length plus minimal buffer for dial code if included
+        let minimalBuffer = this.includeDialCode() ? 4 : 2;
+
+        // Special case: RFC3966 with includeDialCode needs more space even for invalid numbers
+        // because "tel:" prefix takes significant space during typing
+        if (
+          this.includeDialCode() &&
+          this.outputNumberFormat() === PhoneNumberFormat.RFC3966
+        ) {
+          minimalBuffer = 8; // Extra space for "tel:" prefix and formatting
+        }
+
+        return baseMaxLength + minimalBuffer;
+      }
+    } catch (_) {
+      // If any errors occur, fall back to a conservative default
+      const baseMaxLength = getMaxPhoneNumberLength(countryCode);
+      return baseMaxLength + 3; // Minimal fallback buffer
+    }
+  };
+
+  /**
+   * Checks if the current number is valid and properly formatted.
+   * Valid formatted numbers contain spaces/separators.
+   *
+   * @param currentValue Current input value
+   * @param countryCode ISO2 country code
+   * @returns True if number is valid and formatted
+   */
+  private isCurrentNumberValidAndFormatted = (
+    currentValue: string,
+    countryCode: string
+  ): boolean => {
+    if (!currentValue || currentValue.length < 3) {
+      return false; // Too short to be valid
+    }
+
+    try {
+      // Try to parse the current value
+      const fullNumber = this.includeDialCode()
+        ? currentValue
+        : `+${this.prefixCtrl.value?.dialCode}${currentValue}`;
+
+      const parsedNumber = this.phoneNumberUtil.parse(fullNumber, countryCode);
+      const isValid = this.phoneNumberUtil.isValidNumber(parsedNumber);
+
+      // Check if the number contains formatting characters (spaces, dashes, etc.)
+      const hasFormatting = /[\s\-()]/.test(currentValue);
+
+      return isValid && hasFormatting;
+    } catch (_) {
+      return false;
+    }
+  };
+
+  /**
+   * Calculates an appropriate safety margin based on component configuration.
+   * Different configurations require different buffer spaces.
+   * Uses conservative margins to prevent overly long input that requires JS correction.
+   *
+   * @returns Calculated safety margin
+   */
+  private calculateSafetyMargin = (): number => {
+    let safetyMargin = 1; // Reduced base safety margin
+
+    // If dial code is included in the input, we need slightly more space
+    // because the user types the dial code along with the number
+    if (this.includeDialCode()) {
+      safetyMargin += 1; // Reduced from 2 to 1
+    }
+
+    // Different output formats have different space requirements
+    switch (this.outputNumberFormat()) {
+      case PhoneNumberFormat.RFC3966:
+        // RFC3966 format (tel: URI) requires additional space for "tel:" prefix
+        safetyMargin += 2; // Reduced from 4 to 2
+        break;
+      case PhoneNumberFormat.E164:
+        // E164 is the most compact format, minimal extra space needed
+        safetyMargin += 0; // Reduced from 1 to 0 (only base margin)
+        break;
+      case PhoneNumberFormat.INTERNATIONAL:
+      default:
+        // International format includes country code and international formatting
+        safetyMargin += 1; // Reduced from 2 to 1
+        break;
+    }
+
+    return safetyMargin;
+  };
+
+  /**
+   * Calculates the formatting buffer needed for a country's phone number formatting.
+   * Analyzes example formatted numbers to determine space requirements.
+   *
+   * @param countryCode ISO2 country code
+   * @param baseLength Base maximum number length
+   * @returns Calculated formatting buffer
+   */
+  private calculateFormattingBuffer = (
+    countryCode: string,
+    baseLength: number
+  ): number => {
+    try {
+      const phoneUtil = PhoneNumberUtil.getInstance();
+
+      // Get example numbers for analysis
+      const numberTypes = [
+        PhoneNumberType.MOBILE,
+        PhoneNumberType.FIXED_LINE,
+        PhoneNumberType.FIXED_LINE_OR_MOBILE
+      ];
+
+      let maxFormattingOverhead = 0;
+
+      for (const numberType of numberTypes) {
+        try {
+          const exampleNumber = phoneUtil.getExampleNumberForType(
+            countryCode.toUpperCase(),
+            numberType
+          );
+
+          if (exampleNumber) {
+            // Format the number and calculate the overhead
+            const formattedNational = phoneUtil.format(
+              exampleNumber,
+              PhoneNumberFormat.NATIONAL
+            );
+
+            const nationalNumber =
+              exampleNumber.getNationalNumber()?.toString() || '';
+            const formattingOverhead =
+              formattedNational.length - nationalNumber.length;
+
+            maxFormattingOverhead = Math.max(
+              maxFormattingOverhead,
+              formattingOverhead
+            );
+          }
+        } catch (_) {
+          // Continue with next type if this one fails
+        }
+      }
+
+      // If we couldn't analyze any examples, use a reasonable default
+      // Most international formatting adds 2-4 characters for spaces and separators
+      return maxFormattingOverhead > 0 ? maxFormattingOverhead : 4;
+    } catch (_) {
+      // Fallback to a standard formatting buffer
+      return 4;
+    }
+  };
 }

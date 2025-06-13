@@ -1,4 +1,9 @@
-import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  inject,
+  signal
+} from '@angular/core';
 import {
   FormBuilder,
   FormGroup,
@@ -31,6 +36,7 @@ import { NgxMaterialIntlTelInputComponent } from 'ngx-material-intl-tel-input';
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class AppComponent {
+  private readonly fb = inject(FormBuilder);
   title = 'ngx-material-intl-tel-input';
   currentPhoneValue = signal<string>('');
   currentCountryCode = signal<string>('');
@@ -40,7 +46,7 @@ export class AppComponent {
   showSetPhoneInput = signal<boolean>(false);
   PhoneNumberFormat = PhoneNumberFormat;
 
-  constructor(private fb: FormBuilder) {
+  constructor() {
     this.formTestGroup = this.fb.group({
       phone: ['', [Validators.required]],
       setPhoneTextbox: ['']

@@ -109,6 +109,11 @@
         (focus)="onInputFocus()"
         (blur)="onInputBlur()"
         [required]="required()"
+        [attr.maxlength]="
+          enableInputMaxLength()
+            ? getMaxInputLength(prefixCtrl.value?.iso2)
+            : null
+        "
         #numberInput
         [imask]="prefixCtrl.value?.mask"
       />
@@ -163,5 +168,10 @@
     fieldControl()?.hasError('invalidNumber') && textLabels().invalidNumberError
   ) {
     <mat-error>{{ textLabels().invalidNumberError }}</mat-error>
+  }
+  @if (
+    fieldControl()?.hasError('numberTooLong') && textLabels().numberTooLongError
+  ) {
+    <mat-error>{{ textLabels().numberTooLongError }}</mat-error>
   }
 </section>
