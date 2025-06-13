@@ -14,49 +14,49 @@
 
     .tel-form:has(.mat-form-field-appearance-fill) {
       border-style: solid;
-      border-width: var(--mdc-filled-tel-form-outline-width, 1px);
-      border-color: var(--mdc-filled-tel-form-outline-color, #d8d8d8);
-      border-radius: var(--mdc-filled-tel-form-container-shape, 8px);
+      border-width: var(--mat-filled-tel-form-outline-width, 1px);
+      border-color: var(--mat-filled-tel-form-outline-color, #d8d8d8);
+      border-radius: var(--mat-filled-tel-form-container-shape, 8px);
       background-color: var(
-        --mdc-filled-tel-form-background,
+        --mat-filled-tel-form-background,
         #fbfbfb
       ) !important;
 
       &.is-focused {
         border-color: var(
-          --mdc-filled-tel-form-focus-outline-color,
-          var(--mdc-theme-primary, rgb(32, 159, 252))
+          --mat-filled-tel-form-focus-outline-color,
+          var(--mat-theme-primary, rgb(32, 159, 252))
         );
         outline: 2px solid
           var(
-            --mdc-filled-tel-form-focus-outline-color,
-            rgba(var(--mdc-theme-primary-rgb, 32, 159, 252), 0.3)
+            --mat-filled-tel-form-focus-outline-color,
+            rgba(var(--mat-theme-primary-rgb, 32, 159, 252), 0.3)
           );
         background-color: var(
-          --mdc-filled-tel-form-focus-background,
+          --mat-filled-tel-form-focus-background,
           #fff
         ) !important;
       }
       &:hover {
         background-color: var(
-          --mdc-filled-tel-form-hover-background,
+          --mat-filled-tel-form-hover-background,
           #f5f5f5
         ) !important;
       }
       &.ng-invalid.ng-dirty:not(.is-focused) {
-        border: 1px solid var(--mdc-theme-error, #f44336);
+        border: 1px solid var(--mat-theme-error, #f44336);
       }
     }
 
     .tel-form:has(.mat-form-field-appearance-outline) {
       border: none;
       background-color: var(
-        --mdc-outline-tel-form-background,
+        --mat-outline-tel-form-background,
         #fbfbfb
       ) !important;
       &:hover {
         background-color: var(
-          --mdc-outline-tel-form-hover-background,
+          --mat-outline-tel-form-hover-background,
           #f5f5f5
         ) !important;
       }
@@ -64,11 +64,11 @@
         &.prefix-form-field {
           &::ng-deep .mat-mdc-text-field-wrapper {
             border-top-left-radius: var(
-              --mdc-outlined-tel-form-container-shape,
+              --mat-outlined-tel-form-container-shape,
               var(--mat-sys-corner-extra-small)
             );
             border-bottom-left-radius: var(
-              --mdc-outlined-tel-form-container-shape,
+              --mat-outlined-tel-form-container-shape,
               var(--mat-sys-corner-extra-small)
             );
           }
@@ -80,11 +80,11 @@
         &.number-form-field {
           &::ng-deep .mat-mdc-text-field-wrapper {
             border-top-right-radius: var(
-              --mdc-outlined-text-field-container-shape,
+              --mat-form-field-outlined-container-shape,
               var(--mat-sys-corner-extra-small)
             );
             border-bottom-right-radius: var(
-              --mdc-outlined-text-field-container-shape,
+              --mat-form-field-outlined-container-shape,
               var(--mat-sys-corner-extra-small)
             );
           }
@@ -93,7 +93,7 @@
             width: max(
               12px,
               var(
-                --mdc-outlined-text-field-container-shape,
+                --mat-form-field-outlined-container-shape,
                 var(--mat-sys-corner-extra-small)
               )
             );
@@ -158,19 +158,19 @@
           width: 100%;
           input {
             &::placeholder {
-              color: var(--mdc-tel-form-placeholder-color, #ccc);
+              color: var(--mat-tel-form-placeholder-color, #ccc);
             }
           }
           mat-icon {
             padding: 0 8px;
             svg {
-              color: var(--mdc-tel-form-icon-color, #909090);
+              color: var(--mat-tel-form-icon-color, #909090);
             }
             a {
               text-decoration: none;
-              color: var(--mdc-theme-primary, #209ffc);
+              color: var(--mat-theme-primary, #209ffc);
               svg {
-                color: var(--mdc-theme-primary, #209ffc);
+                color: var(--mat-theme-primary, #209ffc);
               }
             }
           }
@@ -200,12 +200,12 @@
       margin: 2px 0;
     }
     mat-hint {
-      color: var(--mdc-tel-form-hint-color, #b2b2b2);
+      color: var(--mat-tel-form-hint-color, #b2b2b2);
     }
     mat-error {
       color: var(
-        --mdc-tel-form-error-color,
-        var(--mat-sys-error, var(--mdc-theme-error, #f44336))
+        --mat-tel-form-error-color,
+        var(--mat-sys-error, var(--mat-theme-error, #f44336))
       );
     }
   }

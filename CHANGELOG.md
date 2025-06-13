@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [20.0.0] - 2025-06-13
+
+### Added
+
+- Add support for Angular 20.
+- Add 'enableInputMaxLength' option to enable or disable the 'maxlength' attribute on the number input field, true by default to prevent errors for long numbers ([#47](https://github.com/juanjotorres90/ngx-material-intl-tel-input/issues/47)).
+
+### Fixed
+
+- Fix cursor position when using 'includeDialCode' and 'outputNumberFormat' E164 or RFC3966 options ([#47](https://github.com/juanjotorres90/ngx-material-intl-tel-input/issues/47)).
+
 ## [19.2.1] - 2025-02-13
 
 ### Fixed

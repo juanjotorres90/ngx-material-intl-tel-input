@@ -1,6 +1,7 @@
 import { AbstractControl, FormGroup, ValidatorFn } from '@angular/forms';
 import { PhoneNumberFormat, PhoneNumberUtil } from 'google-libphonenumber';
 import { Country } from '../types/country.model';
+import { isValidPhoneNumberLength } from '../utils/phone-number.utils';
 
 export default class TelValidators {
   static isValidNumber(
@@ -70,11 +71,25 @@ export default class TelValidators {
 
         const isValidNumber = phoneNumberUtil.isValidNumber(parsed);
         setPrefixControlValue(parsed.getCountryCode(), allCountries, telForm);
+
+        // Check if the phone number length is valid for the country
+        const countryIso = telForm?.value?.prefixCtrl?.iso2;
+        const isValidLength = countryIso
+          ? isValidPhoneNumberLength(control.value, countryIso)
+          : true;
+
         if (!isValidNumber) {
           control.setErrors({ invalidNumber: true });
           telForm.get('numberControl')?.setErrors({ invalidNumber: true });
           return {
             invalidNumber: true
+          };
+        } else if (!isValidLength) {
+          // If the number is valid according to libphonenumber but exceeds the maximum length
+          control.setErrors({ numberTooLong: true });
+          telForm.get('numberControl')?.setErrors({ numberTooLong: true });
+          return {
+            numberTooLong: true
           };
         } else {
           control.setErrors(null);
