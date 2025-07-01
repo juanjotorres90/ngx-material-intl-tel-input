@@ -30,3 +30,43 @@ body {
   font-family: Roboto, 'Helvetica Neue', sans-serif;
   overflow: hidden;
 }
+
+/* Force white text on blue chips globally with high specificity */
+mat-chip,
+.mat-mdc-chip,
+.mdc-evolution-chip,
+.mat-chip,
+.mat-standard-chip,
+.mat-mdc-standard-chip {
+  background-color: #1976d2 !important;
+  color: white !important;
+
+  span,
+  div,
+  .mat-mdc-chip-action-label,
+  .mdc-evolution-chip__text-label,
+  .mat-chip-list-wrapper,
+  .mat-chip-content {
+    color: white !important;
+  }
+
+  /* Target all child elements */
+  * {
+    color: white !important;
+  }
+}
+
+/* Even more specific targeting for results section */
+.results mat-chip,
+.results .mat-mdc-chip,
+.results .mdc-evolution-chip,
+.results .mat-chip,
+.results .mat-standard-chip,
+.results .mat-mdc-standard-chip {
+  background-color: #1976d2 !important;
+  color: white !important;
+
+  * {
+    color: white !important;
+  }
+}

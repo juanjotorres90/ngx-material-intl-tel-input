@@ -1,55 +1,152 @@
 :host {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
+  display: block;
   width: 100%;
   height: 100%;
+
+  // Force white text on chips globally
+  ::ng-deep mat-chip,
+  ::ng-deep .mat-mdc-chip,
+  ::ng-deep .mdc-evolution-chip,
+  ::ng-deep .mat-chip,
+  ::ng-deep .mat-standard-chip {
+    background-color: #1976d2 !important;
+    color: white !important;
+
+    span,
+    div,
+    * {
+      color: white !important;
+    }
+  }
+
   section {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    justify-content: center;
-    align-items: center;
-    form {
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      justify-content: center;
-      align-items: center;
-      mat-checkbox {
-        margin-top: 16px;
-      }
-      button {
-        display: block;
-        margin: 0 auto;
-      }
+    padding: 20px;
+    max-width: 1200px;
+    margin: 0 auto;
+
+    h1 {
+      text-align: center;
+      margin-bottom: 30px;
+      color: #333;
+      font-weight: 400;
     }
-    .current-country-code-container {
-      display: flex;
-      flex-direction: row;
-      gap: 8px;
-      div {
-        display: flex;
-        gap: 8px;
-        align-items: center;
-        flex: 1;
-        width: auto;
+
+    mat-tab-group {
+      margin: 20px 0;
+    }
+
+    mat-card {
+      margin: 20px;
+      max-width: none;
+
+      mat-card-header {
+        margin-bottom: 20px;
+
+        mat-card-title {
+          color: #1976d2;
+          font-size: 1.5rem;
+        }
+
+        mat-card-subtitle {
+          color: #666;
+          font-size: 1rem;
+          margin-top: 8px;
+        }
       }
-    }
-    ngx-material-intl-tel-input,
-    div {
-      max-width: 400px;
-      padding: 16px;
-      box-sizing: border-box;
-      display: block;
-      width: 100%;
-    }
-    & > div {
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 16px;
+
+      mat-card-content {
+        form {
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+          align-items: center;
+
+          ngx-material-intl-tel-input,
+          ngx-material-intl-tel-input-refactored {
+            max-width: 400px;
+            width: 100%;
+          }
+
+          .form-actions {
+            display: flex;
+            gap: 10px;
+            margin: 20px 0;
+
+            button {
+              margin: 0;
+            }
+          }
+
+          mat-checkbox {
+            margin: 10px 0;
+            align-self: flex-start;
+          }
+
+          mat-form-field {
+            max-width: 400px;
+            width: 100%;
+          }
+        }
+
+        .results {
+          margin-top: 30px;
+          padding: 20px;
+          background-color: #f5f5f5;
+          border-radius: 8px;
+          border-left: 4px solid #1976d2;
+          max-width: 400px;
+
+          > div {
+            margin: 10px 0;
+          }
+
+          mat-chip,
+          .mat-mdc-chip,
+          .mdc-evolution-chip,
+          .mat-chip,
+          .mat-standard-chip {
+            margin: 5px 0 !important;
+            background-color: #1976d2 !important;
+            color: white !important;
+
+            .mat-mdc-chip-action-label,
+            .mdc-evolution-chip__text-label,
+            .mat-chip-list-wrapper,
+            .mat-chip-content,
+            span {
+              color: white !important;
+            }
+          }
+
+          /* More specific targeting for all possible chip elements */
+          .results mat-chip,
+          .results .mat-mdc-chip,
+          .results .mdc-evolution-chip,
+          .results .mat-chip,
+          .results .mat-standard-chip {
+            background-color: #1976d2 !important;
+            color: white !important;
+
+            * {
+              color: white !important;
+            }
+          }
+
+          .current-country-code-container {
+            margin-top: 10px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 20px;
+
+            div {
+              display: flex;
+              flex-direction: column;
+              gap: 5px;
+              min-width: 120px;
+            }
+          }
+        }
+      }
     }
   }
 }

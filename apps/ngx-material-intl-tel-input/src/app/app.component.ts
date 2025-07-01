@@ -15,20 +15,28 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import { MatTabsModule } from '@angular/material/tabs';
+import { MatCardModule } from '@angular/material/card';
 import { RouterModule } from '@angular/router';
 import { PhoneNumberFormat } from 'google-libphonenumber';
-import { NgxMaterialIntlTelInputComponent } from 'ngx-material-intl-tel-input';
+import {
+  NgxMaterialIntlTelInputComponent,
+  NgxMaterialIntlTelInputRefactoredComponent
+} from 'ngx-material-intl-tel-input';
 
 @Component({
   imports: [
     NgxMaterialIntlTelInputComponent,
+    NgxMaterialIntlTelInputRefactoredComponent,
     RouterModule,
     ReactiveFormsModule,
     MatButtonModule,
     MatChipsModule,
     MatFormFieldModule,
     MatInputModule,
-    MatCheckboxModule
+    MatCheckboxModule,
+    MatTabsModule,
+    MatCardModule
   ],
   selector: 'ngx-material-intl-tel-input-root',
   templateUrl: './app.component.html',
@@ -46,10 +54,23 @@ export class AppComponent {
   showSetPhoneInput = signal<boolean>(false);
   PhoneNumberFormat = PhoneNumberFormat;
 
+  // State for refactored component
+  currentPhoneValueRefactored = signal<string>('');
+  currentCountryCodeRefactored = signal<string>('');
+  currentCountryISORefactored = signal<string>('');
+  submittedPhoneValueRefactored = signal<string>('');
+  formTestGroupRefactored: FormGroup;
+  showSetPhoneInputRefactored = signal<boolean>(false);
+
   constructor() {
     this.formTestGroup = this.fb.group({
       phone: ['', [Validators.required]],
       setPhoneTextbox: ['']
+    });
+
+    this.formTestGroupRefactored = this.fb.group({
+      phoneRefactored: ['', [Validators.required]],
+      setPhoneTextboxRefactored: ['']
     });
   }
 
@@ -108,5 +129,76 @@ export class AppComponent {
    */
   resetForm(): void {
     this.formTestGroup.reset();
+  }
+
+  // Methods for refactored component
+  /**
+   * Sets the current phone value to the provided value for the refactored component.
+   *
+   * @param value - The new value for the current phone.
+   */
+  getValueRefactored(value: string): void {
+    this.currentPhoneValueRefactored.set(value);
+  }
+
+  /**
+   * Submits the refactored form data by setting the submitted phone value to the current phone value from the form group.
+   */
+  onSubmitRefactored(): void {
+    console.log('Form submitted!', this.formTestGroupRefactored.value);
+    console.log(
+      'Phone control value:',
+      this.formTestGroupRefactored.get('phoneRefactored')?.value
+    );
+    console.log(
+      'Current phone value from signal:',
+      this.currentPhoneValueRefactored()
+    );
+
+    const phoneValue =
+      this.formTestGroupRefactored.value['phoneRefactored'] ||
+      this.currentPhoneValueRefactored();
+    this.submittedPhoneValueRefactored.set(phoneValue);
+  }
+
+  /**
+   * Sets the refactored phone control value to the value entered in the 'setPhoneTextboxRefactored' control.
+   */
+  setPhoneRefactored(): void {
+    this.formTestGroupRefactored.controls['phoneRefactored'].setValue(
+      this.formTestGroupRefactored.value['setPhoneTextboxRefactored']
+    );
+  }
+
+  /**
+   * Toggles the visibility of the set phone input field for the refactored component.
+   */
+  toggleShowSetPhoneInputRefactored(): void {
+    this.showSetPhoneInputRefactored.set(!this.showSetPhoneInputRefactored());
+  }
+
+  /**
+   * Sets the current country code to the provided value for the refactored component.
+   *
+   * @param value - The new country code to set.
+   */
+  getCountryCodeRefactored(value: string): void {
+    this.currentCountryCodeRefactored.set(value);
+  }
+
+  /**
+   * Sets the current country ISO code to the provided value for the refactored component.
+   *
+   * @param value - The new ISO code to set.
+   */
+  getCountryISORefactored(value: string): void {
+    this.currentCountryISORefactored.set(value);
+  }
+
+  /**
+   * Resets the refactored form group to its initial state, clearing all form controls.
+   */
+  resetFormRefactored(): void {
+    this.formTestGroupRefactored.reset();
   }
 }

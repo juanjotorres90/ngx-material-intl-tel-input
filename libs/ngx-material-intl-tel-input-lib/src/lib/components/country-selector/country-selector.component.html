@@ -1,0 +1,87 @@
+<mat-form-field
+  [appearance]="appearance()"
+  class="prefix-form-field"
+  [matTooltip]="selectedCountry()?.name || ''"
+>
+  <mat-select
+    [formControl]="countryControl"
+    [placeholder]="(!isLoading() && textLabels()?.codePlaceholder) || ''"
+    #singleSelect
+    panelClass="tel-mat-select-panel"
+    [required]="required()"
+    (selectionChange)="onCountryChange($event.value)"
+  >
+    <mat-select-trigger>
+      <div class="country-option">
+        <div class="country-option-flag-container">
+          @if (emojiFlags()) {
+            <div>
+              <span class="flag-emoji">{{ selectedCountry()?.emojiFlag }}</span>
+            </div>
+          } @else {
+            <div
+              class="country-option-flag"
+              [ngClass]="selectedCountry()?.flagClass"
+            ></div>
+          }
+        </div>
+        @if (includeDialCode() || selectedCountry()?.iso2 === 'mp') {
+          <div>{{ selectedCountry()?.iso2?.toUpperCase() || '' }}</div>
+        } @else {
+          <div>+{{ selectedCountry()?.dialCode || '' }}</div>
+        }
+      </div>
+    </mat-select-trigger>
+
+    @if (enableSearch()) {
+      <mat-option>
+        <ngx-mat-select-search
+          [formControl]="searchControl"
+          [placeholderLabel]="textLabels()?.searchPlaceholderLabel || ''"
+          [noEntriesFoundLabel]="textLabels()?.noEntriesFoundLabel || ''"
+        >
+          <svg
+            ngxMatSelectSearchClear
+            xmlns="http://www.w3.org/2000/svg"
+            class="icon icon-tabler icon-tabler-x"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            stroke-width="1.5"
+            stroke="currentColor"
+            fill="none"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+            <path d="M18 6l-12 12" />
+            <path d="M6 6l12 12" />
+          </svg>
+        </ngx-mat-select-search>
+      </mat-option>
+    }
+
+    @for (country of filteredCountries | async; track $index) {
+      <mat-option [value]="country">
+        <div
+          class="country-option"
+          style="display: flex; align-items: center; font-size: 14px"
+        >
+          <div class="country-option-flag-container">
+            @if (emojiFlags()) {
+              <div>
+                <span class="flag-emoji">{{ country.emojiFlag }}</span>
+              </div>
+            } @else {
+              <div
+                class="country-option-flag"
+                [ngClass]="country.flagClass"
+              ></div>
+            }
+          </div>
+          <div>{{ country.name }}</div>
+        </div>
+      </mat-option>
+    }
+  </mat-select>
+</mat-form-field>

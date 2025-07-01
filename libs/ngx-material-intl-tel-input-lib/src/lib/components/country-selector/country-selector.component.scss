@@ -1,0 +1,26 @@
+.country-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.country-option-flag-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 15px;
+}
+
+.flag-emoji {
+  font-size: 18px;
+  line-height: 1;
+}
+
+.country-option-flag {
+  width: 20px;
+  height: 15px;
+  background-size: cover;
+  background-position: center;
+  border-radius: 2px;
+}

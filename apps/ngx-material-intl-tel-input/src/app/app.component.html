@@ -1,59 +1,205 @@
 <section>
-  <form [formGroup]="formTestGroup" (ngSubmit)="onSubmit()">
-    <ngx-material-intl-tel-input
-      (currentValue)="getValue($event)"
-      (currentCountryCode)="getCountryCode($event)"
-      (currentCountryISO)="getCountryISO($event)"
-      fieldControlName="phone"
-      [emojiFlags]="false"
-      [includeDialCode]="false"
-      [useMask]="false"
-      [forceSelectedCountryCode]="false"
-      [showMaskPlaceholder]="true"
-      [outputNumberFormat]="PhoneNumberFormat.INTERNATIONAL"
-      [appearance]="'fill'"
-    ></ngx-material-intl-tel-input>
-    <button mat-flat-button type="submit" [disabled]="!formTestGroup.valid">
-      Submit
-    </button>
-    <button mat-flat-button (click)="resetForm()" type="button">Reset</button>
+  <h1>NgxMaterialIntlTelInput - Component Comparison</h1>
 
-    <mat-checkbox (change)="toggleShowSetPhoneInput()"
-      >Show input to change number</mat-checkbox
-    >
-    @if (showSetPhoneInput()) {
-      <mat-form-field>
-        <mat-label>Set phone number</mat-label>
-        <input matInput type="text" formControlName="setPhoneTextbox" />
-      </mat-form-field>
-      <button mat-flat-button (click)="setPhone()" type="button">
-        Set phone number
-      </button>
-    }
-  </form>
-  @if (currentPhoneValue()) {
-    <div>
-      Returned value: <br /><mat-chip>{{ currentPhoneValue() }}</mat-chip>
-    </div>
-    <div class="current-country-code-container">
-      @if (currentCountryCode()) {
-        <div>
-          Country code: <br /><mat-chip>{{ currentCountryCode() }}</mat-chip>
-        </div>
-      }
-      @if (currentCountryISO()) {
-        <div>
-          Country ISO: <br /><mat-chip>{{ currentCountryISO() }}</mat-chip>
-        </div>
-      }
-    </div>
-  } @else {
-    <div>No value returned</div>
-  }
-  @if (submittedPhoneValue()) {
-    <div>
-      Submitted value: <br /><mat-chip>{{ submittedPhoneValue() }}</mat-chip>
-    </div>
-  }
+  <mat-tab-group>
+    <!-- Legacy Component Tab -->
+    <mat-tab label="Legacy Component">
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Legacy Component</mat-card-title>
+          <mat-card-subtitle
+            >Original implementation for backward
+            compatibility</mat-card-subtitle
+          >
+        </mat-card-header>
+        <mat-card-content>
+          <form [formGroup]="formTestGroup" (ngSubmit)="onSubmit()">
+            <ngx-material-intl-tel-input
+              (currentValue)="getValue($event)"
+              (currentCountryCode)="getCountryCode($event)"
+              (currentCountryISO)="getCountryISO($event)"
+              fieldControlName="phone"
+              [emojiFlags]="false"
+              [includeDialCode]="false"
+              [autoIpLookup]="false"
+              [useMask]="false"
+              [forceSelectedCountryCode]="false"
+              [showMaskPlaceholder]="true"
+              [outputNumberFormat]="PhoneNumberFormat.INTERNATIONAL"
+              [appearance]="'fill'"
+            ></ngx-material-intl-tel-input>
+            <div class="form-actions">
+              <button
+                mat-flat-button
+                type="submit"
+                [disabled]="!formTestGroup.valid"
+              >
+                Submit
+              </button>
+              <button mat-flat-button (click)="resetForm()" type="button">
+                Reset
+              </button>
+            </div>
+
+            <mat-checkbox (change)="toggleShowSetPhoneInput()"
+              >Show input to change number</mat-checkbox
+            >
+            @if (showSetPhoneInput()) {
+              <mat-form-field>
+                <mat-label>Set phone number</mat-label>
+                <input matInput type="text" formControlName="setPhoneTextbox" />
+              </mat-form-field>
+              <button mat-flat-button (click)="setPhone()" type="button">
+                Set phone number
+              </button>
+            }
+          </form>
+
+          <div class="results">
+            @if (currentPhoneValue()) {
+              <div>
+                Returned value: <br /><mat-chip>{{
+                  currentPhoneValue()
+                }}</mat-chip>
+              </div>
+              <div class="current-country-code-container">
+                @if (currentCountryCode()) {
+                  <div>
+                    Country code: <br /><mat-chip>{{
+                      currentCountryCode()
+                    }}</mat-chip>
+                  </div>
+                }
+                @if (currentCountryISO()) {
+                  <div>
+                    Country ISO: <br /><mat-chip>{{
+                      currentCountryISO()
+                    }}</mat-chip>
+                  </div>
+                }
+              </div>
+            } @else {
+              <div>No value returned</div>
+            }
+            @if (submittedPhoneValue()) {
+              <div>
+                Submitted value: <br /><mat-chip>{{
+                  submittedPhoneValue()
+                }}</mat-chip>
+              </div>
+            }
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </mat-tab>
+
+    <!-- Refactored Component Tab -->
+    <mat-tab label="Refactored Component">
+      <mat-card>
+        <mat-card-header>
+          <mat-card-title>Refactored Component</mat-card-title>
+          <mat-card-subtitle
+            >New implementation with improved architecture and
+            testing</mat-card-subtitle
+          >
+        </mat-card-header>
+        <mat-card-content>
+          <form
+            [formGroup]="formTestGroupRefactored"
+            (ngSubmit)="onSubmitRefactored()"
+          >
+            <ngx-material-intl-tel-input-refactored
+              (currentValue)="getValueRefactored($event)"
+              (currentCountryCode)="getCountryCodeRefactored($event)"
+              (currentCountryISO)="getCountryISORefactored($event)"
+              fieldControlName="phoneRefactored"
+              [required]="true"
+              [emojiFlags]="false"
+              [includeDialCode]="false"
+              [autoIpLookup]="false"
+              [useMask]="false"
+              [forceSelectedCountryCode]="false"
+              [showMaskPlaceholder]="true"
+              [outputNumberFormat]="PhoneNumberFormat.INTERNATIONAL"
+              [appearance]="'fill'"
+            ></ngx-material-intl-tel-input-refactored>
+            <div class="form-actions">
+              <button
+                mat-flat-button
+                type="submit"
+                [disabled]="!formTestGroupRefactored.valid"
+              >
+                Submit
+              </button>
+              <button
+                mat-flat-button
+                (click)="resetFormRefactored()"
+                type="button"
+              >
+                Reset
+              </button>
+            </div>
+
+            <mat-checkbox (change)="toggleShowSetPhoneInputRefactored()"
+              >Show input to change number</mat-checkbox
+            >
+            @if (showSetPhoneInputRefactored()) {
+              <mat-form-field>
+                <mat-label>Set phone number</mat-label>
+                <input
+                  matInput
+                  type="text"
+                  formControlName="setPhoneTextboxRefactored"
+                />
+              </mat-form-field>
+              <button
+                mat-flat-button
+                (click)="setPhoneRefactored()"
+                type="button"
+              >
+                Set phone number
+              </button>
+            }
+          </form>
+
+          <div class="results">
+            @if (currentPhoneValueRefactored()) {
+              <div>
+                Returned value: <br /><mat-chip>{{
+                  currentPhoneValueRefactored()
+                }}</mat-chip>
+              </div>
+              <div class="current-country-code-container">
+                @if (currentCountryCodeRefactored()) {
+                  <div>
+                    Country code: <br /><mat-chip>{{
+                      currentCountryCodeRefactored()
+                    }}</mat-chip>
+                  </div>
+                }
+                @if (currentCountryISORefactored()) {
+                  <div>
+                    Country ISO: <br /><mat-chip>{{
+                      currentCountryISORefactored()
+                    }}</mat-chip>
+                  </div>
+                }
+              </div>
+            } @else {
+              <div>No value returned</div>
+            }
+            @if (submittedPhoneValueRefactored()) {
+              <div>
+                Submitted value: <br /><mat-chip>{{
+                  submittedPhoneValueRefactored()
+                }}</mat-chip>
+              </div>
+            }
+          </div>
+        </mat-card-content>
+      </mat-card>
+    </mat-tab>
+  </mat-tab-group>
+
   <router-outlet></router-outlet>
 </section>

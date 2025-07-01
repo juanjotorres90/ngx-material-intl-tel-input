@@ -1,0 +1,15 @@
+@if (textLabels()?.hintLabel && showHint()) {
+  <mat-hint>{{ textLabels()?.hintLabel }}</mat-hint>
+}
+
+@if (shouldShowRequiredError()) {
+  <mat-error>{{ textLabels()?.requiredError }}</mat-error>
+}
+
+@if (shouldShowInvalidNumberError()) {
+  <mat-error>{{ textLabels()?.invalidNumberError }}</mat-error>
+}
+
+@if (shouldShowNumberTooLongError()) {
+  <mat-error>{{ textLabels()?.numberTooLongError }}</mat-error>
+}

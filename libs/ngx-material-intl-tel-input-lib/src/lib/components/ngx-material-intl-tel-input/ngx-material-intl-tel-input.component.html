@@ -1,0 +1,186 @@
+<section>
+  @if (textLabels().mainLabel) {
+    <mat-label class="main-label">{{ textLabels().mainLabel }}</mat-label>
+  }
+  <div
+    class="tel-form"
+    [formGroup]="facade.telForm"
+    [ngClass]="{
+      'is-focused': facade.isFocused() && appearance() !== 'outline'
+    }"
+  >
+    <mat-form-field
+      [appearance]="appearance()"
+      class="prefix-form-field"
+      [matTooltip]="facade.selectedCountry()?.name || ''"
+    >
+      <mat-select
+        [formControl]="facade.prefixControl"
+        [placeholder]="
+          (!facade.isLoading() && textLabels().codePlaceholder) || ''
+        "
+        #singleSelect
+        panelClass="tel-mat-select-panel"
+        [required]="required()"
+        (selectionChange)="onCountryChanged($event.value)"
+      >
+        <mat-select-trigger>
+          <div class="country-option">
+            <div class="country-option-flag-container">
+              @if (emojiFlags()) {
+                <div>
+                  <span class="flag-emoji">{{
+                    facade.selectedCountry()?.emojiFlag
+                  }}</span>
+                </div>
+              } @else {
+                <div
+                  class="country-option-flag"
+                  [ngClass]="facade.selectedCountry()?.flagClass"
+                ></div>
+              }
+            </div>
+            @if (includeDialCode() || facade.selectedCountry()?.iso2 === 'mp') {
+              <div>
+                {{ facade.selectedCountry()?.iso2?.toUpperCase() || '' }}
+              </div>
+            } @else {
+              <div>+{{ facade.selectedCountry()?.dialCode || '' }}</div>
+            }
+          </div>
+        </mat-select-trigger>
+
+        @if (enableSearch()) {
+          <mat-option>
+            <ngx-mat-select-search
+              [formControl]="facade.searchControl"
+              [placeholderLabel]="textLabels().searchPlaceholderLabel || ''"
+              [noEntriesFoundLabel]="textLabels().noEntriesFoundLabel || ''"
+            >
+              <svg
+                ngxMatSelectSearchClear
+                xmlns="http://www.w3.org/2000/svg"
+                class="icon icon-tabler icon-tabler-x"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                stroke-width="1.5"
+                stroke="currentColor"
+                fill="none"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              >
+                <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+                <path d="M18 6l-12 12" />
+                <path d="M6 6l12 12" />
+              </svg>
+            </ngx-mat-select-search>
+          </mat-option>
+        }
+
+        @for (country of facade.filteredCountries(); track $index) {
+          <mat-option [value]="country">
+            <div
+              class="country-option"
+              style="display: flex; align-items: center; font-size: 14px"
+            >
+              <div class="country-option-flag-container">
+                @if (emojiFlags()) {
+                  <div>
+                    <span class="flag-emoji">{{ country.emojiFlag }}</span>
+                  </div>
+                } @else {
+                  <div
+                    class="country-option-flag"
+                    [ngClass]="country.flagClass"
+                  ></div>
+                }
+              </div>
+              <div>{{ country.name }}</div>
+            </div>
+          </mat-option>
+        }
+      </mat-select>
+    </mat-form-field>
+
+    <mat-form-field [appearance]="appearance()" class="number-form-field">
+      @if (textLabels().nationalNumberLabel) {
+        <mat-label>{{ textLabels().nationalNumberLabel }}</mat-label>
+      }
+      <input
+        matInput
+        type="tel"
+        [formControl]="facade.numberControl"
+        [placeholder]="facade.selectedCountry()?.placeHolder || ''"
+        autocomplete="off"
+        (focus)="onPhoneInputFocused()"
+        (blur)="onPhoneInputBlurred()"
+        [required]="required()"
+        [attr.maxlength]="
+          enableInputMaxLength() ? facade.maxInputLength() : null
+        "
+        #numberInput
+        [imask]="facade.selectedCountry()?.mask"
+      />
+
+      @if (!hidePhoneIcon()) {
+        <mat-icon matSuffix>
+          @if (
+            iconMakeCall() &&
+            facade.fieldControl?.valid &&
+            facade.fieldControl?.value
+          ) {
+            <a href="tel:{{ facade.fieldControl?.value }}">
+              <ng-container *ngTemplateOutlet="phoneIcon"> </ng-container>
+            </a>
+          } @else {
+            <ng-container *ngTemplateOutlet="phoneIcon"> </ng-container>
+          }
+        </mat-icon>
+      }
+    </mat-form-field>
+  </div>
+
+  <ng-template #phoneIcon>
+    <svg
+      xmlns="http://www.w3.org/2000/svg"
+      class="icon icon-tabler icon-tabler-phone"
+      width="24"
+      height="24"
+      viewBox="0 0 24 24"
+      stroke-width="1.5"
+      stroke="currentColor"
+      fill="none"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    >
+      <path stroke="none" d="M0 0h24v24H0z" fill="none" />
+      <path
+        d="M5 4h4l2 5l-2.5 1.5a11 11 0 0 0 5 5l1.5 -2.5l5 2v4a2 2 0 0 1 -2 2a16 16 0 0 1 -15 -15a2 2 0 0 1 2 -2"
+      />
+    </svg>
+  </ng-template>
+
+  @if (textLabels().hintLabel) {
+    <mat-hint>{{ textLabels().hintLabel }}</mat-hint>
+  }
+  @if (
+    facade.fieldControl?.hasError('required') &&
+    textLabels().requiredError &&
+    facade.fieldControl?.dirty
+  ) {
+    <mat-error>{{ textLabels().requiredError }}</mat-error>
+  }
+  @if (
+    facade.fieldControl?.hasError('invalidNumber') &&
+    textLabels().invalidNumberError
+  ) {
+    <mat-error>{{ textLabels().invalidNumberError }}</mat-error>
+  }
+  @if (
+    facade.fieldControl?.hasError('numberTooLong') &&
+    textLabels().numberTooLongError
+  ) {
+    <mat-error>{{ textLabels().numberTooLongError }}</mat-error>
+  }
+</section>
