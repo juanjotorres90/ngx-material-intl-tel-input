@@ -1,6 +1,8 @@
 <section>
-  @if (textLabels().mainLabel) {
-    <mat-label class="main-label">{{ textLabels().mainLabel }}</mat-label>
+  @if (mainLabel() || textLabels().mainLabel) {
+    <mat-label class="main-label">{{
+      mainLabel() || textLabels().mainLabel
+    }}</mat-label>
   }
   <div
     class="tel-form"
