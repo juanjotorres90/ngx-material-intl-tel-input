@@ -148,6 +148,7 @@ export class NgxMaterialIntlTelInputComponent
     requiredError: 'This field is required',
     numberTooLongError: 'Phone number is too long'
   });
+  mainLabel = input<string>('');
   useMask = input<boolean>(false);
   forceSelectedCountryCode = input<boolean>(false);
   showMaskPlaceholder = input<boolean>(false);
@@ -451,16 +452,30 @@ export class NgxMaterialIntlTelInputComponent
       try {
         const parsedNumber = this.phoneNumberUtil.parse(this.initialValue());
         const countryCode = parsedNumber.getCountryCode();
-        const country = this.allCountries?.find(
-          (c) => c.dialCode === `${countryCode}`
-        );
+        const country = this.allCountries?.find((c) => {
+          if (c.dialCode === countryCode?.toString()) {
+            if (c.areaCodes) {
+              return c.areaCodes?.find((ac) =>
+                parsedNumber.getNationalNumber()?.toString().startsWith(ac)
+              );
+            } else if (c.priority === 0) {
+              return c;
+            }
+          }
+          return undefined;
+        });
         if (country) {
           this.prefixCtrl.setValue(country);
         }
-        const nationalNumber =
-          parsedNumber?.getNationalNumber()?.toString() || '';
-        if (nationalNumber) {
-          this.telForm.get('numberControl')?.setValue(nationalNumber);
+        const formattedOnlyNumber = this.phoneNumberUtil.format(
+          parsedNumber,
+          this.includeDialCode() ||
+            this.telForm?.value?.prefixCtrl?.iso2 === 'mp'
+            ? this.outputNumberFormat()
+            : PhoneNumberFormat.NATIONAL
+        );
+        if (formattedOnlyNumber) {
+          this.telForm.get('numberControl')?.setValue(formattedOnlyNumber);
         }
       } catch {
         this.telForm.get('numberControl')?.setValue(this.initialValue());

@@ -624,8 +624,13 @@ describe('NgxMaterialIntlTelInputComponent', () => {
   describe('setInitialTelValue', () => {
     beforeEach(() => {
       component.allCountries = [
-        { name: 'Spain', iso2: 'es', dialCode: '34' } as Country,
-        { name: 'United States', iso2: 'us', dialCode: '1' } as Country
+        { name: 'Spain', iso2: 'es', dialCode: '34', priority: 0 } as Country,
+        {
+          name: 'United States',
+          iso2: 'us',
+          dialCode: '1',
+          priority: 0
+        } as Country
       ];
       component.telForm = {
         get: jest.fn().mockReturnValue({ setValue: jest.fn() })
@@ -699,7 +704,7 @@ describe('NgxMaterialIntlTelInputComponent', () => {
       );
       expect(
         component.telForm.get('numberControl')?.setValue
-      ).toHaveBeenCalledWith('678906543');
+      ).toHaveBeenCalledWith('678 90 65 43');
       expect(component.isLoading()).toBe(false);
     });
 
@@ -719,6 +724,51 @@ describe('NgxMaterialIntlTelInputComponent', () => {
         'invalid-number'
       );
       expect(component.fieldControl()?.markAsDirty).toHaveBeenCalled();
+      expect(component.isLoading()).toBe(false);
+    });
+
+    it('should not set prefix when country has areaCodes but none match the phone number', () => {
+      // Set up a country with areaCodes that don't match the phone number
+      component.allCountries = [
+        {
+          name: 'United States',
+          iso2: 'us',
+          dialCode: '1',
+          priority: 0,
+          areaCodes: ['212', '646', '917'] // NYC area codes
+        } as Country
+      ];
+
+      Object.defineProperty(component, 'initialValue', {
+        value: jest.fn().mockReturnValue('+1555123456'), // 555 area code, not in the list
+        writable: true
+      });
+      jest.spyOn(component.prefixCtrl, 'setValue');
+
+      component['setInitialTelValue']();
+
+      // Should not call setValue because no area code matches
+      expect(component.prefixCtrl.setValue).not.toHaveBeenCalled();
+      expect(component.isLoading()).toBe(false);
+    });
+
+    it('should not set prefix when no country matches the dial code', () => {
+      // Set up countries that don't match the phone number's dial code
+      component.allCountries = [
+        { name: 'Spain', iso2: 'es', dialCode: '34', priority: 0 } as Country,
+        { name: 'France', iso2: 'fr', dialCode: '33', priority: 0 } as Country
+      ];
+
+      Object.defineProperty(component, 'initialValue', {
+        value: jest.fn().mockReturnValue('+44123456789'), // UK number, not in allCountries
+        writable: true
+      });
+      jest.spyOn(component.prefixCtrl, 'setValue');
+
+      component['setInitialTelValue']();
+
+      // Should not call setValue because no country matches dial code 44
+      expect(component.prefixCtrl.setValue).not.toHaveBeenCalled();
       expect(component.isLoading()).toBe(false);
     });
   });
