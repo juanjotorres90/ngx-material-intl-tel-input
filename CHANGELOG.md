@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [20.1.0] - 2025-07-10
+
+### Added
+
+- Add 'mainLabel' option to just set the main label of the input field ([#17](https://github.com/juanjotorres90/ngx-material-intl-tel-input/issues/17#issuecomment-3015066525)).
+
+### Fixed
+
+- Fix initial value not being set properly when the field is disabled ([#50](https://github.com/juanjotorres90/ngx-material-intl-tel-input/issues/50)).
+
 ## [20.0.0] - 2025-06-13
 
 ### Added
