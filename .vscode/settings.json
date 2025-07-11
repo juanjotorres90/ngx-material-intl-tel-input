@@ -1,3 +1,6 @@
 {
-  "nxConsole.generateAiAgentRules": true
+  "nxConsole.generateAiAgentRules": true,
+  // Jest Runner extension settings
+  "jestrunner.jestCommand": "npx jest --config=jest.dev.config.js",
+  "jestrunner.configPath": "jest.dev.config.js"
 }
