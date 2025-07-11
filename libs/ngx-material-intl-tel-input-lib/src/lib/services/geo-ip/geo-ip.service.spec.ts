@@ -5,7 +5,7 @@ import {
   provideHttpClientTesting
 } from '@angular/common/http/testing';
 import { GeoData } from '../../types/geo.type';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withFetch } from '@angular/common/http';
 
 describe('GeoIpService', () => {
   let service: GeoIpService;
@@ -13,7 +13,11 @@ describe('GeoIpService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [GeoIpService, provideHttpClientTesting(), provideHttpClient()]
+      providers: [
+        GeoIpService,
+        provideHttpClientTesting(),
+        provideHttpClient(withFetch())
+      ]
     });
     service = TestBed.inject(GeoIpService);
     httpMock = TestBed.inject(HttpTestingController);

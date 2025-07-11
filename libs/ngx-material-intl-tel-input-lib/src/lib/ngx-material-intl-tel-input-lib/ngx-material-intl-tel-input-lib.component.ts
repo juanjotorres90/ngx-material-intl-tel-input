@@ -1,4 +1,4 @@
-import { AsyncPipe, NgClass, NgTemplateOutlet } from '@angular/common';
+import { AsyncPipe, NgClass } from '@angular/common';
 import {
   AfterViewInit,
   ChangeDetectionStrategy,
@@ -52,6 +52,7 @@ import { CountryDataService } from '../services/country-data/country-data.servic
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { IMaskModule } from 'angular-imask';
 import { getMaxPhoneNumberLength } from '../utils/phone-number.utils';
+import { PhoneIconComponent } from '../components/phone-icon/phone-icon.component';
 
 @Component({
   selector: 'ngx-material-intl-tel-input',
@@ -66,7 +67,7 @@ import { getMaxPhoneNumberLength } from '../utils/phone-number.utils';
     MatFormFieldModule,
     MatInputModule,
     MatTooltipModule,
-    NgTemplateOutlet,
+    PhoneIconComponent,
     IMaskModule
   ],
   providers: [
