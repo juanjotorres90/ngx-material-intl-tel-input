@@ -3,7 +3,7 @@ import { NgxMaterialIntlTelInputComponent } from './ngx-material-intl-tel-input-
 import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { PhoneNumberFormat, PhoneNumberUtil } from 'google-libphonenumber';
 import { Country } from '../types/country.model';
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withFetch } from '@angular/common/http';
 import { ControlContainer, FormControl, Validators } from '@angular/forms';
 import { of, Subject } from 'rxjs';
 import { GeoData } from '../types/geo.type';
@@ -21,7 +21,7 @@ describe('NgxMaterialIntlTelInputComponent', () => {
     await TestBed.configureTestingModule({
       imports: [NgxMaterialIntlTelInputComponent, NoopAnimationsModule],
       providers: [
-        provideHttpClient(),
+        provideHttpClient(withFetch()),
         ControlContainer,
         { provide: GeoIpService, useValue: geoIpServiceMock }
       ]
@@ -31,6 +31,16 @@ describe('NgxMaterialIntlTelInputComponent', () => {
     component = fixture.componentInstance;
     phoneNumberUtil = PhoneNumberUtil.getInstance();
     fixture.detectChanges();
+  });
+
+  afterEach(() => {
+    // Clean up component and destroy observables
+    if (component) {
+      component.ngOnDestroy();
+    }
+    fixture?.destroy();
+    // Reset mocks
+    jest.clearAllMocks();
   });
 
   it('should create', () => {
@@ -127,6 +137,12 @@ describe('NgxMaterialIntlTelInputComponent', () => {
       component['startFieldControlValueChangesListener']();
     });
 
+    afterEach(() => {
+      valueChangesSubject.complete();
+      component['_onDestroy'].next();
+      component['_onDestroy'].complete();
+    });
+
     it('should format and set the value if valid', () => {
       const parsedNumber = phoneNumberUtil.parse('1234567890', 'US');
       const formattedNumber = phoneNumberUtil.format(
@@ -167,6 +183,12 @@ describe('NgxMaterialIntlTelInputComponent', () => {
       component['_onDestroy'] = new Subject<void>();
       component.disabled = { set: jest.fn() } as any;
       component['startFieldControlStatusChangesListener']();
+    });
+
+    afterEach(() => {
+      statusChangesSubject.complete();
+      component['_onDestroy'].next();
+      component['_onDestroy'].complete();
     });
 
     it('should set disabled to true if status is DISABLED', () => {
@@ -519,6 +541,12 @@ describe('NgxMaterialIntlTelInputComponent', () => {
       component['startTelFormValueChangesListener']();
     });
 
+    afterEach(() => {
+      telFormValueChangesSubject.complete();
+      component['_onDestroy'].next();
+      component['_onDestroy'].complete();
+    });
+
     it('should format valid phone number with dial code', () => {
       const mockData = {
         numberControl: '1234567890',
@@ -585,6 +613,12 @@ describe('NgxMaterialIntlTelInputComponent', () => {
         writable: true
       });
       component['startPrefixValueChangesListener']();
+    });
+
+    afterEach(() => {
+      prefixValueChangesSubject.complete();
+      component['_onDestroy'].next();
+      component['_onDestroy'].complete();
     });
 
     it('should set dial code when includeDialCode is true', () => {
