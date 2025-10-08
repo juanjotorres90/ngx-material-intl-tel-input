@@ -603,6 +603,9 @@ export class NgxMaterialIntlTelInputComponent
     parsed: PhoneNumber,
     currentValue: string
   ): void {
+    if (!this.numberValidation()) {
+      return;
+    }
     const nationalNumber = this.phoneNumberUtil.format(
       parsed,
       this.includeDialCode()
