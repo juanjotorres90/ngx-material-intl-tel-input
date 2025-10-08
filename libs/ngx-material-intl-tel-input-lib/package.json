@@ -1,6 +1,6 @@
 {
   "name": "ngx-material-intl-tel-input",
-  "version": "20.1.1",
+  "version": "20.1.2",
   "license": "MIT",
 	"repository": {
 		"type": "git",
@@ -37,7 +37,7 @@
     "@angular/cdk": "^20.0.0",
     "@angular/material": "^20.0.0",
     "angular-imask": "^7.6.1",
-    "google-libphonenumber": "^3.2.40",
+    "google-libphonenumber": "^3.2.43",
     "ngx-mat-select-search": "^8.0.2",
     "tslib": "^2.3.0"
   },
