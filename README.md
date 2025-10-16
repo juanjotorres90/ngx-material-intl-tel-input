@@ -96,44 +96,44 @@ imports: [NgxMaterialIntlTelInputComponent];
 
 ### Container Styles
 
-- `--mdc-filled-tel-form-outline-width`: Outline width (`default: 1px`)
-- `--mdc-filled-tel-form-outline-color`: Border color (`default: #d8d8d8`)
-- `--mdc-filled-tel-form-background`: Background color (`default: #fbfbfb`)
-- `--mdc-filled-tel-form-container-shape`: Border radius (`default: 8px`)
+- `--mat-filled-tel-form-outline-width`: Outline width (`default: 1px`)
+- `--mat-filled-tel-form-outline-color`: Border color (`default: #d8d8d8`)
+- `--mat-filled-tel-form-background`: Background color (`default: #fbfbfb`)
+- `--mat-filled-tel-form-container-shape`: Border radius (`default: 8px`)
 
 ### Focus States
 
-- `--mdc-filled-tel-form-focus-outline-color`: Focus border color (`default: rgb(32, 159, 252)`)
-- `--mdc-filled-tel-form-focus-background`: Focus background (`default: #fff`)
+- `--mat-filled-tel-form-focus-outline-color`: Focus border color (`default: rgb(32, 159, 252)`)
+- `--mat-filled-tel-form-focus-background`: Focus background (`default: #fff`)
 
 ### Hover States
 
-- `--mdc-filled-tel-form-hover-background`: Hover background (`default: #f5f5f5`)
-- `--mdc-outline-tel-form-hover-background`: Outline variant hover background (`default: #f5f5f5`)
+- `--mat-filled-tel-form-hover-background`: Hover background (`default: #f5f5f5`)
+- `--mat-outline-tel-form-hover-background`: Outline variant hover background (`default: #f5f5f5`)
 
 ## 📱 Input Field Customization
 
 ### Appearance
 
-- `--mdc-outline-tel-form-background`: Outline variant background (`default: #fbfbfb`)
-- `--mdc-tel-form-placeholder-color`: Input placeholder color (`default: #ccc`)
-- `--mdc-tel-form-icon-color`: Action icon color (`default: #909090`)
+- `--mat-outline-tel-form-background`: Outline variant background (`default: #fbfbfb`)
+- `--mat-tel-form-placeholder-color`: Input placeholder color (`default: #ccc`)
+- `--mat-tel-form-icon-color`: Action icon color (`default: #909090`)
 
 ### Shape Customization
 
-- `--mdc-outlined-tel-form-container-shape`: Outline field border radius (`default: Material system variable`)
-- `--mdc-outlined-text-field-container-shape`: Text field border radius (`default: Material system variable`)
+- `--mat-outlined-tel-form-container-shape`: Outline field border radius (`default: Material system variable`)
+- `--mat-outlined-text-field-container-shape`: Text field border radius (`default: Material system variable`)
 
 ## 🔍 Validation & Feedback
 
-- `--mdc-tel-form-hint-color`: Hint text color (`default: #b2b2b2`)
-- `--mdc-tel-form-error-color`: Error message color (`default: Material system error`)
+- `--mat-tel-form-hint-color`: Hint text color (`default: #b2b2b2`)
+- `--mat-tel-form-error-color`: Error message color (`default: Material system error`)
 - `--mat-sys-error`: Material system error fallback (`default: #f44336`)
 
 ## 🖌️ Theme Integration
 
-- `--mdc-theme-primary`: Primary theme color (`default: rgb(32, 159, 252)`)
-- `--mdc-theme-error`: Error state color (`default: #f44336`)
+- `--mat-theme-primary`: Primary theme color (`default: rgb(32, 159, 252)`)
+- `--mat-theme-error`: Error state color (`default: #f44336`)
 - `--mat-sys-corner-extra-small`: Material system small corner radius
 
 ## Example Configuration
@@ -141,15 +141,15 @@ imports: [NgxMaterialIntlTelInputComponent];
 ```css
 :root {
   /* Container Customization */
-  --mdc-filled-tel-form-background: #f8f9fa;
-  --mdc-filled-tel-form-container-shape: 6px;
+  --mat-filled-tel-form-background: #f8f9fa;
+  --mat-filled-tel-form-container-shape: 6px;
 
   /* Theme Colors */
-  --mdc-theme-primary: #2a7de1;
-  --mdc-tel-form-error-color: #dc3545;
+  --mat-theme-primary: #2a7de1;
+  --mat-tel-form-error-color: #dc3545;
 
   /* Input Styling */
-  --mdc-tel-form-placeholder-color: #a0aec0;
+  --mat-tel-form-placeholder-color: #a0aec0;
 }
 ```
 
