@@ -1,4 +1,4 @@
-import { Injectable } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 import { Country } from '../../types/country.model';
 import {
   PhoneNumberFormat,
@@ -7,9 +7,13 @@ import {
 } from 'google-libphonenumber';
 import { CountryCode, CountryData } from '../../data/country-code';
 import { CountryISO } from '../../enums/country-iso.enum';
+import { CountryDisplayNameService } from '../country-display-name/country-display-name.service';
 
 @Injectable()
 export class CountryDataService {
+  private readonly countryDisplayNameService: CountryDisplayNameService =
+    inject(CountryDisplayNameService);
+
   phoneNumberUtil = PhoneNumberUtil.getInstance();
 
   /**
@@ -26,17 +30,23 @@ export class CountryDataService {
     useMask: boolean,
     forceSelectedCountryCode: boolean,
     showMaskPlaceholder: boolean,
-    outputNumberFormat: PhoneNumberFormat
+    outputNumberFormat: PhoneNumberFormat,
+    localizeCountryNames: boolean
   ): Country {
     const phoneNumberPlaceholder = this.getPhoneNumberPlaceholder(
       countryData[2].toString().toUpperCase(),
       includeDialCode,
       outputNumberFormat
     );
+    const isoCode = countryData[2].toString();
+    const fallbackName = countryData[1].toString();
+    const countryName = localizeCountryNames
+      ? this.countryDisplayNameService.getCountryName(isoCode, fallbackName)
+      : fallbackName;
     const country: Country = {
       emojiFlag: countryData[0].toString(),
-      name: countryData[1].toString(),
-      iso2: countryData[2].toString(),
+      name: countryName,
+      iso2: isoCode,
       dialCode: countryData[3].toString(),
       priority: (countryData?.[4] && +countryData[4]) || 0,
       areaCodes: (countryData[5] as string[]) || undefined,
@@ -135,7 +145,8 @@ export class CountryDataService {
     useMask = false,
     forceSelectedCountryCode = false,
     showMaskPlaceholder = false,
-    outputNumberFormat = PhoneNumberFormat.INTERNATIONAL
+    outputNumberFormat = PhoneNumberFormat.INTERNATIONAL,
+    localizeCountryNames = false
   ): Country[] {
     const allCountries: Country[] = countryCodeData.allCountries.map(
       (countryData: CountryData) =>
@@ -146,7 +157,8 @@ export class CountryDataService {
           useMask,
           forceSelectedCountryCode,
           showMaskPlaceholder,
-          outputNumberFormat
+          outputNumberFormat,
+          localizeCountryNames
         )
     );
     const filteredVisibleCountries = visibleCountries?.length
