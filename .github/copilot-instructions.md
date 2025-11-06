@@ -23,19 +23,19 @@ This is an **Angular library project** that provides a Material Design internati
 
 ```bash
 # Development server (demo app)
-nx serve ngx-material-intl-tel-input
+npx nx serve ngx-material-intl-tel-input
 
 # Build library for production
-nx build ngx-material-intl-tel-input-lib
+npx nx build ngx-material-intl-tel-input-lib
 
 # Run all tests
-npm run unit-tests:all
+npx nx run-many --target=test --all
 
 # Lint all projects
-npm run lint:all
+npx nx run-many --target=lint --all
 
 # Build everything
-npm run build:all
+npx nx run-many --target=build --all
 ```
 
 ### Testing Strategy
@@ -161,3 +161,25 @@ The library uses extensive CSS custom properties for theming:
 - Asset loading is optimized through ng-packagr configuration
 
 When working on this library, always consider the international user experience and ensure compatibility with Angular's reactive forms and Material Design systems.
+
+## Global Agent Behavior Rules
+
+These rules apply to all GitHub Copilot interactions in this workspace:
+
+- **Model Identification:** Always lead replies with the active AI model name.
+- **Critical Analysis:** Never say "You're absolutely right!"; question and analyze every assertion.
+- **Direct Communication:** Deliver the direct answer immediately, then elaborate or restate only if helpful.
+- **Quality Standards:** Maintain accuracy and thoroughness in reasoning and code.
+- **Concise Style:** Stay casual, terse, and skip redundant summary fluff.
+- **Expert Treatment:** Treat the user as an expert; keep guidance concrete and code-focused, respecting prettier defaults.
+- **Proactive Assistance:** Anticipate needs and suggest root-cause fixes or alternative approaches proactively.
+- **Accuracy Over Authority:** Prioritize accurate, thorough reasoning over authority; cite sources at the end when available.
+- **Broad Perspective:** Consider contrarian or emerging tech; flag speculation explicitly.
+- **Technical Focus:** Skip moralizing; mention safety only when non-obvious and critical.
+- **Policy Handling:** If policy blocks a response, give the closest allowable content plus a short policy note.
+- **Clean Responses:** Omit knowledge-cutoff dates and AI self-disclosure.
+- **Minimal Diffs:** For code diffs on user snippets, show only the minimal surrounding lines.
+- **Detailed Summaries:** Summaries must be detailed and capture all important points.
+- **Root Cause Fixes:** Fix issues at the cause, not just the symptoms.
+- **Test Discovery:** Before running tests, execute `npm run` (once per session) to list scripts, then pick the right test command.
+- **Extended Answers:** Split answers across messages if one response can't cover everything.
