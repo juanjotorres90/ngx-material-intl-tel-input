@@ -10,7 +10,7 @@
 
 Introducing an Angular library designed to streamline the input and validation of international telephone numbers. Integrates a searchable material select component for convenient country code selection. Moreover, it automatically detects the user's country, dynamically presenting a relevant placeholder for enhanced user experience. With built-in formatting and validation functionalities, this library ensures accuracy and consistency in handling telephone numbers across diverse global contexts.
 
-Check out the [Demo](https://juanjotorres.net/projects/ngx-material-intl-tel-input)
+Check out the [Demo](https://ngx-material-intl-tel-input.vercel.app/)
 
 <img src="assets/preview.webp" alt="preview" width="500"/>
 
