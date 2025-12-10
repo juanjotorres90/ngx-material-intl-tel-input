@@ -103,8 +103,16 @@ imports: [NgxMaterialIntlTelInputComponent];
 
 ### Focus States
 
-- `--mat-filled-tel-form-focus-outline-color`: Focus border color (`default: rgb(32, 159, 252)`)
+- `--mat-filled-tel-form-focus-outline-color`: Focus border and outline color (`default: rgb(32, 159, 252)`)
+- `--mat-filled-tel-form-focus-outline-width`: Focus outline width (`default: 2px`)
+- `--mat-filled-tel-form-focus-outline-style`: Focus outline style (`default: solid`)
 - `--mat-filled-tel-form-focus-background`: Focus background (`default: #fff`)
+
+### Ripple Effect (Material Design)
+
+- `--mat-filled-tel-form-ripple-width`: Bottom ripple border width on focus (`default: 0`)
+- `--mat-filled-tel-form-ripple-style`: Bottom ripple border style on focus (`default: none`)
+- `--mat-filled-tel-form-ripple-color`: Bottom ripple color on focus (`default: primary theme color`)
 
 ### Hover States
 
@@ -136,7 +144,9 @@ imports: [NgxMaterialIntlTelInputComponent];
 - `--mat-theme-error`: Error state color (`default: #f44336`)
 - `--mat-sys-corner-extra-small`: Material system small corner radius
 
-## Example Configuration
+## Example Configurations
+
+### Basic Customization
 
 ```css
 :root {
@@ -150,6 +160,23 @@ imports: [NgxMaterialIntlTelInputComponent];
 
   /* Input Styling */
   --mat-tel-form-placeholder-color: #a0aec0;
+}
+```
+
+### Ripple Effect Instead of Outline
+
+To show a Material Design bottom ripple instead of an outline on focus:
+
+```css
+:root {
+  /* Disable the focus outline */
+  --mat-filled-tel-form-focus-outline-width: 0;
+  --mat-filled-tel-form-focus-outline-style: none;
+
+  /* Enable the bottom ripple effect */
+  --mat-filled-tel-form-ripple-width: 2px;
+  --mat-filled-tel-form-ripple-style: solid;
+  --mat-filled-tel-form-ripple-color: #2a7de1; /* Your custom color */
 }
 ```
 

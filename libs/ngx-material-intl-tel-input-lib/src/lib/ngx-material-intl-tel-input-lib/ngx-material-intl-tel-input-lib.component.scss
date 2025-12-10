@@ -27,11 +27,12 @@
           --mat-filled-tel-form-focus-outline-color,
           var(--mat-theme-primary, rgb(32, 159, 252))
         );
-        outline: 2px solid
-          var(
-            --mat-filled-tel-form-focus-outline-color,
-            rgba(var(--mat-theme-primary-rgb, 32, 159, 252), 0.3)
-          );
+        outline-width: var(--mat-filled-tel-form-focus-outline-width, 2px);
+        outline-style: var(--mat-filled-tel-form-focus-outline-style, solid);
+        outline-color: var(
+          --mat-filled-tel-form-focus-outline-color,
+          rgba(var(--mat-theme-primary-rgb, 32, 159, 252), 0.3)
+        );
         background-color: var(
           --mat-filled-tel-form-focus-background,
           #fff
@@ -115,13 +116,31 @@
         &::ng-deep .mdc-text-field--filled,
         &::ng-deep .mdc-text-field--filled.mdc-text-field--focused,
         &::ng-deep
-          .mdc-text-field--filled.mdc-text-field--focused.mdc-text-field--invalid,
-        &::ng-deep .mdc-line-ripple::after,
-        &::ng-deep .mdc-line-ripple::before {
+          .mdc-text-field--filled.mdc-text-field--focused.mdc-text-field--invalid {
           border-left: none !important;
           border-right: none !important;
           border-top: none !important;
           border-bottom: none !important;
+          outline: none !important;
+        }
+
+        &::ng-deep .mdc-line-ripple::after,
+        &::ng-deep .mdc-line-ripple::before {
+          border-bottom-width: var(
+            --mat-filled-tel-form-ripple-width,
+            0
+          ) !important;
+          border-bottom-style: var(
+            --mat-filled-tel-form-ripple-style,
+            none
+          ) !important;
+          border-bottom-color: var(
+            --mat-filled-tel-form-ripple-color,
+            var(--mat-theme-primary, rgb(32, 159, 252))
+          ) !important;
+          border-left: none !important;
+          border-right: none !important;
+          border-top: none !important;
           outline: none !important;
         }
 
@@ -213,13 +232,23 @@
   ::ng-deep
     .mdc-text-field--filled:not(.mdc-text-field--disabled)
     .mdc-line-ripple::after {
-    border-bottom: none;
+    border-bottom-width: var(--mat-filled-tel-form-ripple-width, 0);
+    border-bottom-style: var(--mat-filled-tel-form-ripple-style, none);
+    border-bottom-color: var(
+      --mat-filled-tel-form-ripple-color,
+      var(--mat-theme-primary, rgb(32, 159, 252))
+    );
   }
 
   ::ng-deep
     .mdc-text-field--filled:not(.mdc-text-field--disabled)
     .mdc-line-ripple::before {
-    border-bottom: none;
+    border-bottom-width: var(--mat-filled-tel-form-ripple-width, 0);
+    border-bottom-style: var(--mat-filled-tel-form-ripple-style, none);
+    border-bottom-color: var(
+      --mat-filled-tel-form-ripple-color,
+      var(--mat-theme-primary, rgb(32, 159, 252))
+    );
   }
 }
 

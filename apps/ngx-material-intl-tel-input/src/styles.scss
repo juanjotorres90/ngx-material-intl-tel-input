@@ -18,6 +18,14 @@
     --mat-option-selected-state-label-text-color: #209ffc;
     --mat-select-focused-arrow-color: #209ffc;
     --mat-form-field-outlined-focus-outline-color: #209ffc;
+
+    /* Example: Enable ripple effect instead of outline on focus */
+    /* Uncomment the following lines to enable the ripple effect */
+    /* --mat-filled-tel-form-focus-outline-width: 0; */
+    /* --mat-filled-tel-form-focus-outline-style: none; */
+    /* --mat-filled-tel-form-ripple-width: 2px; */
+    /* --mat-filled-tel-form-ripple-style: solid; */
+    /* --mat-filled-tel-form-ripple-color: #209ffc; */
   }
 }
 
