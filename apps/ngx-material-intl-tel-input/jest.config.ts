@@ -1,4 +1,4 @@
-export default {
+module.exports = {
   displayName: 'ngx-material-intl-tel-input',
   preset: '../../jest.preset.js',
   setupFilesAfterEnv: ['<rootDir>/src/test-setup.ts'],

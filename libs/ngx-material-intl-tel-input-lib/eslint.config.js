@@ -33,7 +33,7 @@ module.exports = [
           'error',
           {
             type: 'element',
-            prefix: 'ngx-material-intl-tel-input',
+            prefix: 'ngx-material-intl-tel',
             style: 'kebab-case'
           }
         ]

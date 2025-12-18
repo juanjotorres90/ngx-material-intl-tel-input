@@ -10,7 +10,7 @@
 
 Introducing an Angular library designed to streamline the input and validation of international telephone numbers. Integrates a searchable material select component for convenient country code selection. Moreover, it automatically detects the user's country, dynamically presenting a relevant placeholder for enhanced user experience. With built-in formatting and validation functionalities, this library ensures accuracy and consistency in handling telephone numbers across diverse global contexts.
 
-Check out the [Demo](https://juanjotorres.net/projects/ngx-material-intl-tel-input)
+Check out the [Demo](https://ngx-material-intl-tel-input.vercel.app/)
 
 <img src="assets/preview.webp" alt="preview" width="500"/>
 
@@ -20,10 +20,13 @@ Validation with [google-libphonenumber](https://github.com/google/libphonenumber
 
 | ngx-material-intl-tel-input | Angular |
 | --------------------------- | ------- |
+| 21.0.0                      | 21      |
 | 20.0.0 - 20.1.2             | 20      |
 | 19.0.0 - 19.2.1             | 19      |
 | 18.0.0 - 18.2.1             | 18      |
 | 0.0.1 - 17.3.0              | 17      |
+
+> **Note:** This package is completely different from `ngx-intl-tel-input`, `ngx-mat-input-tel` or `intl-tel-input`. It was built from scratch specifically for Angular Material and has no relation to those packages.
 
 ## Installation
 
@@ -79,6 +82,7 @@ imports: [NgxMaterialIntlTelInputComponent];
 | showMaskPlaceholder      | `boolean`                  | `false`                                                                                                                                                                                                                                                                                                      | If useMask is active it shows the placeholder for the mask                     |
 | outputNumberFormat       | `PhoneNumberFormat`        | `PhoneNumberFormat.INTERNATIONAL`                                                                                                                                                                                                                                                                            | Sets the output number format to INTERNATIONAL, E164, or RFC3966 format        |
 | enableInputMaxLength     | `boolean`                  | `true`                                                                                                                                                                                                                                                                                                       | Enables or disables the input max length.                                      |
+| localizeCountryNames     | `boolean`                  | `false`                                                                                                                                                                                                                                                                                                      | Opt-in to locale-aware country names.                                          |
 | textLabels               | `TextLabels`               | {mainLabel: 'Phone number', codePlaceholder: 'Code', searchPlaceholderLabel: 'Search', noEntriesFoundLabel: 'No countries found', nationalNumberLabel: 'Number', hintLabel: 'Select country and type your phone number', invalidNumberError: 'Number is not valid', requiredError: 'This field is required'} | Overrides all component text labels                                            |
 | mainLabel                | `string`                   | `''`                                                                                                                                                                                                                                                                                                         | Sets the main label of the input field. It overrides the textLabels.mainLabel. |
 
@@ -202,6 +206,32 @@ Run `npx nx build ngx-material-intl-tel-input-lib` to build the library. The bui
 
 This project follows conventional commits specification.
 
+## Localization
+
+The country selector now supports locale-aware display names and accent-insensitive search. Enable localization per instance with `[localizeCountryNames]="true"`. When disabled (default) the component keeps the original English dataset.
+
+If the browser exposes [`Intl.DisplayNames`](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Intl/DisplayNames), the component will resolve translated labels for the active `LOCALE_ID`. You can override specific entries through the `COUNTRY_NAME_OVERRIDES` token:
+
+```ts
+import { COUNTRY_NAME_OVERRIDES, CountryNameOverrides } from 'ngx-material-intl-tel-input';
+
+const spanishCountryOverrides: CountryNameOverrides = {
+  US: 'Estados Unidos de América',
+  MX: 'Estados Unidos Mexicanos'
+};
+
+bootstrapApplication(AppComponent, {
+  providers: [
+    provideAnimations(),
+    { provide: LOCALE_ID, useValue: 'es-ES' },
+    {
+      provide: COUNTRY_NAME_OVERRIDES,
+      useValue: spanishCountryOverrides
+    }
+  ]
+});
+```
+
 ## Contributors
 
 Thanks goes to these wonderful people:
@@ -216,6 +246,7 @@ Thanks goes to these wonderful people:
     <td align="center"><a href="https://github.com/ghollingworthh"><img src="https://avatars.githubusercontent.com/u/26550815?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Glen Hollingworth</b></sub></a><br /> <a href="https://github.com/juanjotorres90/ngx-material-intl-tel-input/commits?author=ghollingworthh" title="Code">💻</a> <a href="#ideas-ghollingworthh" title="Ideas, Planning, & Feedback">🤔</a> <a href="#question-ghollingworthh" title="Answering Questions">💬</a> <a href="#example-ghollingworthh" title="Examples">💡</a> <a href="#maintenance-ghollingworthh" title="Maintenance">🚧</a> <a href="https://github.com/juanjotorres90/ngx-material-intl-tel-input/pulls?q=is%3Apr+reviewed-by%ghollingworthh" title="Reviewed Pull Requests">👀</a></td>
     <td align="center"><a href="https://github.com/EphraimHaber"><img src="https://avatars.githubusercontent.com/u/61934858?v=4?s=100" width="100px;" alt=""/><br /><sub><b>EphraimHaber</b></sub></a><br /> <a href="https://github.com/juanjotorres90/ngx-material-intl-tel-input/commits?author=EphraimHaber" title="Code">💻</a> <a href="#ideas-EphraimHaber" title="Ideas, Planning, & Feedback">🤔</a> <a href="#question-EphraimHaber" title="Answering Questions">💬</a> <a href="#example-EphraimHaber" title="Examples">💡</a> <a href="#maintenance-EphraimHaber" title="Maintenance">🚧</a> <a href="https://github.com/juanjotorres90/ngx-material-intl-tel-input/pulls?q=is%3Apr+reviewed-by%EphraimHaber" title="Reviewed Pull Requests">👀</a></td>
     <td align="center"><a href="https://github.com/Kamma31"><img src="https://avatars.githubusercontent.com/u/50776388?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Rant</b></sub></a><br /> <a href="https://github.com/juanjotorres90/ngx-material-intl-tel-input/commits?author=Kamma31" title="Code">💻</a> <a href="#ideas-Kamma31" title="Ideas, Planning, & Feedback">🤔</a> <a href="#question-Kamma31" title="Answering Questions">💬</a> <a href="#example-Kamma31" title="Examples">💡</a> <a href="#maintenance-Kamma31" title="Maintenance">🚧</a> <a href="https://github.com/juanjotorres90/ngx-material-intl-tel-input/pulls?q=is%3Apr+reviewed-by%Kamma31" title="Reviewed Pull Requests">👀</a></td>
+    <td align="center"><a href="https://github.com/jeanfwl"><img src="https://avatars.githubusercontent.com/u/67374151?v=4?s=100" width="100px;" alt=""/><br /><sub><b>Jean Talar</b></sub></a><br /> <a href="https://github.com/juanjotorres90/ngx-material-intl-tel-input/commits?author=jeanfwl" title="Code">💻</a> <a href="#ideas-jeanfwl" title="Ideas, Planning, & Feedback">🤔</a> <a href="#question-jeanfwl" title="Answering Questions">💬</a> <a href="#example-jeanfwl" title="Examples">💡</a> <a href="#maintenance-jeanfwl" title="Maintenance">🚧</a> <a href="https://github.com/juanjotorres90/ngx-material-intl-tel-input/pulls?q=is%3Apr+reviewed-by%jeanfwl" title="Reviewed Pull Requests">👀</a></td>
 </table>
 
 <!-- markdownlint-restore -->

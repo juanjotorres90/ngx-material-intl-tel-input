@@ -3,7 +3,7 @@ const nxPreset = require('@nx/jest/preset').default;
 module.exports = {
   ...nxPreset,
   passWithNoTests: true,
-  coverageReporters: ['html', 'lcov', 'text-summary'],
+  coverageReporters: ['text', 'text-summary'],
   collectCoverage: true,
   collectCoverageFrom: [
     '**/*.{ts,js,jsx}',

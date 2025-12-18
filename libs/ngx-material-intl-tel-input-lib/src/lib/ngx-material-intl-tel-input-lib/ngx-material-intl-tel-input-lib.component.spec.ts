@@ -314,7 +314,8 @@ describe('NgxMaterialIntlTelInputComponent', () => {
         component.useMask(),
         component.forceSelectedCountryCode(),
         component.showMaskPlaceholder(),
-        component.outputNumberFormat()
+        component.outputNumberFormat(),
+        component.localizeCountryNames()
       );
       expect(component.allCountries).toHaveLength(2);
     });
@@ -499,7 +500,7 @@ describe('NgxMaterialIntlTelInputComponent', () => {
     });
 
     it('should filter countries by name', () => {
-      component.prefixFilterCtrl.setValue('spain');
+      component.prefixFilterCtrl.setValue('espana');
       component['filterCountries']();
       expect(component.filteredCountries.next).toHaveBeenCalledWith([
         { name: 'Spain (España)', iso2: 'es' } as Country
@@ -967,6 +968,24 @@ describe('NgxMaterialIntlTelInputComponent', () => {
 
       jest.advanceTimersByTime(1);
       expect(mockInputElement.setSelectionRange).toHaveBeenCalledWith(10, 10);
+    });
+
+    it('should return early when numberValidation is false', () => {
+      Object.defineProperty(component, 'numberValidation', {
+        value: jest.fn().mockReturnValue(false),
+        writable: true
+      });
+
+      component['setCursorPosition'](
+        mockInputElement,
+        5,
+        mockParsedNumber,
+        '12345'
+      );
+
+      jest.advanceTimersByTime(1);
+      expect(mockInputElement.setSelectionRange).not.toHaveBeenCalled();
+      expect(component['adjustCursorPosition']).not.toHaveBeenCalled();
     });
   });
 

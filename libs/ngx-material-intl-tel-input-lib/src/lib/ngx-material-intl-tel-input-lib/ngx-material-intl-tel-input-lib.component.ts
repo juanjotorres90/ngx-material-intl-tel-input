@@ -135,6 +135,7 @@ export class NgxMaterialIntlTelInputComponent
   includeDialCode = input<boolean>(false);
   emojiFlags = input<boolean>(false);
   hidePhoneIcon = input<boolean>(false);
+  localizeCountryNames = input<boolean>(false);
   preferredCountries = input<(CountryISO | string)[]>([]);
   visibleCountries = input<(CountryISO | string)[]>([]);
   excludedCountries = input<(CountryISO | string)[]>([]);
@@ -211,7 +212,8 @@ export class NgxMaterialIntlTelInputComponent
       this.useMask(),
       this.forceSelectedCountryCode(),
       this.showMaskPlaceholder(),
-      this.outputNumberFormat()
+      this.outputNumberFormat(),
+      this.localizeCountryNames()
     );
     this.allCountries = processedCountries;
   }
@@ -334,19 +336,41 @@ export class NgxMaterialIntlTelInputComponent
       return;
     }
     // get the search keyword
-    let search = this.prefixFilterCtrl.value || '';
-    if (!search) {
+    const normalizedSearch = this.normalizeSearchValue(
+      this.prefixFilterCtrl.value
+    );
+    if (!normalizedSearch) {
       this.filteredCountries.next(this.allCountries.slice());
       return;
-    } else {
-      search = search.toLowerCase();
     }
     // filter the countries
     this.filteredCountries.next(
       this.allCountries.filter(
-        (country) => country?.name?.toLowerCase()?.indexOf(search) > -1
+        (country) =>
+          this.normalizeSearchValue(country?.name).indexOf(normalizedSearch) >
+          -1
       )
     );
+  }
+
+  /**
+   * Normalizes the search value by trimming whitespace, converting to lowercase,
+   * and removing diacritics.
+   *
+   * @param value - The value to normalize.
+   * @return The normalized value.
+   */
+  private normalizeSearchValue(value: string | null | undefined): string {
+    if (!value) {
+      return '';
+    }
+    let normalizedValue = value.toString().trim().toLocaleLowerCase();
+    try {
+      normalizedValue = normalizedValue.normalize('NFD');
+    } catch {
+      // ignore if normalize is not supported in the current environment
+    }
+    return normalizedValue.replace(/[\u0300-\u036f]/g, '');
   }
 
   /**

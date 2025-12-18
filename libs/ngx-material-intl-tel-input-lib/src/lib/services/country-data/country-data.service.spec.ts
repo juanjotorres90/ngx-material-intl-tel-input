@@ -373,7 +373,8 @@ describe('CountryDataService', () => {
         false,
         false,
         false,
-        PhoneNumberFormat.INTERNATIONAL
+        PhoneNumberFormat.INTERNATIONAL,
+        false
       );
 
       expect(result).toEqual({
@@ -404,7 +405,8 @@ describe('CountryDataService', () => {
         false,
         false,
         false,
-        PhoneNumberFormat.INTERNATIONAL
+        PhoneNumberFormat.INTERNATIONAL,
+        false
       );
 
       expect(result.priority).toBe(0);
@@ -426,7 +428,8 @@ describe('CountryDataService', () => {
         true,
         false,
         false,
-        PhoneNumberFormat.INTERNATIONAL
+        PhoneNumberFormat.INTERNATIONAL,
+        false
       );
 
       expect(result.mask).toBeDefined();
@@ -449,7 +452,8 @@ describe('CountryDataService', () => {
         true,
         false,
         true,
-        PhoneNumberFormat.INTERNATIONAL
+        PhoneNumberFormat.INTERNATIONAL,
+        false
       );
 
       expect(result.mask?.lazy).toBe(false);
