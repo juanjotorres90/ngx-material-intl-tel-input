@@ -117,7 +117,7 @@ Key customization variables:
 ## Technology Stack
 
 - **Angular 21.0.6** with standalone components and signals
-- **Angular Material 20.2.7** with CDK
+- **Angular Material 21.0.3** with CDK
 - **Google libphonenumber** for validation
 - **Nx 22.0.2** for monorepo management
 - **Jest** for testing with `jest-preset-angular`
