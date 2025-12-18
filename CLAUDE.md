@@ -24,7 +24,7 @@ This is an **Angular library project** that provides a Material Design internati
 
 - **Library**: `libs/ngx-material-intl-tel-input-lib/` - The publishable npm package
 - **Demo App**: `apps/ngx-material-intl-tel-input/` - Development and testing application
-- **Nx Monorepo**: Uses Nx 22.0.2 with Angular 20 support
+- **Nx Monorepo**: Uses Nx 22.3.1 with Angular 21 support
 
 ### Library Structure
 
@@ -70,7 +70,7 @@ npm run build:all
 
 ### Key Dependencies
 
-- **Core**: Angular 20, Angular Material, Angular CDK
+- **Core**: Angular 21, Angular Material, Angular CDK
 - **Phone Validation**: `google-libphonenumber` for international phone number validation
 - **UI Enhancement**: `ngx-mat-select-search` for searchable country selection
 - **Input Masking**: `angular-imask` for phone number formatting
@@ -116,7 +116,7 @@ Key customization variables:
 
 ## Technology Stack
 
-- **Angular 20.3.3** with standalone components and signals
+- **Angular 21.0.6** with standalone components and signals
 - **Angular Material 20.2.7** with CDK
 - **Google libphonenumber** for validation
 - **Nx 22.0.2** for monorepo management
