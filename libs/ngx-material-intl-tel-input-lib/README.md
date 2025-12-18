@@ -20,6 +20,7 @@ Validation with [google-libphonenumber](https://github.com/google/libphonenumber
 
 | ngx-material-intl-tel-input | Angular |
 | --------------------------- | ------- |
+| 21.0.0                      | 21      |
 | 20.0.0 - 20.1.2             | 20      |
 | 19.0.0 - 19.2.1             | 19      |
 | 18.0.0 - 18.2.1             | 18      |
