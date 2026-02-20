@@ -1,1 +1,1 @@
-# npx nx affected -t lint test build
+npx nx affected -t lint test build
