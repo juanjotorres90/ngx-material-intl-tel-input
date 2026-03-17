@@ -55,12 +55,10 @@ export class CountryDataService {
       placeHolder: enablePlaceholder ? phoneNumberPlaceholder : ''
     };
     if (useMask) {
-      let mask = '';
-      if (forceSelectedCountryCode) {
-        mask = this.formatPhoneNumberWithPrefix(phoneNumberPlaceholder, false);
-      } else {
-        mask = this.formatPhoneNumberWithPrefix(phoneNumberPlaceholder, true);
-      }
+      const mask = this.formatPhoneNumberWithPrefix(
+        phoneNumberPlaceholder,
+        !forceSelectedCountryCode
+      );
       country.mask = {
         mask: mask,
         lazy: !showMaskPlaceholder
@@ -82,15 +80,16 @@ export class CountryDataService {
   ): Country[] {
     if (preferredCountries?.length) {
       return allCountries.sort((a, b) => {
-        if (
-          preferredCountries.includes(a.iso2) &&
-          !preferredCountries.includes(b.iso2)
-        ) {
+        const aIsPreferred = preferredCountries.includes(a.iso2);
+        const bIsPreferred = preferredCountries.includes(b.iso2);
+        if (aIsPreferred && bIsPreferred) {
+          return (
+            preferredCountries.indexOf(a.iso2) -
+            preferredCountries.indexOf(b.iso2)
+          );
+        } else if (aIsPreferred) {
           return -1;
-        } else if (
-          !preferredCountries.includes(a.iso2) &&
-          preferredCountries.includes(b.iso2)
-        ) {
+        } else if (bIsPreferred) {
           return 1;
         }
         return 0;
