@@ -4,7 +4,12 @@ import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { PhoneNumberFormat, PhoneNumberUtil } from 'google-libphonenumber';
 import { Country } from '../types/country.model';
 import { provideHttpClient, withFetch } from '@angular/common/http';
-import { ControlContainer, FormControl, Validators } from '@angular/forms';
+import {
+  ControlContainer,
+  FormControl,
+  FormGroup,
+  Validators
+} from '@angular/forms';
 import { of, Subject } from 'rxjs';
 import { GeoData } from '../types/geo.type';
 import { GeoIpService } from '../services/geo-ip/geo-ip.service';
@@ -169,6 +174,105 @@ describe('NgxMaterialIntlTelInputComponent', () => {
       expect(component.currentValue.emit).toHaveBeenCalledWith('1234567890');
       expect(component.currentCountryCode.emit).toHaveBeenCalledWith('+1');
       expect(component.currentCountryISO.emit).toHaveBeenCalledWith('US');
+    });
+
+    it('should update prefix and number control when external value has a different country code', () => {
+      const zaCountry = {
+        name: 'South Africa',
+        iso2: 'za',
+        dialCode: '27',
+        priority: 0
+      } as Country;
+      const gbCountry = {
+        name: 'United Kingdom',
+        iso2: 'gb',
+        dialCode: '44',
+        priority: 0
+      } as Country;
+
+      component.allCountries = [zaCountry, gbCountry];
+      component.prefixCtrl = new FormControl(zaCountry);
+      component.telForm = new FormGroup({
+        prefixCtrl: component.prefixCtrl,
+        numberControl: new FormControl('')
+      });
+      jest.spyOn(component.prefixCtrl, 'setValue');
+
+      // Re-initialize listener with updated state
+      component['_onDestroy'].next();
+      component['_onDestroy'].complete();
+      component['_onDestroy'] = new Subject<void>();
+      valueChangesSubject = new Subject<string>();
+      jest.spyOn(component, 'fieldControl').mockReturnValue({
+        valueChanges: valueChangesSubject.asObservable(),
+        setValue: jest.fn()
+      } as any);
+      component.currentValue = { emit: jest.fn() } as any;
+      component.currentCountryCode = { emit: jest.fn() } as any;
+      component.currentCountryISO = { emit: jest.fn() } as any;
+      component['startFieldControlValueChangesListener']();
+
+      valueChangesSubject.next('+44 7797 712345');
+      expect(component.prefixCtrl.setValue).toHaveBeenCalledWith(gbCountry, {
+        emitEvent: false
+      });
+    });
+  });
+
+  describe('findCountryByPhoneNumber', () => {
+    it('should find country by dial code and priority', () => {
+      component.allCountries = [
+        {
+          name: 'Spain',
+          iso2: 'es',
+          dialCode: '34',
+          priority: 0
+        } as Country,
+        {
+          name: 'United Kingdom',
+          iso2: 'gb',
+          dialCode: '44',
+          priority: 0
+        } as Country
+      ];
+      const parsed = phoneNumberUtil.parse('+44 7797 712345');
+      const result = component['findCountryByPhoneNumber'](parsed);
+      expect(result?.iso2).toBe('gb');
+    });
+
+    it('should match country by area code', () => {
+      component.allCountries = [
+        {
+          name: 'Guernsey',
+          iso2: 'gg',
+          dialCode: '44',
+          priority: 1,
+          areaCodes: ['1481']
+        } as Country,
+        {
+          name: 'United Kingdom',
+          iso2: 'gb',
+          dialCode: '44',
+          priority: 0
+        } as Country
+      ];
+      const parsed = phoneNumberUtil.parse('+44 1481 123456');
+      const result = component['findCountryByPhoneNumber'](parsed);
+      expect(result?.iso2).toBe('gg');
+    });
+
+    it('should return undefined when no country matches', () => {
+      component.allCountries = [
+        {
+          name: 'Spain',
+          iso2: 'es',
+          dialCode: '34',
+          priority: 0
+        } as Country
+      ];
+      const parsed = phoneNumberUtil.parse('+44 7797 712345');
+      const result = component['findCountryByPhoneNumber'](parsed);
+      expect(result).toBeUndefined();
     });
   });
 

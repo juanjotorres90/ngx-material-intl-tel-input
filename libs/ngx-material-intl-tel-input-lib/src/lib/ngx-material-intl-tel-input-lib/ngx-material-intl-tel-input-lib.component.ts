@@ -476,19 +476,7 @@ export class NgxMaterialIntlTelInputComponent
     } else {
       try {
         const parsedNumber = this.phoneNumberUtil.parse(this.initialValue());
-        const countryCode = parsedNumber.getCountryCode();
-        const country = this.allCountries?.find((c) => {
-          if (c.dialCode === countryCode?.toString()) {
-            if (c.areaCodes) {
-              return c.areaCodes?.find((ac) =>
-                parsedNumber.getNationalNumber()?.toString().startsWith(ac)
-              );
-            } else if (c.priority === 0) {
-              return c;
-            }
-          }
-          return undefined;
-        });
+        const country = this.findCountryByPhoneNumber(parsedNumber);
         if (country) {
           this.prefixCtrl.setValue(country);
         }
@@ -510,6 +498,28 @@ export class NgxMaterialIntlTelInputComponent
         this.isLoading.set(false);
       }
     }
+  }
+
+  /**
+   * Finds the country from allCountries that matches the given
+   * parsed phone number based on dial code, area codes, and priority.
+   */
+  private findCountryByPhoneNumber(
+    parsedNumber: PhoneNumber
+  ): Country | undefined {
+    const countryCode = parsedNumber.getCountryCode();
+    return this.allCountries?.find((c) => {
+      if (c.dialCode === countryCode?.toString()) {
+        if (c.areaCodes) {
+          return c.areaCodes?.find((ac) =>
+            parsedNumber.getNationalNumber()?.toString().startsWith(ac)
+          );
+        } else if (c.priority === 0) {
+          return c;
+        }
+      }
+      return undefined;
+    });
   }
 
   /**
@@ -550,6 +560,24 @@ export class NgxMaterialIntlTelInputComponent
             data,
             this.telForm?.value?.prefixCtrl?.iso2
           );
+          const detectedCountry = this.findCountryByPhoneNumber(parsed);
+          if (
+            detectedCountry &&
+            detectedCountry.iso2 !== this.telForm?.value?.prefixCtrl?.iso2
+          ) {
+            this.prefixCtrl.setValue(detectedCountry, {
+              emitEvent: false
+            });
+            const nationalNumber = this.phoneNumberUtil.format(
+              parsed,
+              this.includeDialCode() || detectedCountry.iso2 === 'mp'
+                ? this.outputNumberFormat()
+                : PhoneNumberFormat.NATIONAL
+            );
+            this.telForm.get('numberControl')?.setValue(nationalNumber, {
+              emitEvent: false
+            });
+          }
           const formatted = this.phoneNumberUtil.format(
             parsed,
             this.outputNumberFormat()
