@@ -1,1 +1,1 @@
-npx nx affected -t lint test build
+
