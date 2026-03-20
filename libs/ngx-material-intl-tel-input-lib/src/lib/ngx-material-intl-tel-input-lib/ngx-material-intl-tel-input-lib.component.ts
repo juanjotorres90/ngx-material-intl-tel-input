@@ -556,15 +556,10 @@ export class NgxMaterialIntlTelInputComponent
     valueChanges.pipe(takeUntil(this._onDestroy)).subscribe((data: string) => {
       if (data) {
         try {
-          const parsed = this.phoneNumberUtil.parse(
-            data,
-            this.telForm?.value?.prefixCtrl?.iso2
-          );
+          const currentIso2 = this.telForm?.value?.prefixCtrl?.iso2 || '';
+          const parsed = this.phoneNumberUtil.parse(data, currentIso2);
           const detectedCountry = this.findCountryByPhoneNumber(parsed);
-          if (
-            detectedCountry &&
-            detectedCountry.iso2 !== this.telForm?.value?.prefixCtrl?.iso2
-          ) {
+          if (detectedCountry && detectedCountry.iso2 !== currentIso2) {
             this.prefixCtrl.setValue(detectedCountry, {
               emitEvent: false
             });
