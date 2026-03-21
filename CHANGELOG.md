@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [21.0.1] - 2026-03-21
+
+### Fixed
+
+- Preserve the input order of the 'preferredCountries' array in the country list ([#68](https://github.com/juanjotorres90/ngx-material-intl-tel-input/issues/68)).
+
 ## [21.0.0] - 2025-12-18
 
 ### Added
