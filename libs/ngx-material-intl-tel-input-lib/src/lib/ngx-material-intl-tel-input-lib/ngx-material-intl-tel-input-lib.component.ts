@@ -400,16 +400,12 @@ export class NgxMaterialIntlTelInputComponent
           const cursorPosition = inputElement?.selectionStart;
           const currentValue = data.numberControl;
           this.fieldControl()?.markAsDirty();
-          let value = '';
-          if (
+          const value =
             data?.prefixCtrl?.dialCode &&
             !this.includeDialCode() &&
             data?.prefixCtrl?.iso2 !== 'mp'
-          ) {
-            value = '+' + data.prefixCtrl.dialCode + data.numberControl;
-          } else {
-            value = data.numberControl;
-          }
+              ? '+' + data.prefixCtrl.dialCode + data.numberControl
+              : data.numberControl;
           try {
             const parsed = this.phoneNumberUtil.parse(
               value,

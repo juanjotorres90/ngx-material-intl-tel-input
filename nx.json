@@ -107,5 +107,6 @@
       "typeSeparator": "."
     }
   },
-  "nxCloudAccessToken": "NDRmYjc0MTEtMzVhOS00YWEwLWE0YjEtMjRhYTFjMWEzNWM3fHJlYWQtd3JpdGU="
+  "nxCloudAccessToken": "NDRmYjc0MTEtMzVhOS00YWEwLWE0YjEtMjRhYTFjMWEzNWM3fHJlYWQtd3JpdGU=",
+  "analytics": false
 }

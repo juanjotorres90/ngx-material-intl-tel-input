@@ -44,6 +44,7 @@ export class AppComponent {
   submittedPhoneValue = signal<string>('');
   formTestGroup: FormGroup;
   showSetPhoneInput = signal<boolean>(false);
+  preferredCountries = ['ch', 'fr'];
   PhoneNumberFormat = PhoneNumberFormat;
 
   constructor() {

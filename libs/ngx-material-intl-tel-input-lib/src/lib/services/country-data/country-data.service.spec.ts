@@ -486,6 +486,19 @@ describe('CountryDataService', () => {
       expect(result[3].iso2).toBe(CountryISO.UnitedKingdom);
     });
 
+    it('should preserve the order defined in the preferredCountries array', () => {
+      // France before Germany, opposite of the source data order
+      const preferredCountries = [CountryISO.France, CountryISO.Germany];
+
+      const result = (service as any).sortCountries(
+        countries,
+        preferredCountries
+      );
+
+      expect(result[0].iso2).toBe(CountryISO.France);
+      expect(result[1].iso2).toBe(CountryISO.Germany);
+    });
+
     it('should return original order when no preferred countries', () => {
       const result = (service as any).sortCountries(countries, undefined);
 
