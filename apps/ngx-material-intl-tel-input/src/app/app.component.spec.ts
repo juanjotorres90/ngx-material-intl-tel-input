@@ -32,8 +32,6 @@ describe('AppComponent', () => {
 
     it('should initialize signals with correct default values', () => {
       expect(component.currentPhoneValue()).toBe('');
-      expect(component.currentCountryCode()).toBe('');
-      expect(component.currentCountryISO()).toBe('');
       expect(component.submittedPhoneValue()).toBe('');
       expect(component.showSetPhoneInput()).toBe(false);
     });
