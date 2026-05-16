@@ -75,7 +75,7 @@
           </mat-option>
         }
 
-        @for (country of filteredCountries | async; track $index) {
+        @for (country of filteredCountries(); track $index) {
           <mat-option [value]="country">
             <div
               class="country-option"

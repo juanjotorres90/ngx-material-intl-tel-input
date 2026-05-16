@@ -1,11 +1,13 @@
-import { AsyncPipe, NgClass } from '@angular/common';
+import { NgClass } from '@angular/common';
 import {
   AfterViewInit,
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ElementRef,
-  OnDestroy,
+  Injector,
   OnInit,
+  afterNextRender,
   computed,
   effect,
   inject,
@@ -15,6 +17,7 @@ import {
   signal,
   viewChild
 } from '@angular/core';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import {
   AbstractControl,
   ControlContainer,
@@ -30,7 +33,7 @@ import {
   MatSelectModule
 } from '@angular/material/select';
 import { NgxMatSelectSearchModule } from 'ngx-mat-select-search';
-import { Observable, ReplaySubject, Subject, take, takeUntil } from 'rxjs';
+import { Observable } from 'rxjs';
 import { CountryCode } from '../data/country-code';
 import { Country } from '../types/country.model';
 import {
@@ -60,7 +63,6 @@ import { PhoneIconComponent } from '../components/phone-icon/phone-icon.componen
   templateUrl: './ngx-material-intl-tel-input-lib.component.html',
   styleUrl: './ngx-material-intl-tel-input-lib.component.scss',
   imports: [
-    AsyncPipe,
     MatSelectModule,
     NgxMatSelectSearchModule,
     ReactiveFormsModule,
@@ -82,13 +84,13 @@ import { PhoneIconComponent } from '../components/phone-icon/phone-icon.componen
   ],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
-export class NgxMaterialIntlTelInputComponent
-  implements OnInit, AfterViewInit, OnDestroy
-{
+export class NgxMaterialIntlTelInputComponent implements OnInit, AfterViewInit {
   private readonly countryCodeData = inject(CountryCode);
   private readonly geoIpService = inject(GeoIpService);
   private readonly countryDataService = inject(CountryDataService);
   private readonly controlContainer = inject(ControlContainer);
+  private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
 
   /** control for the selected country prefix */
   public prefixCtrl: FormControl<Country | null> =
@@ -99,18 +101,26 @@ export class NgxMaterialIntlTelInputComponent
     string | null
   >('');
 
-  /** list of countries filtered by search keyword */
-  public filteredCountries: ReplaySubject<Country[]> = new ReplaySubject<
-    Country[]
-  >(1);
-
   singleSelect = viewChild<MatSelect>('singleSelect');
   numberInput = viewChild<ElementRef>('numberInput');
 
-  /** Subject that emits when the component has been destroyed. */
-  protected _onDestroy = new Subject<void>();
+  readonly allCountries = signal<Country[]>([]);
+  private readonly searchKeyword = toSignal(
+    this.prefixFilterCtrl.valueChanges,
+    { initialValue: '' }
+  );
+  /** list of countries filtered by search keyword */
+  readonly filteredCountries = computed<Country[]>(() => {
+    const all = this.allCountries();
+    const needle = this.normalizeSearchValue(this.searchKeyword());
+    if (!needle) {
+      return all;
+    }
+    return all.filter(
+      (country) => this.normalizeSearchValue(country?.name).indexOf(needle) > -1
+    );
+  });
 
-  allCountries: Country[] = [];
   phoneNumberUtil = PhoneNumberUtil.getInstance();
 
   telForm = new FormGroup({
@@ -188,18 +198,10 @@ export class NgxMaterialIntlTelInputComponent
     this.setFieldControl();
     this.fetchCountryData();
     this.addValidations();
-    // load the initial countries list
-    this.filteredCountries.next(this.allCountries.slice());
-    // listen for search field value changes
-    this.prefixFilterCtrl.valueChanges
-      .pipe(takeUntil(this._onDestroy))
-      .subscribe(() => {
-        this.filterCountries();
-      });
     this.startTelFormValueChangesListener();
     this.startPrefixValueChangesListener();
-    setTimeout(() => {
-      this.setInitialTelValue();
+    afterNextRender(() => this.setInitialTelValue(), {
+      injector: this.injector
     });
     this.startFieldControlValueChangesListener();
     this.startFieldControlStatusChangesListener();
@@ -222,7 +224,7 @@ export class NgxMaterialIntlTelInputComponent
       this.outputNumberFormat(),
       this.localizeCountryNames()
     );
-    this.allCountries = processedCountries;
+    this.allCountries.set(processedCountries);
   }
 
   /**
@@ -231,14 +233,12 @@ export class NgxMaterialIntlTelInputComponent
    * it adds a custom validator to check the validity of the phone number.
    */
   private addValidations(): void {
-    this.setRequiredValidators();
-    this.setDisabledState();
     if (this.numberValidation()) {
       this.fieldControl()?.addValidators(
         TelValidators.isValidNumber(
           this.telForm,
           this.includeDialCode(),
-          this.allCountries,
+          this.allCountries(),
           this.outputNumberFormat()
         )
       );
@@ -283,22 +283,13 @@ export class NgxMaterialIntlTelInputComponent
   }
 
   /**
-   * Method called when the component is destroyed.
-   *
-   */
-  ngOnDestroy(): void {
-    this._onDestroy.next();
-    this._onDestroy.complete();
-  }
-
-  /**
    * Performs a geo IP lookup and sets the prefix control value based on the country retrieved.
    */
   private geoIpLookup(): void {
     this.geoIpService.geoIpLookup().subscribe({
       next: (data: GeoData) => {
         const country =
-          this.allCountries?.find(
+          this.allCountries().find(
             (c) => c.iso2 === data.country_code?.toLowerCase()
           ) || null;
         if (country) {
@@ -317,47 +308,14 @@ export class NgxMaterialIntlTelInputComponent
   }
 
   /**
-   * Sets the initial value after the filteredCountries are loaded initially
+   * Sets the compareWith function on the mat-select so initial selection is bound by iso2.
    */
   protected setInitialPrefixValue(): void {
-    this.filteredCountries
-      .pipe(take(1), takeUntil(this._onDestroy))
-      .subscribe(() => {
-        // setting the compareWith property to a comparison function
-        // triggers initializing the selection according to the initial value of
-        // the form control (i.e. _initializeSelection())
-        // this needs to be done after the filteredCountries are loaded initially
-        // and after the mat-option elements are available
-        const singleSelectInstance = this.singleSelect() as MatSelect;
-        singleSelectInstance.compareWith = (a: Country, b: Country) =>
-          a && b && a.iso2 === b.iso2;
-      });
-  }
-
-  /**
-   * Method to filter the list of countries based on a search keyword.
-   *
-   */
-  protected filterCountries(): void {
-    if (!this.allCountries) {
-      return;
+    const singleSelectInstance = this.singleSelect();
+    if (singleSelectInstance) {
+      singleSelectInstance.compareWith = (a: Country, b: Country) =>
+        a && b && a.iso2 === b.iso2;
     }
-    // get the search keyword
-    const normalizedSearch = this.normalizeSearchValue(
-      this.prefixFilterCtrl.value
-    );
-    if (!normalizedSearch) {
-      this.filteredCountries.next(this.allCountries.slice());
-      return;
-    }
-    // filter the countries
-    this.filteredCountries.next(
-      this.allCountries.filter(
-        (country) =>
-          this.normalizeSearchValue(country?.name).indexOf(normalizedSearch) >
-          -1
-      )
-    );
   }
 
   /**
@@ -400,7 +358,7 @@ export class NgxMaterialIntlTelInputComponent
    */
   private startTelFormValueChangesListener(): void {
     this.telForm.valueChanges
-      .pipe(takeUntil(this._onDestroy))
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((data) => {
         const inputElement = this.numberInput()?.nativeElement;
         if (data?.numberControl) {
@@ -445,7 +403,7 @@ export class NgxMaterialIntlTelInputComponent
    */
   private startPrefixValueChangesListener(): void {
     this.prefixCtrl.valueChanges
-      .pipe(takeUntil(this._onDestroy))
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((data) => {
         if (this.includeDialCode() && data?.dialCode) {
           this.telForm
@@ -453,8 +411,8 @@ export class NgxMaterialIntlTelInputComponent
             ?.setValue('+' + data?.dialCode, { emitEvent: false });
         }
         if (!this.isLoading()) {
-          setTimeout(() => {
-            this.numberInput()?.nativeElement?.focus();
+          afterNextRender(() => this.numberInput()?.nativeElement?.focus(), {
+            injector: this.injector
           });
         }
       });
@@ -480,7 +438,7 @@ export class NgxMaterialIntlTelInputComponent
       try {
         const parsedNumber = this.phoneNumberUtil.parse(this.initialValue());
         const countryCode = parsedNumber.getCountryCode();
-        const country = this.allCountries?.find((c) => {
+        const country = this.allCountries().find((c) => {
           if (c.dialCode === countryCode?.toString()) {
             if (c.areaCodes) {
               return c.areaCodes?.find((ac) =>
@@ -520,19 +478,20 @@ export class NgxMaterialIntlTelInputComponent
    *
    */
   private setAutoSelectedCountry(): void {
-    const autoSelectedCountry = this.allCountries?.find(
+    const all = this.allCountries();
+    const autoSelectedCountry = all.find(
       (country) => country?.iso2 === this.autoSelectedCountry()
     );
     if (autoSelectedCountry) {
       this.prefixCtrl.setValue(autoSelectedCountry);
     } else {
-      const defaultCountry = this.allCountries?.find(
+      const defaultCountry = all.find(
         (country) => country?.iso2 === CountryISO.Spain
       );
       if (defaultCountry) {
         this.prefixCtrl.setValue(defaultCountry);
       } else {
-        this.prefixCtrl.setValue(this.allCountries?.[0]);
+        this.prefixCtrl.setValue(all[0]);
       }
     }
   }
@@ -546,33 +505,35 @@ export class NgxMaterialIntlTelInputComponent
   private startFieldControlValueChangesListener(): void {
     const valueChanges = this.fieldControl()
       ?.valueChanges as Observable<string>;
-    valueChanges.pipe(takeUntil(this._onDestroy)).subscribe((data: string) => {
-      if (data) {
-        try {
-          const parsed = this.phoneNumberUtil.parse(
-            data,
-            this.telForm?.value?.prefixCtrl?.iso2
-          );
-          const formatted = this.phoneNumberUtil.format(
-            parsed,
-            this.outputNumberFormat()
-          );
-          this.fieldControl()?.setValue(formatted, { emitEvent: false });
-        } catch {
-          this.fieldControl()?.setValue(data, { emitEvent: false });
+    valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((data: string) => {
+        if (data) {
+          try {
+            const parsed = this.phoneNumberUtil.parse(
+              data,
+              this.telForm?.value?.prefixCtrl?.iso2
+            );
+            const formatted = this.phoneNumberUtil.format(
+              parsed,
+              this.outputNumberFormat()
+            );
+            this.fieldControl()?.setValue(formatted, { emitEvent: false });
+          } catch {
+            this.fieldControl()?.setValue(data, { emitEvent: false });
+          }
+        } else {
+          this.telForm.get('numberControl')?.setValue('', { emitEvent: false });
+          this.fieldControl()?.setValue('', { emitEvent: false });
         }
-      } else {
-        this.telForm.get('numberControl')?.setValue('', { emitEvent: false });
-        this.fieldControl()?.setValue('', { emitEvent: false });
-      }
-      this.currentValue?.emit(this.fieldControl()?.value || data);
-      this.currentCountryCode?.emit(
-        this.prefixCtrl.value?.dialCode
-          ? `+${this.prefixCtrl.value?.dialCode}`
-          : ''
-      );
-      this.currentCountryISO?.emit(this.prefixCtrl.value?.iso2 || '');
-    });
+        this.currentValue?.emit(this.fieldControl()?.value || data);
+        this.currentCountryCode?.emit(
+          this.prefixCtrl.value?.dialCode
+            ? `+${this.prefixCtrl.value?.dialCode}`
+            : ''
+        );
+        this.currentCountryISO?.emit(this.prefixCtrl.value?.iso2 || '');
+      });
   }
 
   /**
@@ -581,7 +542,7 @@ export class NgxMaterialIntlTelInputComponent
    */
   private startFieldControlStatusChangesListener(): void {
     this.fieldControl()
-      ?.statusChanges.pipe(takeUntil(this._onDestroy))
+      ?.statusChanges.pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((status: FormControlStatus) => {
         if (status === 'DISABLED') {
           this.disabled.set(true);
@@ -644,9 +605,11 @@ export class NgxMaterialIntlTelInputComponent
       currentValue,
       nationalNumber
     );
-    setTimeout(() => {
-      inputElement.setSelectionRange(newCursorPosition, newCursorPosition);
-    }, 0);
+    afterNextRender(
+      () =>
+        inputElement.setSelectionRange(newCursorPosition, newCursorPosition),
+      { injector: this.injector }
+    );
   }
 
   /**
