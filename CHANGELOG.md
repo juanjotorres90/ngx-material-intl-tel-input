@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](http://keepachangelog.com/en/1.0.0/)
 and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.html).
 
+## [21.1.0] - 2026-05-17
+
+### Changed
+
+- Render the main label inside the country selector's notched outline when `appearance` is `'outline'`, matching Material Design behavior. For `'fill'` appearance, the label still renders above the form field as before ([#74](https://github.com/juanjotorres90/ngx-material-intl-tel-input/issues/74)).
+
 ## [21.0.1] - 2026-03-21
 
 ### Fixed

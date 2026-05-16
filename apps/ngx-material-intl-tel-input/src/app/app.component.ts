@@ -17,7 +17,10 @@ import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { RouterModule } from '@angular/router';
 import { PhoneNumberFormat } from 'google-libphonenumber';
-import { NgxMaterialIntlTelInputComponent } from 'ngx-material-intl-tel-input';
+import {
+  NgxMaterialIntlTelInputComponent,
+  TextLabels
+} from 'ngx-material-intl-tel-input';
 
 @Component({
   imports: [
@@ -46,6 +49,17 @@ export class AppComponent {
   showSetPhoneInput = signal<boolean>(false);
   preferredCountries = ['ch', 'fr'];
   PhoneNumberFormat = PhoneNumberFormat;
+  textLabels: TextLabels = {
+    mainLabel: 'Phone number',
+    codePlaceholder: 'Code',
+    searchPlaceholderLabel: 'Search',
+    noEntriesFoundLabel: 'No countries found',
+    nationalNumberLabel: 'Number',
+    hintLabel: 'Select country and type your phone number',
+    invalidNumberError: 'Number is not valid',
+    requiredError: 'This field is required',
+    numberTooLongError: 'Phone number is too long'
+  };
 
   constructor() {
     this.formTestGroup = this.fb.group({

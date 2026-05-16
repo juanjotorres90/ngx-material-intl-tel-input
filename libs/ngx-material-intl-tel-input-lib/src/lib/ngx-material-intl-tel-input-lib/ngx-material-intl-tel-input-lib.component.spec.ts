@@ -1236,6 +1236,155 @@ describe('NgxMaterialIntlTelInputComponent', () => {
     });
   });
 
+  describe('main label rendering with appearance', () => {
+    const emptyTextLabels = {
+      mainLabel: '',
+      codePlaceholder: '',
+      searchPlaceholderLabel: '',
+      noEntriesFoundLabel: '',
+      nationalNumberLabel: '',
+      hintLabel: '',
+      invalidNumberError: '',
+      requiredError: '',
+      numberTooLongError: ''
+    };
+
+    describe('resolvedMainLabel', () => {
+      it('should prefer mainLabel input over textLabels.mainLabel', () => {
+        fixture.componentRef.setInput('mainLabel', 'Custom label');
+        fixture.componentRef.setInput('textLabels', {
+          ...emptyTextLabels,
+          mainLabel: 'Fallback'
+        });
+        expect(component.resolvedMainLabel()).toBe('Custom label');
+      });
+
+      it('should fall back to textLabels.mainLabel when mainLabel is empty', () => {
+        fixture.componentRef.setInput('mainLabel', '');
+        fixture.componentRef.setInput('textLabels', {
+          ...emptyTextLabels,
+          mainLabel: 'Fallback label'
+        });
+        expect(component.resolvedMainLabel()).toBe('Fallback label');
+      });
+
+      it('should be empty when neither mainLabel nor textLabels.mainLabel is set', () => {
+        fixture.componentRef.setInput('mainLabel', '');
+        fixture.componentRef.setInput('textLabels', emptyTextLabels);
+        expect(component.resolvedMainLabel()).toBe('');
+      });
+    });
+
+    describe('isOutlineWithLabel', () => {
+      it('should be true when appearance is outline and a label is resolved', () => {
+        fixture.componentRef.setInput('appearance', 'outline');
+        fixture.componentRef.setInput('mainLabel', 'Phone');
+        expect(component.isOutlineWithLabel()).toBe(true);
+      });
+
+      it('should be false when appearance is fill even if a label is resolved', () => {
+        fixture.componentRef.setInput('appearance', 'fill');
+        fixture.componentRef.setInput('mainLabel', 'Phone');
+        expect(component.isOutlineWithLabel()).toBe(false);
+      });
+
+      it('should be false when appearance is outline but no label is resolved', () => {
+        fixture.componentRef.setInput('appearance', 'outline');
+        fixture.componentRef.setInput('mainLabel', '');
+        fixture.componentRef.setInput('textLabels', emptyTextLabels);
+        expect(component.isOutlineWithLabel()).toBe(false);
+      });
+    });
+
+    describe('template', () => {
+      it('should render the top-level .main-label for fill + label', () => {
+        fixture.componentRef.setInput('appearance', 'fill');
+        fixture.componentRef.setInput('mainLabel', 'Phone number');
+        fixture.detectChanges();
+
+        const topLabel: HTMLElement | null =
+          fixture.nativeElement.querySelector('section > .main-label');
+        expect(topLabel).toBeTruthy();
+        expect(topLabel?.textContent?.trim()).toBe('Phone number');
+      });
+
+      it('should not render the top-level .main-label for outline + label', () => {
+        fixture.componentRef.setInput('appearance', 'outline');
+        fixture.componentRef.setInput('mainLabel', 'Phone number');
+        fixture.detectChanges();
+
+        const topLabel = fixture.nativeElement.querySelector(
+          'section > .main-label'
+        );
+        expect(topLabel).toBeFalsy();
+      });
+
+      it('should add has-main-label class to the prefix form field for outline + label', () => {
+        fixture.componentRef.setInput('appearance', 'outline');
+        fixture.componentRef.setInput('mainLabel', 'Phone number');
+        fixture.detectChanges();
+
+        const prefixField: HTMLElement =
+          fixture.nativeElement.querySelector('.prefix-form-field');
+        expect(prefixField.classList.contains('has-main-label')).toBe(true);
+      });
+
+      it('should not add has-main-label class for fill + label', () => {
+        fixture.componentRef.setInput('appearance', 'fill');
+        fixture.componentRef.setInput('mainLabel', 'Phone number');
+        fixture.detectChanges();
+
+        const prefixField: HTMLElement =
+          fixture.nativeElement.querySelector('.prefix-form-field');
+        expect(prefixField.classList.contains('has-main-label')).toBe(false);
+      });
+
+      it('should not add has-main-label class for outline + no label', () => {
+        fixture.componentRef.setInput('appearance', 'outline');
+        fixture.componentRef.setInput('mainLabel', '');
+        fixture.componentRef.setInput('textLabels', emptyTextLabels);
+        fixture.detectChanges();
+
+        const prefixField: HTMLElement =
+          fixture.nativeElement.querySelector('.prefix-form-field');
+        expect(prefixField.classList.contains('has-main-label')).toBe(false);
+      });
+
+      it('should render the mat-label inside the prefix form field for outline + label', () => {
+        fixture.componentRef.setInput('appearance', 'outline');
+        fixture.componentRef.setInput('mainLabel', 'Phone number');
+        fixture.detectChanges();
+
+        const prefixLabel: HTMLElement | null =
+          fixture.nativeElement.querySelector('.prefix-form-field mat-label');
+        expect(prefixLabel).toBeTruthy();
+        expect(prefixLabel?.textContent?.trim()).toBe('Phone number');
+      });
+
+      it('should suppress the national number label when outline + label', () => {
+        fixture.componentRef.setInput('appearance', 'outline');
+        fixture.componentRef.setInput('mainLabel', 'Phone number');
+        fixture.detectChanges();
+
+        const numberLabel = fixture.nativeElement.querySelector(
+          '.number-form-field mat-label'
+        );
+        expect(numberLabel).toBeFalsy();
+      });
+
+      it('should keep the national number label for fill + nationalNumberLabel', () => {
+        fixture.componentRef.setInput('appearance', 'fill');
+        fixture.componentRef.setInput('mainLabel', 'Phone number');
+        fixture.detectChanges();
+
+        const numberLabel: HTMLElement | null =
+          fixture.nativeElement.querySelector('.number-form-field mat-label');
+        expect(numberLabel).toBeTruthy();
+        expect(numberLabel?.textContent?.trim()).toBe('Number');
+      });
+    });
+  });
+
   describe('Edge Cases and Error Handling', () => {
     it('should handle null/undefined values gracefully', () => {
       component.allCountries = null as any;

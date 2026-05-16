@@ -149,6 +149,12 @@
             padding-top: var(--mat-form-field-container-vertical-padding, 16px);
             padding-bottom: 0;
           }
+          &.has-main-label {
+            width: auto;
+            &::ng-deep .mdc-notched-outline__notch {
+              max-width: none;
+            }
+          }
           &::ng-deep .mdc-text-field {
             padding-right: 6px;
           }

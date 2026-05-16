@@ -6,6 +6,7 @@ import {
   ElementRef,
   OnDestroy,
   OnInit,
+  computed,
   effect,
   inject,
   input,
@@ -165,6 +166,12 @@ export class NgxMaterialIntlTelInputComponent
   currentCountryISO = output<string>();
   isFocused = signal<boolean>(false);
   isLoading = signal<boolean>(true);
+  resolvedMainLabel = computed(
+    () => this.mainLabel() || this.textLabels().mainLabel
+  );
+  isOutlineWithLabel = computed(
+    () => this.appearance() === 'outline' && !!this.resolvedMainLabel()
+  );
 
   constructor() {
     effect(() => {
