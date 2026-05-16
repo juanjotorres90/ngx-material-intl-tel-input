@@ -71,7 +71,7 @@ describe('NgxMaterialIntlTelInputComponent', () => {
       codePlaceholder: 'Code',
       searchPlaceholderLabel: 'Search',
       noEntriesFoundLabel: 'No countries found',
-      nationalNumberLabel: 'Number',
+      nationalNumberLabel: '',
       hintLabel: 'Select country and type your phone number',
       invalidNumberError: 'Number is not valid',
       requiredError: 'This field is required',
@@ -1361,9 +1361,13 @@ describe('NgxMaterialIntlTelInputComponent', () => {
         expect(prefixLabel?.textContent?.trim()).toBe('Phone number');
       });
 
-      it('should keep the national number label for outline + mainLabel + nationalNumberLabel', () => {
+      it('should render the national number label for outline + mainLabel + nationalNumberLabel', () => {
         fixture.componentRef.setInput('appearance', 'outline');
         fixture.componentRef.setInput('mainLabel', 'Phone number');
+        fixture.componentRef.setInput('textLabels', {
+          ...emptyTextLabels,
+          nationalNumberLabel: 'Number'
+        });
         fixture.detectChanges();
 
         const numberLabel: HTMLElement | null =
@@ -1372,13 +1376,9 @@ describe('NgxMaterialIntlTelInputComponent', () => {
         expect(numberLabel?.textContent?.trim()).toBe('Number');
       });
 
-      it('should omit the national number label when nationalNumberLabel is empty', () => {
+      it('should omit the national number label by default', () => {
         fixture.componentRef.setInput('appearance', 'outline');
         fixture.componentRef.setInput('mainLabel', 'Phone number');
-        fixture.componentRef.setInput('textLabels', {
-          ...emptyTextLabels,
-          mainLabel: 'Phone number'
-        });
         fixture.detectChanges();
 
         const numberLabel = fixture.nativeElement.querySelector(
@@ -1387,9 +1387,13 @@ describe('NgxMaterialIntlTelInputComponent', () => {
         expect(numberLabel).toBeFalsy();
       });
 
-      it('should keep the national number label for fill + nationalNumberLabel', () => {
+      it('should render the national number label for fill + nationalNumberLabel', () => {
         fixture.componentRef.setInput('appearance', 'fill');
         fixture.componentRef.setInput('mainLabel', 'Phone number');
+        fixture.componentRef.setInput('textLabels', {
+          ...emptyTextLabels,
+          nationalNumberLabel: 'Number'
+        });
         fixture.detectChanges();
 
         const numberLabel: HTMLElement | null =

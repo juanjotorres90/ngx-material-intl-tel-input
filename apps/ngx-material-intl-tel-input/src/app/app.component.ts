@@ -54,7 +54,7 @@ export class AppComponent {
     codePlaceholder: 'Code',
     searchPlaceholderLabel: 'Search',
     noEntriesFoundLabel: 'No countries found',
-    nationalNumberLabel: 'Number',
+    nationalNumberLabel: '',
     hintLabel: 'Select country and type your phone number',
     invalidNumberError: 'Number is not valid',
     requiredError: 'This field is required',
