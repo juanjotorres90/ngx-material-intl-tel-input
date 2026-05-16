@@ -101,7 +101,7 @@
     </mat-form-field>
 
     <mat-form-field [appearance]="appearance()" class="number-form-field">
-      @if (textLabels().nationalNumberLabel && !isOutlineWithLabel()) {
+      @if (textLabels().nationalNumberLabel) {
         <mat-label>{{ textLabels().nationalNumberLabel }}</mat-label>
       }
       <input

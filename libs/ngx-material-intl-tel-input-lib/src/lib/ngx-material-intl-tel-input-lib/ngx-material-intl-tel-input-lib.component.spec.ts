@@ -1361,9 +1361,24 @@ describe('NgxMaterialIntlTelInputComponent', () => {
         expect(prefixLabel?.textContent?.trim()).toBe('Phone number');
       });
 
-      it('should suppress the national number label when outline + label', () => {
+      it('should keep the national number label for outline + mainLabel + nationalNumberLabel', () => {
         fixture.componentRef.setInput('appearance', 'outline');
         fixture.componentRef.setInput('mainLabel', 'Phone number');
+        fixture.detectChanges();
+
+        const numberLabel: HTMLElement | null =
+          fixture.nativeElement.querySelector('.number-form-field mat-label');
+        expect(numberLabel).toBeTruthy();
+        expect(numberLabel?.textContent?.trim()).toBe('Number');
+      });
+
+      it('should omit the national number label when nationalNumberLabel is empty', () => {
+        fixture.componentRef.setInput('appearance', 'outline');
+        fixture.componentRef.setInput('mainLabel', 'Phone number');
+        fixture.componentRef.setInput('textLabels', {
+          ...emptyTextLabels,
+          mainLabel: 'Phone number'
+        });
         fixture.detectChanges();
 
         const numberLabel = fixture.nativeElement.querySelector(
