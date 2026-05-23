@@ -6,6 +6,7 @@ import {
   ElementRef,
   OnDestroy,
   OnInit,
+  computed,
   effect,
   inject,
   input,
@@ -144,7 +145,7 @@ export class NgxMaterialIntlTelInputComponent
     codePlaceholder: 'Code',
     searchPlaceholderLabel: 'Search',
     noEntriesFoundLabel: 'No countries found',
-    nationalNumberLabel: 'Number',
+    nationalNumberLabel: '',
     hintLabel: 'Select country and type your phone number',
     invalidNumberError: 'Number is not valid',
     requiredError: 'This field is required',
@@ -165,6 +166,12 @@ export class NgxMaterialIntlTelInputComponent
   currentCountryISO = output<string>();
   isFocused = signal<boolean>(false);
   isLoading = signal<boolean>(true);
+  resolvedMainLabel = computed(
+    () => this.mainLabel() || this.textLabels().mainLabel
+  );
+  isOutlineWithLabel = computed(
+    () => this.appearance() === 'outline' && !!this.resolvedMainLabel()
+  );
 
   constructor() {
     effect(() => {
