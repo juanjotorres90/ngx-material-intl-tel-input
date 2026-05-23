@@ -74,6 +74,20 @@
         "maintenance",
         "review"
       ]
+    },
+    {
+      "login": "jeanfwl",
+      "name": "Jean Talar",
+      "avatar_url": "https://avatars.githubusercontent.com/u/67374151?v=4?s=100",
+      "profile": "https://github.com/jeanfwl",
+      "contributions": [
+        "code",
+        "ideas",
+        "question",
+        "example",
+        "maintenance",
+        "review"
+      ]
     }
   ],
   "contributorsPerLine": 7,

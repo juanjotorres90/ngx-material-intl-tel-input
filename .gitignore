@@ -48,3 +48,7 @@ Thumbs.db
 
 .claude/worktrees
 .claude/settings.local.json
+
+.playwright-mcp
+.nx/polygraph
+.nx/self-healing

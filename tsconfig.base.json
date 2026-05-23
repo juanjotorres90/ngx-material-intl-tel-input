@@ -13,10 +13,9 @@
     "lib": ["es2020", "dom"],
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
-    "baseUrl": ".",
     "paths": {
       "ngx-material-intl-tel-input": [
-        "libs/ngx-material-intl-tel-input-lib/src/index.ts"
+        "./libs/ngx-material-intl-tel-input-lib/src/index.ts"
       ]
     }
   },
