@@ -52,3 +52,7 @@ Thumbs.db
 .playwright-mcp
 .nx/polygraph
 .nx/self-healing
+# Playwright
+test-results
+playwright-report
+.playwright-mcp

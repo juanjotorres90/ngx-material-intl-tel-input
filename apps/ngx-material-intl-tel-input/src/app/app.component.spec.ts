@@ -1,10 +1,10 @@
 import { TestBed } from '@angular/core/testing';
 import { AppComponent } from './app.component';
 import { provideHttpClient, withFetch } from '@angular/common/http';
+import { PhoneNumberFormat } from 'ngx-material-intl-tel-input';
 import { ComponentFixture } from '@angular/core/testing';
 import { ReactiveFormsModule } from '@angular/forms';
 import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
-import { PhoneNumberFormat } from 'google-libphonenumber';
 
 describe('AppComponent', () => {
   let component: AppComponent;
@@ -501,7 +501,7 @@ describe('AppComponent', () => {
 
       expect(component.currentPhoneValue()).toContain('234567890');
       expect(component.currentCountryCode()).toBe('+1');
-      expect(component.currentCountryISO()).toBe('us');
+      expect(component.currentCountryISO()).toBe('US');
       const submittedValue = component.submittedPhoneValue();
       expect(submittedValue).toContain('234567890');
     });

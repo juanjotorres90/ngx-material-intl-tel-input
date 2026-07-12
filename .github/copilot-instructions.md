@@ -13,7 +13,7 @@ This is an **Angular library project** that provides a Material Design internati
 ### Key Dependencies
 
 - **Core**: Angular 21, Angular Material, Angular CDK
-- **Phone Validation**: `google-libphonenumber` for international phone number validation
+- **Phone Validation**: `libphonenumber-js` for international phone number validation
 - **UI Enhancement**: `ngx-mat-select-search` for searchable country selection
 - **Input Masking**: `angular-imask` for phone number formatting
 
@@ -136,7 +136,7 @@ The library uses extensive CSS custom properties for theming:
 
 ### Phone Number Validation
 
-- Uses Google's libphonenumber for validation
+- Uses libphonenumber-js for validation
 - Supports multiple output formats: `INTERNATIONAL`, `E164`, `RFC3966`
 - Custom Angular validators in `libs/ngx-material-intl-tel-input-lib/src/lib/validators/`
 
@@ -150,7 +150,7 @@ The library uses extensive CSS custom properties for theming:
 
 ### Testing Considerations
 
-- Mock `google-libphonenumber` in tests for consistent results
+- Tests run against the real libphonenumber-js (deterministic metadata)
 - Test form integration scenarios thoroughly
 - Include accessibility testing for international users
 

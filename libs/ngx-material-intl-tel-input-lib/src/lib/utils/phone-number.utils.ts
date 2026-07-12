@@ -1,4 +1,58 @@
-import { PhoneNumberType, PhoneNumberUtil } from 'google-libphonenumber';
+import {
+  CountryCode,
+  getExampleNumber,
+  NumberFormat,
+  PhoneNumber,
+  validatePhoneNumberLength
+} from 'libphonenumber-js';
+import * as mobileExamplesModule from 'libphonenumber-js/mobile/examples';
+import {
+  LegacyPhoneNumberFormat,
+  normalizePhoneNumberFormat,
+  PhoneNumberFormat
+} from '../enums/phone-number-format.enum';
+
+// Unwrap the CJS/ESM interop difference: the ESM build exposes the examples on
+// `.default`, while the CJS build (used by Jest) resolves to the raw JSON object.
+type MobileExamples = typeof mobileExamplesModule.default;
+const examples: MobileExamples =
+  (mobileExamplesModule as { default?: MobileExamples }).default ??
+  (mobileExamplesModule as unknown as MobileExamples);
+
+// Default reasonable maximum length based on international standards.
+// Most countries have maximum phone numbers between 10-15 digits.
+const DEFAULT_MAX_LENGTH = 15;
+
+const maxLengthCache = new Map<string, number>();
+
+/**
+ * Returns the example mobile number for a country, or undefined when the
+ * country is unknown.
+ *
+ * @param {string} countryCode - ISO2 country code, any casing.
+ */
+export const getExampleMobileNumber = (
+  countryCode: string
+): PhoneNumber | undefined => {
+  try {
+    return getExampleNumber(countryCode.toUpperCase() as CountryCode, examples);
+  } catch {
+    return undefined;
+  }
+};
+
+/**
+ * Formats a parsed phone number using the library's PhoneNumberFormat enum.
+ *
+ * @param {PhoneNumber} phoneNumber - The parsed phone number.
+ * @param {PhoneNumberFormat} format - The desired output format.
+ * @returns {string} The formatted phone number.
+ */
+export const formatPhoneNumber = (
+  phoneNumber: PhoneNumber,
+  format: PhoneNumberFormat | LegacyPhoneNumberFormat
+): string =>
+  phoneNumber.format(normalizePhoneNumberFormat(format) as NumberFormat);
 
 /**
  * Gets the maximum allowed length for a country's phone number.
@@ -7,56 +61,22 @@ import { PhoneNumberType, PhoneNumberUtil } from 'google-libphonenumber';
  * @returns {number} The maximum allowed length for the country's national number
  */
 export const getMaxPhoneNumberLength = (countryCode?: string): number => {
-  try {
-    const phoneNumberUtil = PhoneNumberUtil.getInstance();
-
-    // Default reasonable maximum length based on international standards
-    // Most countries have maximum phone numbers between 10-15 digits
-    const DEFAULT_MAX_LENGTH = 15;
-
-    if (!countryCode) {
-      return DEFAULT_MAX_LENGTH;
-    }
-
-    // Get example numbers for different types to analyze the pattern
-    const exampleNumberTypes = [
-      PhoneNumberType.MOBILE,
-      PhoneNumberType.FIXED_LINE,
-      PhoneNumberType.FIXED_LINE_OR_MOBILE
-    ];
-
-    let maxObservedLength = 0;
-
-    // Check the length of example numbers for different types
-    for (const numberType of exampleNumberTypes) {
-      try {
-        const exampleNumber = phoneNumberUtil.getExampleNumberForType(
-          countryCode.toUpperCase(),
-          numberType
-        );
-
-        if (exampleNumber) {
-          const nationalNumber =
-            exampleNumber.getNationalNumber()?.toString() || '';
-          maxObservedLength = Math.max(
-            maxObservedLength,
-            nationalNumber.length
-          );
-        }
-      } catch (_) {
-        // Continue to the next type if this one fails
-      }
-    }
-
-    if (maxObservedLength > 0) {
-      // Add a small buffer to accommodate variations (e.g., extensions)
-      return maxObservedLength + 3;
-    }
-
+  if (!countryCode) {
     return DEFAULT_MAX_LENGTH;
-  } catch {
-    return 15; // Fallback to reasonable default
   }
+  const iso = countryCode.toUpperCase();
+  const cached = maxLengthCache.get(iso);
+  if (cached) {
+    return cached;
+  }
+  let maxLength = DEFAULT_MAX_LENGTH;
+  const exampleNumber = getExampleMobileNumber(iso);
+  if (exampleNumber) {
+    // Small buffer to accommodate longer number types than the mobile example
+    maxLength = exampleNumber.nationalNumber.length + 3;
+  }
+  maxLengthCache.set(iso, maxLength);
+  return maxLength;
 };
 
 /**
@@ -70,21 +90,15 @@ export const isValidPhoneNumberLength = (
   phoneNumber: string,
   countryCode: string
 ): boolean => {
-  try {
-    const phoneNumberUtil = PhoneNumberUtil.getInstance();
-
-    // Parse the phone number to get its national number portion
-    const parsedNumber = phoneNumberUtil.parse(phoneNumber, countryCode);
-    const nationalNumber = parsedNumber.getNationalNumber()?.toString() || '';
-
-    // Get the maximum allowed length for this country
-    const maxLength = getMaxPhoneNumberLength(countryCode);
-
-    // Check if the national number length exceeds the maximum allowed
-    // This only checks the actual digits, ignoring formatting characters
-    return nationalNumber.length <= maxLength;
-  } catch (_) {
-    // If parsing fails, consider it invalid
-    return false;
-  }
+  const result = validatePhoneNumberLength(
+    phoneNumber,
+    countryCode?.toUpperCase() as CountryCode
+  );
+  // Only "too long" (or unparseable input) fails this check; short numbers are
+  // reported by the number validity check instead.
+  return (
+    result === undefined ||
+    result === 'TOO_SHORT' ||
+    result === 'INVALID_LENGTH'
+  );
 };

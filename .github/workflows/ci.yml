@@ -37,3 +37,24 @@ jobs:
       # - run: npx nx-cloud record -- echo Hello World
       # Nx Affected runs only tasks affected by the changes in this PR/commit. Learn more: https://nx.dev/ci/features/affected
       - run: npx nx affected -t lint test build
+
+      # Catch packaging breaks before release time
+      - name: Publish dry-run
+        run: |
+          npx nx run ngx-material-intl-tel-input-lib:build:production
+          cd dist/libs/ngx-material-intl-tel-input-lib
+          npm publish --dry-run
+
+  e2e:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: 'npm'
+
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npx playwright test -c e2e

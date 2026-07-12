@@ -6,7 +6,8 @@
     "prepare": "husky",
     "lint:all": "npx nx run ngx-material-intl-tel-input:lint && npx nx run ngx-material-intl-tel-input-lib:lint",
     "unit-tests:all": "npx nx run ngx-material-intl-tel-input:test && npx nx run ngx-material-intl-tel-input-lib:test",
-    "build:all": "npx nx run ngx-material-intl-tel-input:build && npx nx run ngx-material-intl-tel-input-lib:build"
+    "build:all": "npx nx run ngx-material-intl-tel-input:build && npx nx run ngx-material-intl-tel-input-lib:build",
+    "e2e": "playwright test -c e2e"
   },
   "private": true,
   "dependencies": {
@@ -22,7 +23,7 @@
     "@angular/router": "^21.1.6",
     "@nx/angular": "22.7.3",
     "angular-imask": "^7.6.1",
-    "google-libphonenumber": "^3.2.43",
+    "libphonenumber-js": "^1.13.8",
     "ngx-mat-select-search": "^8.0.4",
     "rxjs": "~7.8.0",
     "tslib": "^2.3.0",
@@ -47,11 +48,11 @@
     "@nx/jest": "22.7.3",
     "@nx/js": "22.7.3",
     "@nx/workspace": "22.7.3",
+    "@playwright/test": "^1.61.1",
     "@schematics/angular": "^21.1.5",
     "@swc-node/register": "1.11.1",
     "@swc/core": "1.15.8",
     "@swc/helpers": "0.5.19",
-    "@types/google-libphonenumber": "^7.4.30",
     "@types/jest": "^30.0.0",
     "@types/node": "^24.10.3",
     "@typescript-eslint/utils": "^8.46.0",

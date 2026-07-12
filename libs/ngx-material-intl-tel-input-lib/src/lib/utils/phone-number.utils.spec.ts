@@ -1,319 +1,82 @@
-import { PhoneNumberType, PhoneNumberUtil } from 'google-libphonenumber';
 import {
+  formatPhoneNumber,
   getMaxPhoneNumberLength,
   isValidPhoneNumberLength
 } from './phone-number.utils';
+import { parsePhoneNumberWithError } from 'libphonenumber-js';
+import { PhoneNumberFormat } from '../enums/phone-number-format.enum';
 
 describe('Phone Number Utils', () => {
-  let mockPhoneNumberUtil: jest.Mocked<PhoneNumberUtil>;
-  let mockExampleNumber: any;
-
-  beforeEach(() => {
-    // Create mock example number
-    mockExampleNumber = {
-      getNationalNumber: jest.fn()
-    };
-
-    // Create mock PhoneNumberUtil
-    mockPhoneNumberUtil = {
-      getInstance: jest.fn(),
-      getExampleNumberForType: jest.fn(),
-      parse: jest.fn()
-    } as any;
-
-    // Mock the static getInstance method
-    jest
-      .spyOn(PhoneNumberUtil, 'getInstance')
-      .mockReturnValue(mockPhoneNumberUtil);
-  });
-
-  afterEach(() => {
-    jest.clearAllMocks();
-  });
-
   describe('getMaxPhoneNumberLength', () => {
-    describe('when countryCode is not provided', () => {
-      it('should return default maximum length of 15', () => {
-        const result = getMaxPhoneNumberLength();
-        expect(result).toBe(15);
-      });
-
-      it('should return default maximum length of 15 for empty string', () => {
-        const result = getMaxPhoneNumberLength('');
-        expect(result).toBe(15);
-      });
+    it('should return default maximum length of 15 when countryCode is not provided', () => {
+      expect(getMaxPhoneNumberLength()).toBe(15);
+      expect(getMaxPhoneNumberLength('')).toBe(15);
     });
 
-    describe('when countryCode is provided', () => {
-      beforeEach(() => {
-        mockExampleNumber.getNationalNumber.mockReturnValue(1234567890);
-        mockPhoneNumberUtil.getExampleNumberForType.mockReturnValue(
-          mockExampleNumber
-        );
-      });
+    it('should return the example number length plus buffer for a valid country', () => {
+      // US mobile example number has 10 national digits
+      expect(getMaxPhoneNumberLength('US')).toBe(13);
+    });
 
-      it('should return calculated max length plus buffer for valid country', () => {
-        const result = getMaxPhoneNumberLength('US');
+    it('should handle lowercase country codes', () => {
+      expect(getMaxPhoneNumberLength('us')).toBe(13);
+    });
 
-        expect(
-          mockPhoneNumberUtil.getExampleNumberForType
-        ).toHaveBeenCalledWith('US', PhoneNumberType.MOBILE);
-        expect(
-          mockPhoneNumberUtil.getExampleNumberForType
-        ).toHaveBeenCalledWith('US', PhoneNumberType.FIXED_LINE);
-        expect(
-          mockPhoneNumberUtil.getExampleNumberForType
-        ).toHaveBeenCalledWith('US', PhoneNumberType.FIXED_LINE_OR_MOBILE);
-        expect(result).toBe(13); // 10 digits + 3 buffer
-      });
+    it('should return consistent values from the cache', () => {
+      expect(getMaxPhoneNumberLength('CH')).toBe(getMaxPhoneNumberLength('ch'));
+    });
 
-      it('should handle lowercase country codes', () => {
-        const result = getMaxPhoneNumberLength('ch');
-
-        expect(
-          mockPhoneNumberUtil.getExampleNumberForType
-        ).toHaveBeenCalledWith('CH', PhoneNumberType.MOBILE);
-        expect(result).toBe(13);
-      });
-
-      it('should return the maximum length from different number types', () => {
-        // Mock different lengths for different number types
-        mockPhoneNumberUtil.getExampleNumberForType
-          .mockReturnValueOnce({
-            getNationalNumber: () => 123456789 // 9 digits
-          } as any)
-          .mockReturnValueOnce({
-            getNationalNumber: () => 12345678901 // 11 digits
-          } as any)
-          .mockReturnValueOnce({
-            getNationalNumber: () => 1234567890 // 10 digits
-          } as any);
-
-        const result = getMaxPhoneNumberLength('DE');
-
-        expect(result).toBe(14); // 11 (max) + 3 buffer
-      });
-
-      it('should handle null example numbers gracefully', () => {
-        mockPhoneNumberUtil.getExampleNumberForType.mockReturnValue(
-          null as any
-        );
-
-        const result = getMaxPhoneNumberLength('XX');
-
-        expect(result).toBe(15); // Default fallback
-      });
-
-      it('should handle example numbers with null national number', () => {
-        mockPhoneNumberUtil.getExampleNumberForType.mockReturnValue({
-          getNationalNumber: () => undefined
-        } as any);
-
-        const result = getMaxPhoneNumberLength('XX');
-
-        expect(result).toBe(15); // Default fallback
-      });
-
-      it('should handle exceptions when getting example numbers', () => {
-        mockPhoneNumberUtil.getExampleNumberForType
-          .mockImplementationOnce(() => {
-            throw new Error('Invalid country');
-          })
-          .mockReturnValueOnce(mockExampleNumber)
-          .mockReturnValueOnce(mockExampleNumber);
-
-        const result = getMaxPhoneNumberLength('XX');
-
-        expect(result).toBe(13); // Should continue with other types
-      });
-
-      it('should return default when all example number calls fail', () => {
-        mockPhoneNumberUtil.getExampleNumberForType.mockImplementation(() => {
-          throw new Error('Invalid country');
-        });
-
-        const result = getMaxPhoneNumberLength('XX');
-
-        expect(result).toBe(15); // Default fallback
-      });
-
-      it('should handle PhoneNumberUtil getInstance failure', () => {
-        jest.spyOn(PhoneNumberUtil, 'getInstance').mockImplementation(() => {
-          throw new Error('PhoneNumberUtil error');
-        });
-
-        const result = getMaxPhoneNumberLength('US');
-
-        expect(result).toBe(15); // Fallback to default
-      });
+    it('should return the default length for unknown country codes', () => {
+      expect(getMaxPhoneNumberLength('XX')).toBe(15);
     });
   });
 
   describe('isValidPhoneNumberLength', () => {
-    let mockParsedNumber: any;
-
-    beforeEach(() => {
-      mockParsedNumber = {
-        getNationalNumber: jest.fn()
-      };
-      mockPhoneNumberUtil.parse.mockReturnValue(mockParsedNumber);
+    it('should return true for a valid length phone number', () => {
+      expect(isValidPhoneNumberLength('+12015550123', 'US')).toBe(true);
     });
 
-    describe('when phone number parsing succeeds', () => {
-      it('should return true for valid length phone number', () => {
-        mockParsedNumber.getNationalNumber.mockReturnValue(1234567890); // 10 digits
-
-        // Mock getMaxPhoneNumberLength to return 15
-        mockExampleNumber.getNationalNumber.mockReturnValue(1234567890);
-        mockPhoneNumberUtil.getExampleNumberForType.mockReturnValue(
-          mockExampleNumber
-        );
-
-        const result = isValidPhoneNumberLength('+1234567890', 'US');
-
-        expect(mockPhoneNumberUtil.parse).toHaveBeenCalledWith(
-          '+1234567890',
-          'US'
-        );
-        expect(result).toBe(true);
-      });
-
-      it('should return false for phone number exceeding maximum length', () => {
-        // Use a number that's within safe integer range but still long enough to test
-        const largeNumber = 123456789012345; // 15 digits - safe for JavaScript
-        mockParsedNumber.getNationalNumber.mockReturnValue(largeNumber);
-
-        // Mock getMaxPhoneNumberLength to return 10 to make this number exceed the limit
-        mockExampleNumber.getNationalNumber.mockReturnValue(1234567); // 7 digits, so max will be 10 (7 + 3)
-        mockPhoneNumberUtil.getExampleNumberForType.mockReturnValue(
-          mockExampleNumber
-        );
-
-        const result = isValidPhoneNumberLength('+123456789012345', 'US');
-
-        expect(result).toBe(false); // 15 > 10
-      });
-
-      it('should handle null national number', () => {
-        mockParsedNumber.getNationalNumber.mockReturnValue(undefined);
-
-        // Mock getMaxPhoneNumberLength to return 15
-        mockExampleNumber.getNationalNumber.mockReturnValue(1234567890);
-        mockPhoneNumberUtil.getExampleNumberForType.mockReturnValue(
-          mockExampleNumber
-        );
-
-        const result = isValidPhoneNumberLength('+1234567890', 'US');
-
-        expect(result).toBe(true); // Empty string length (0) should be <= max length
-      });
-
-      it('should work with different country codes', () => {
-        mockParsedNumber.getNationalNumber.mockReturnValue(123456789); // 9 digits
-
-        // Mock getMaxPhoneNumberLength to return 12
-        mockExampleNumber.getNationalNumber.mockReturnValue(123456789);
-        mockPhoneNumberUtil.getExampleNumberForType.mockReturnValue(
-          mockExampleNumber
-        );
-
-        const result = isValidPhoneNumberLength('+41123456789', 'CH');
-
-        expect(mockPhoneNumberUtil.parse).toHaveBeenCalledWith(
-          '+41123456789',
-          'CH'
-        );
-        expect(result).toBe(true);
-      });
-
-      it('should handle edge case where length equals maximum', () => {
-        mockParsedNumber.getNationalNumber.mockReturnValue(1234567890123); // 13 digits
-
-        // Mock getMaxPhoneNumberLength to return exactly 13
-        mockExampleNumber.getNationalNumber.mockReturnValue(1234567890); // 10 digits, so max will be 13 (10 + 3)
-        mockPhoneNumberUtil.getExampleNumberForType.mockReturnValue(
-          mockExampleNumber
-        );
-
-        const result = isValidPhoneNumberLength('+11234567890123', 'US');
-
-        expect(result).toBe(true);
-      });
+    it('should return false for a phone number exceeding maximum length', () => {
+      expect(isValidPhoneNumberLength('+1201555012345678', 'US')).toBe(false);
     });
 
-    describe('when phone number parsing fails', () => {
-      it('should return false when parse throws an error', () => {
-        mockPhoneNumberUtil.parse.mockImplementation(() => {
-          throw new Error('Invalid phone number format');
-        });
-
-        const result = isValidPhoneNumberLength('invalid-phone', 'US');
-
-        expect(result).toBe(false);
-      });
-
-      it('should return false for empty phone number', () => {
-        mockPhoneNumberUtil.parse.mockImplementation(() => {
-          throw new Error('Empty phone number');
-        });
-
-        const result = isValidPhoneNumberLength('', 'US');
-
-        expect(result).toBe(false);
-      });
-
-      it('should return false when PhoneNumberUtil getInstance fails', () => {
-        jest.spyOn(PhoneNumberUtil, 'getInstance').mockImplementation(() => {
-          throw new Error('PhoneNumberUtil error');
-        });
-
-        const result = isValidPhoneNumberLength('+1234567890', 'US');
-
-        expect(result).toBe(false);
-      });
+    it('should return true for a too-short number (short numbers are reported by validity, not length)', () => {
+      expect(isValidPhoneNumberLength('+1201', 'US')).toBe(true);
     });
 
-    describe('integration with getMaxPhoneNumberLength', () => {
-      it('should use the correct maximum length from getMaxPhoneNumberLength', () => {
-        mockParsedNumber.getNationalNumber.mockReturnValue(123456789012); // 12 digits
+    it('should return false for unparseable input', () => {
+      expect(isValidPhoneNumberLength('invalid-phone', 'US')).toBe(false);
+      expect(isValidPhoneNumberLength('', 'US')).toBe(false);
+    });
 
-        // Mock getMaxPhoneNumberLength to return 10 (which means 12 > 10, should be false)
-        mockExampleNumber.getNationalNumber.mockReturnValue(1234567); // 7 digits, so max will be 10 (7 + 3)
-        mockPhoneNumberUtil.getExampleNumberForType.mockReturnValue(
-          mockExampleNumber
-        );
+    it('should work with different country codes', () => {
+      expect(isValidPhoneNumberLength('+41781234567', 'CH')).toBe(true);
+    });
+  });
 
-        const result = isValidPhoneNumberLength('+1123456789012', 'US');
+  describe('formatPhoneNumber', () => {
+    const parsed = parsePhoneNumberWithError('+12015550123');
 
-        expect(result).toBe(false); // 12 > 10
-      });
+    it('should format using the library PhoneNumberFormat enum', () => {
+      expect(formatPhoneNumber(parsed, PhoneNumberFormat.E164)).toBe(
+        '+12015550123'
+      );
+      expect(formatPhoneNumber(parsed, PhoneNumberFormat.INTERNATIONAL)).toBe(
+        '+1 201 555 0123'
+      );
+      expect(formatPhoneNumber(parsed, PhoneNumberFormat.NATIONAL)).toBe(
+        '(201) 555-0123'
+      );
+      expect(formatPhoneNumber(parsed, PhoneNumberFormat.RFC3966)).toBe(
+        'tel:+12015550123'
+      );
+    });
 
-      it('should handle country codes that return default max length', () => {
-        mockParsedNumber.getNationalNumber.mockReturnValue(123456789012345); // 15 digits
-
-        // Mock getMaxPhoneNumberLength to return default (15) by having no example numbers
-        mockPhoneNumberUtil.getExampleNumberForType.mockReturnValue(
-          null as any
-        );
-
-        const result = isValidPhoneNumberLength('+1123456789012345', 'XX');
-
-        expect(result).toBe(true); // 15 <= 15
-      });
-
-      it('should handle country codes that return default max length for numbers exceeding default', () => {
-        // Use a number that's exactly 16 digits but within JavaScript's safe integer range
-        mockParsedNumber.getNationalNumber.mockReturnValue(1234567890123456); // 16 digits
-
-        // Mock getMaxPhoneNumberLength to return default (15) by having no example numbers
-        mockPhoneNumberUtil.getExampleNumberForType.mockReturnValue(
-          null as any
-        );
-
-        const result = isValidPhoneNumberLength('+11234567890123456', 'XX');
-
-        expect(result).toBe(false); // 16 > 15
-      });
+    it('should support legacy google-libphonenumber enum values', () => {
+      expect(formatPhoneNumber(parsed, 0)).toBe('+12015550123');
+      expect(formatPhoneNumber(parsed, 1)).toBe('+1 201 555 0123');
+      expect(formatPhoneNumber(parsed, 2)).toBe('(201) 555-0123');
+      expect(formatPhoneNumber(parsed, 3)).toBe('tel:+12015550123');
     });
   });
 });

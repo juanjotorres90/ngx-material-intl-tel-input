@@ -1,13 +1,13 @@
-import { AsyncPipe, NgClass } from '@angular/common';
 import {
   AfterViewInit,
   ChangeDetectionStrategy,
   Component,
+  DestroyRef,
   ElementRef,
-  OnDestroy,
   OnInit,
   computed,
   effect,
+  forwardRef,
   inject,
   input,
   model,
@@ -15,56 +15,73 @@ import {
   signal,
   viewChild
 } from '@angular/core';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import {
   AbstractControl,
   ControlContainer,
+  ControlValueAccessor,
   FormControl,
   FormControlStatus,
   FormGroup,
+  NG_VALIDATORS,
+  NG_VALUE_ACCESSOR,
   ReactiveFormsModule,
+  ValidationErrors,
+  Validator,
   Validators
 } from '@angular/forms';
+import { ErrorStateMatcher } from '@angular/material/core';
 import {
   MAT_SELECT_CONFIG,
   MatSelect,
   MatSelectModule
 } from '@angular/material/select';
 import { NgxMatSelectSearchModule } from 'ngx-mat-select-search';
-import { Observable, ReplaySubject, Subject, take, takeUntil } from 'rxjs';
+import { Observable } from 'rxjs';
+import {
+  CountryCode as LibCountryCode,
+  PhoneNumber,
+  getCountryCallingCode,
+  parsePhoneNumberWithError
+} from 'libphonenumber-js';
 import { CountryCode } from '../data/country-code';
 import { Country } from '../types/country.model';
-import {
-  PhoneNumber,
-  PhoneNumberFormat,
-  PhoneNumberUtil,
-  PhoneNumberType
-} from 'google-libphonenumber';
 import {
   MatFormFieldAppearance,
   MatFormFieldModule
 } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
-import TelValidators from '../validators/tel.validators';
+import TelValidators, {
+  validatePhoneNumber
+} from '../validators/tel.validators';
 import { GeoIpService } from '../services/geo-ip/geo-ip.service';
 import { GeoData } from '../types/geo.type';
 import { TextLabels } from '../types/text-labels.type';
 import { CountryISO } from '../enums/country-iso.enum';
+import {
+  normalizePhoneNumberFormat,
+  PhoneNumberFormat,
+  PhoneNumberOutputFormat
+} from '../enums/phone-number-format.enum';
 import { CountryDataService } from '../services/country-data/country-data.service';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { IMaskModule } from 'angular-imask';
-import { getMaxPhoneNumberLength } from '../utils/phone-number.utils';
+import {
+  formatPhoneNumber,
+  getMaxPhoneNumberLength
+} from '../utils/phone-number.utils';
 import { PhoneIconComponent } from '../components/phone-icon/phone-icon.component';
+
+let nextUniqueId = 0;
 
 @Component({
   selector: 'ngx-material-intl-tel-input',
   templateUrl: './ngx-material-intl-tel-input-lib.component.html',
   styleUrl: './ngx-material-intl-tel-input-lib.component.scss',
   imports: [
-    AsyncPipe,
     MatSelectModule,
     NgxMatSelectSearchModule,
     ReactiveFormsModule,
-    NgClass,
     MatFormFieldModule,
     MatInputModule,
     MatTooltipModule,
@@ -78,17 +95,30 @@ import { PhoneIconComponent } from '../components/phone-icon/phone-icon.componen
       useValue: { overlayPanelClass: 'tel-mat-select-pane' }
     },
     GeoIpService,
-    CountryDataService
+    CountryDataService,
+    {
+      provide: NG_VALUE_ACCESSOR,
+      useExisting: forwardRef(() => NgxMaterialIntlTelInputComponent),
+      multi: true
+    },
+    {
+      provide: NG_VALIDATORS,
+      useExisting: forwardRef(() => NgxMaterialIntlTelInputComponent),
+      multi: true
+    }
   ],
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class NgxMaterialIntlTelInputComponent
-  implements OnInit, AfterViewInit, OnDestroy
+  implements OnInit, AfterViewInit, ControlValueAccessor, Validator
 {
   private readonly countryCodeData = inject(CountryCode);
   private readonly geoIpService = inject(GeoIpService);
   private readonly countryDataService = inject(CountryDataService);
-  private readonly controlContainer = inject(ControlContainer);
+  private readonly controlContainer = inject(ControlContainer, {
+    optional: true
+  });
+  private readonly destroyRef = inject(DestroyRef);
 
   /** control for the selected country prefix */
   public prefixCtrl: FormControl<Country | null> =
@@ -99,36 +129,54 @@ export class NgxMaterialIntlTelInputComponent
     string | null
   >('');
 
-  /** list of countries filtered by search keyword */
-  public filteredCountries: ReplaySubject<Country[]> = new ReplaySubject<
-    Country[]
-  >(1);
-
   singleSelect = viewChild<MatSelect>('singleSelect');
   numberInput = viewChild<ElementRef>('numberInput');
 
-  /** Subject that emits when the component has been destroyed. */
-  protected _onDestroy = new Subject<void>();
+  allCountries = signal<Country[]>([]);
 
-  allCountries: Country[] = [];
-  phoneNumberUtil = PhoneNumberUtil.getInstance();
+  private readonly searchTerm = toSignal(this.prefixFilterCtrl.valueChanges, {
+    initialValue: ''
+  });
+
+  /** list of countries filtered by search keyword */
+  filteredCountries = computed(() => {
+    const search = this.normalizeSearchValue(this.searchTerm());
+    const countries = this.allCountries();
+    if (!search) {
+      return countries;
+    }
+    return countries.filter((country) =>
+      this.normalizeSearchValue(country?.name).includes(search)
+    );
+  });
 
   telForm = new FormGroup({
     prefixCtrl: this.prefixCtrl,
     numberControl: new FormControl('')
   });
 
+  /**
+   * @deprecated Bind the component with `formControlName` / `[formControl]` / `ngModel`
+   * instead: the component implements ControlValueAccessor. `fieldControl` remains
+   * supported for backwards compatibility.
+   */
   fieldControl = model<
     FormControl | AbstractControl<string | null, string | null> | null
   >(new FormControl(''));
+  /**
+   * @deprecated Bind the component with `formControlName` instead: the component
+   * implements ControlValueAccessor.
+   */
   fieldControlName = input<string>('');
   required = model<boolean>(false);
   disabled = model<boolean>(false);
   appearance = input<MatFormFieldAppearance>('fill');
   enablePlaceholder = input<boolean>(true);
-  autoIpLookup = input<boolean>(true);
+  autoIpLookup = input<boolean>(false);
   autoSelectCountry = input<boolean>(true);
   autoSelectedCountry = input<CountryISO | string>('');
+  /** Country selected when no better candidate is available (auto-select and geo-IP failed). */
+  defaultCountry = input<CountryISO | string>(CountryISO.Spain);
   numberValidation = input<boolean>(true);
   iconMakeCall = input<boolean>(true);
   initialValue = model<string>('');
@@ -155,11 +203,9 @@ export class NgxMaterialIntlTelInputComponent
   useMask = input<boolean>(false);
   forceSelectedCountryCode = input<boolean>(false);
   showMaskPlaceholder = input<boolean>(false);
-  outputNumberFormat = input<
-    | PhoneNumberFormat.E164
-    | PhoneNumberFormat.INTERNATIONAL
-    | PhoneNumberFormat.RFC3966
-  >(PhoneNumberFormat.INTERNATIONAL);
+  outputNumberFormat = input<PhoneNumberOutputFormat>(
+    PhoneNumberFormat.INTERNATIONAL
+  );
   enableInputMaxLength = input<boolean>(true);
   currentValue = output<string>();
   currentCountryCode = output<string>();
@@ -173,10 +219,31 @@ export class NgxMaterialIntlTelInputComponent
     () => this.appearance() === 'outline' && !!this.resolvedMainLabel()
   );
 
+  /** id of the hint/error region, referenced by the input's aria-describedby */
+  protected readonly describedById = `ngx-mitl-described-${nextUniqueId++}`;
+
+  /** Reflects the outer control's error state onto the inner Material input. */
+  protected readonly innerErrorStateMatcher: ErrorStateMatcher = {
+    isErrorState: () =>
+      !!this.fieldControl()?.invalid &&
+      !!(this.fieldControl()?.dirty || this.fieldControl()?.touched)
+  };
+
+  private onChange: (value: string) => void = () => undefined;
+  private onTouched: () => void = () => undefined;
+  private onValidatorChange: () => void = () => undefined;
+  private readonly phoneValidator = TelValidators.isValidNumber(
+    () => this.telForm?.value?.prefixCtrl?.iso2
+  );
+  private initialized = false;
+  private writingValue = false;
+
   constructor() {
     effect(() => {
-      this.setRequiredValidators();
-      this.setDisabledState();
+      this.syncValidators();
+    });
+    effect(() => {
+      this.applyDisabledState();
     });
   }
 
@@ -188,61 +255,61 @@ export class NgxMaterialIntlTelInputComponent
     this.setFieldControl();
     this.fetchCountryData();
     this.addValidations();
-    // load the initial countries list
-    this.filteredCountries.next(this.allCountries.slice());
-    // listen for search field value changes
-    this.prefixFilterCtrl.valueChanges
-      .pipe(takeUntil(this._onDestroy))
-      .subscribe(() => {
-        this.filterCountries();
-      });
     this.startTelFormValueChangesListener();
     this.startPrefixValueChangesListener();
     setTimeout(() => {
-      this.setInitialTelValue();
+      this.writingValue = true;
+      try {
+        this.setInitialTelValue();
+        this.initialized = true;
+      } finally {
+        this.writingValue = false;
+      }
     });
     this.startFieldControlValueChangesListener();
     this.startFieldControlStatusChangesListener();
   }
 
   /**
-   * Fetches country data and populates the allCountries array.
+   * Fetches country data and populates the allCountries signal.
    */
   protected fetchCountryData(): void {
-    const processedCountries = this.countryDataService.processCountries(
-      this.countryCodeData,
-      this.enablePlaceholder(),
-      this.includeDialCode(),
-      this.visibleCountries(),
-      this.preferredCountries(),
-      this.excludedCountries(),
-      this.useMask(),
-      this.forceSelectedCountryCode(),
-      this.showMaskPlaceholder(),
-      this.outputNumberFormat(),
-      this.localizeCountryNames()
+    this.allCountries.set(
+      this.countryDataService.processCountries(this.countryCodeData, {
+        enablePlaceholder: this.enablePlaceholder(),
+        includeDialCode: this.includeDialCode(),
+        visibleCountries: this.visibleCountries(),
+        preferredCountries: this.preferredCountries(),
+        excludedCountries: this.excludedCountries(),
+        useMask: this.useMask(),
+        forceSelectedCountryCode: this.forceSelectedCountryCode(),
+        showMaskPlaceholder: this.showMaskPlaceholder(),
+        outputNumberFormat: this.outputNumberFormat(),
+        localizeCountryNames: this.localizeCountryNames()
+      })
     );
-    this.allCountries = processedCountries;
   }
 
   /**
    * Adds validations to the form field based on the current configuration.
    * It sets required validators and disabled state, and if number validation is enabled,
-   * it adds a custom validator to check the validity of the phone number.
+   * it adds a pure phone number validator to the field control.
    */
   private addValidations(): void {
+    this.syncValidators();
+    this.applyDisabledState();
+  }
+
+  /** Keeps the internal and outer-control validators aligned with inputs. */
+  private syncValidators(): void {
     this.setRequiredValidators();
-    this.setDisabledState();
     if (this.numberValidation()) {
-      this.fieldControl()?.addValidators(
-        TelValidators.isValidNumber(
-          this.telForm,
-          this.includeDialCode(),
-          this.allCountries,
-          this.outputNumberFormat()
-        )
-      );
+      this.fieldControl()?.addValidators(this.phoneValidator);
+    } else {
+      this.fieldControl()?.removeValidators(this.phoneValidator);
     }
+    this.fieldControl()?.updateValueAndValidity({ emitEvent: false });
+    this.onValidatorChange();
   }
 
   /**
@@ -263,7 +330,7 @@ export class NgxMaterialIntlTelInputComponent
    * If 'disabled' is true, both telForm and fieldControl are disabled.
    * If 'disabled' is false, both telForm and fieldControl are enabled.
    */
-  setDisabledState(): void {
+  applyDisabledState(): void {
     if (this.disabled()) {
       this.telForm?.disable();
       this.fieldControl()?.disable();
@@ -275,21 +342,72 @@ export class NgxMaterialIntlTelInputComponent
 
   /**
    * A lifecycle hook that is called after Angular has fully initialized a component's view.
+   * Sets the compareWith function on the country select, which triggers initializing
+   * the selection according to the current value of the prefix control.
    *
    * @return {void}
    */
   ngAfterViewInit(): void {
-    this.setInitialPrefixValue();
+    const singleSelectInstance = this.singleSelect();
+    if (singleSelectInstance) {
+      singleSelectInstance.compareWith = (a: Country, b: Country) =>
+        !!(a && b && a.iso2 === b.iso2);
+    }
+  }
+
+  //#region ControlValueAccessor
+
+  /**
+   * Writes a new value from the bound form control into the component.
+   */
+  writeValue(value: string | null): void {
+    const normalized = value ?? '';
+    if (!this.initialized) {
+      this.initialValue.set(normalized);
+      return;
+    }
+    this.writingValue = true;
+    try {
+      this.fieldControl()?.setValue(normalized);
+    } finally {
+      this.writingValue = false;
+    }
+  }
+
+  registerOnChange(fn: (value: string) => void): void {
+    this.onChange = fn;
+  }
+
+  registerOnTouched(fn: () => void): void {
+    this.onTouched = fn;
+  }
+
+  registerOnValidatorChange(fn: () => void): void {
+    this.onValidatorChange = fn;
+  }
+
+  /** Called by the forms API when the bound control's disabled state changes. */
+  setDisabledState(isDisabled: boolean): void {
+    this.disabled.set(isDisabled);
   }
 
   /**
-   * Method called when the component is destroyed.
-   *
+   * Validates the bound control's value as an international phone number.
    */
-  ngOnDestroy(): void {
-    this._onDestroy.next();
-    this._onDestroy.complete();
+  validate(control: AbstractControl): ValidationErrors | null {
+    if (this.required() && !control.value) {
+      return { required: true };
+    }
+    if (!this.numberValidation()) {
+      return null;
+    }
+    return validatePhoneNumber(
+      control.value,
+      this.telForm?.value?.prefixCtrl?.iso2
+    );
   }
+
+  //#endregion
 
   /**
    * Performs a geo IP lookup and sets the prefix control value based on the country retrieved.
@@ -298,7 +416,7 @@ export class NgxMaterialIntlTelInputComponent
     this.geoIpService.geoIpLookup().subscribe({
       next: (data: GeoData) => {
         const country =
-          this.allCountries?.find(
+          this.allCountries().find(
             (c) => c.iso2 === data.country_code?.toLowerCase()
           ) || null;
         if (country) {
@@ -309,6 +427,7 @@ export class NgxMaterialIntlTelInputComponent
       },
       error: () => {
         this.setAutoSelectedCountry();
+        this.isLoading.set(false);
       },
       complete: () => {
         this.isLoading.set(false);
@@ -317,47 +436,12 @@ export class NgxMaterialIntlTelInputComponent
   }
 
   /**
-   * Sets the initial value after the filteredCountries are loaded initially
+   * Whether the visible input shows the number including its dial code.
+   * Northern Mariana Islands ('mp') always does: its +1 670 numbers are
+   * indistinguishable from US numbers in national format.
    */
-  protected setInitialPrefixValue(): void {
-    this.filteredCountries
-      .pipe(take(1), takeUntil(this._onDestroy))
-      .subscribe(() => {
-        // setting the compareWith property to a comparison function
-        // triggers initializing the selection according to the initial value of
-        // the form control (i.e. _initializeSelection())
-        // this needs to be done after the filteredCountries are loaded initially
-        // and after the mat-option elements are available
-        const singleSelectInstance = this.singleSelect() as MatSelect;
-        singleSelectInstance.compareWith = (a: Country, b: Country) =>
-          a && b && a.iso2 === b.iso2;
-      });
-  }
-
-  /**
-   * Method to filter the list of countries based on a search keyword.
-   *
-   */
-  protected filterCountries(): void {
-    if (!this.allCountries) {
-      return;
-    }
-    // get the search keyword
-    const normalizedSearch = this.normalizeSearchValue(
-      this.prefixFilterCtrl.value
-    );
-    if (!normalizedSearch) {
-      this.filteredCountries.next(this.allCountries.slice());
-      return;
-    }
-    // filter the countries
-    this.filteredCountries.next(
-      this.allCountries.filter(
-        (country) =>
-          this.normalizeSearchValue(country?.name).indexOf(normalizedSearch) >
-          -1
-      )
-    );
+  protected requiresDialCode(iso2?: CountryISO | string): boolean {
+    return this.includeDialCode() || iso2 === 'mp';
   }
 
   /**
@@ -393,6 +477,7 @@ export class NgxMaterialIntlTelInputComponent
    */
   onInputBlur(): void {
     this.isFocused.set(false);
+    this.onTouched();
   }
 
   /**
@@ -400,25 +485,27 @@ export class NgxMaterialIntlTelInputComponent
    */
   private startTelFormValueChangesListener(): void {
     this.telForm.valueChanges
-      .pipe(takeUntil(this._onDestroy))
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((data) => {
         const inputElement = this.numberInput()?.nativeElement;
         if (data?.numberControl) {
           const cursorPosition = inputElement?.selectionStart;
           const currentValue = data.numberControl;
           this.fieldControl()?.markAsDirty();
+          const callingCode = this.getParsingCallingCode(
+            data?.prefixCtrl?.iso2,
+            data?.prefixCtrl?.dialCode
+          );
           const value =
-            data?.prefixCtrl?.dialCode &&
-            !this.includeDialCode() &&
-            data?.prefixCtrl?.iso2 !== 'mp'
-              ? '+' + data.prefixCtrl.dialCode + data.numberControl
+            callingCode && !this.requiresDialCode(data?.prefixCtrl?.iso2)
+              ? '+' + callingCode + data.numberControl
               : data.numberControl;
           try {
-            const parsed = this.phoneNumberUtil.parse(
+            const parsed = parsePhoneNumberWithError(
               value,
-              data?.prefixCtrl?.iso2
+              this.toRegion(data?.prefixCtrl?.iso2)
             );
-            const formatted = this.phoneNumberUtil.format(
+            const formatted = formatPhoneNumber(
               parsed,
               this.outputNumberFormat()
             );
@@ -445,7 +532,7 @@ export class NgxMaterialIntlTelInputComponent
    */
   private startPrefixValueChangesListener(): void {
     this.prefixCtrl.valueChanges
-      .pipe(takeUntil(this._onDestroy))
+      .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((data) => {
         if (this.includeDialCode() && data?.dialCode) {
           this.telForm
@@ -478,27 +565,14 @@ export class NgxMaterialIntlTelInputComponent
       }
     } else {
       try {
-        const parsedNumber = this.phoneNumberUtil.parse(this.initialValue());
-        const countryCode = parsedNumber.getCountryCode();
-        const country = this.allCountries?.find((c) => {
-          if (c.dialCode === countryCode?.toString()) {
-            if (c.areaCodes) {
-              return c.areaCodes?.find((ac) =>
-                parsedNumber.getNationalNumber()?.toString().startsWith(ac)
-              );
-            } else if (c.priority === 0) {
-              return c;
-            }
-          }
-          return undefined;
-        });
+        const parsedNumber = parsePhoneNumberWithError(this.initialValue());
+        const country = this.findCountryForNumber(parsedNumber);
         if (country) {
           this.prefixCtrl.setValue(country);
         }
-        const formattedOnlyNumber = this.phoneNumberUtil.format(
+        const formattedOnlyNumber = formatPhoneNumber(
           parsedNumber,
-          this.includeDialCode() ||
-            this.telForm?.value?.prefixCtrl?.iso2 === 'mp'
+          this.requiresDialCode(this.telForm?.value?.prefixCtrl?.iso2)
             ? this.outputNumberFormat()
             : PhoneNumberFormat.NATIONAL
         );
@@ -520,59 +594,112 @@ export class NgxMaterialIntlTelInputComponent
    *
    */
   private setAutoSelectedCountry(): void {
-    const autoSelectedCountry = this.allCountries?.find(
+    const autoSelectedCountry = this.allCountries().find(
       (country) => country?.iso2 === this.autoSelectedCountry()
     );
     if (autoSelectedCountry) {
       this.prefixCtrl.setValue(autoSelectedCountry);
-    } else {
-      const defaultCountry = this.allCountries?.find(
-        (country) => country?.iso2 === CountryISO.Spain
-      );
-      if (defaultCountry) {
-        this.prefixCtrl.setValue(defaultCountry);
-      } else {
-        this.prefixCtrl.setValue(this.allCountries?.[0]);
+      return;
+    }
+    const defaultCountry = this.allCountries().find(
+      (country) => country?.iso2 === this.defaultCountry()
+    );
+    this.prefixCtrl.setValue(defaultCountry || this.allCountries()?.[0]);
+  }
+
+  /**
+   * Finds the Country entry matching a parsed phone number.
+   * libphonenumber-js resolves shared calling codes (e.g. +1 area codes) itself,
+   * so the ISO country reported by the parser is preferred; numbers it cannot
+   * attribute fall back to the highest-priority country for the calling code.
+   */
+  private findCountryForNumber(parsed: PhoneNumber): Country | undefined {
+    const iso = parsed.country?.toLowerCase();
+    const countries = this.allCountries();
+    if (iso) {
+      const match = countries.find((c) => c.iso2 === iso);
+      if (match) {
+        return match;
       }
+    }
+    const currentCountry = this.prefixCtrl.value;
+    if (
+      currentCountry &&
+      this.getParsingCallingCode(
+        currentCountry.iso2,
+        currentCountry.dialCode
+      ) === parsed.countryCallingCode
+    ) {
+      return currentCountry;
+    }
+    return countries.find(
+      (c) => c.dialCode === parsed.countryCallingCode && c.priority === 0
+    );
+  }
+
+  /**
+   * Updates the selected country to match a parsed phone number, without
+   * re-triggering value change listeners.
+   */
+  private syncPrefixFromNumber(parsed: PhoneNumber): void {
+    const country = this.findCountryForNumber(parsed);
+    if (country && country.iso2 !== this.prefixCtrl.value?.iso2) {
+      this.prefixCtrl.setValue(country, { emitEvent: false });
     }
   }
 
   /**
    * Listens to changes in the field control value and updates it accordingly.
-   * If the value is valid, it parses and formats it using the phoneNumberUtil.
-   * If the value is not valid, it sets the value as is.
-   * Finally, emits the currentValue signal with the updated field control value.
+   * If the value is valid, it parses and formats it, keeps the visible number
+   * input and the selected country in sync, and notifies the forms API.
+   * Finally, emits the currentValue output with the updated field control value.
    */
   private startFieldControlValueChangesListener(): void {
     const valueChanges = this.fieldControl()
       ?.valueChanges as Observable<string>;
-    valueChanges.pipe(takeUntil(this._onDestroy)).subscribe((data: string) => {
-      if (data) {
-        try {
-          const parsed = this.phoneNumberUtil.parse(
-            data,
-            this.telForm?.value?.prefixCtrl?.iso2
-          );
-          const formatted = this.phoneNumberUtil.format(
-            parsed,
-            this.outputNumberFormat()
-          );
-          this.fieldControl()?.setValue(formatted, { emitEvent: false });
-        } catch {
-          this.fieldControl()?.setValue(data, { emitEvent: false });
+    valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((data: string) => {
+        if (data) {
+          try {
+            const parsed = parsePhoneNumberWithError(
+              data,
+              this.toRegion(this.telForm?.value?.prefixCtrl?.iso2)
+            );
+            const formatted = formatPhoneNumber(
+              parsed,
+              this.outputNumberFormat()
+            );
+            this.fieldControl()?.setValue(formatted, { emitEvent: false });
+            this.syncPrefixFromNumber(parsed);
+            const formattedOnlyNumber = formatPhoneNumber(
+              parsed,
+              this.requiresDialCode(this.telForm?.value?.prefixCtrl?.iso2)
+                ? this.outputNumberFormat()
+                : PhoneNumberFormat.NATIONAL
+            );
+            this.telForm
+              .get('numberControl')
+              ?.setValue(formattedOnlyNumber, { emitEvent: false });
+          } catch {
+            this.fieldControl()?.setValue(data, { emitEvent: false });
+          }
+        } else {
+          this.telForm.get('numberControl')?.setValue('', { emitEvent: false });
+          this.fieldControl()?.setValue('', { emitEvent: false });
         }
-      } else {
-        this.telForm.get('numberControl')?.setValue('', { emitEvent: false });
-        this.fieldControl()?.setValue('', { emitEvent: false });
-      }
-      this.currentValue?.emit(this.fieldControl()?.value || data);
-      this.currentCountryCode?.emit(
-        this.prefixCtrl.value?.dialCode
-          ? `+${this.prefixCtrl.value?.dialCode}`
-          : ''
-      );
-      this.currentCountryISO?.emit(this.prefixCtrl.value?.iso2 || '');
-    });
+        if (!this.writingValue) {
+          const value = this.fieldControl()?.value || data;
+          this.onChange(value);
+          this.currentValue?.emit(value);
+          this.currentCountryCode?.emit(
+            this.prefixCtrl.value?.dialCode
+              ? `+${this.prefixCtrl.value?.dialCode}`
+              : ''
+          );
+          this.currentCountryISO?.emit(this.prefixCtrl.value?.iso2 || '');
+        }
+      });
   }
 
   /**
@@ -581,7 +708,7 @@ export class NgxMaterialIntlTelInputComponent
    */
   private startFieldControlStatusChangesListener(): void {
     this.fieldControl()
-      ?.statusChanges.pipe(takeUntil(this._onDestroy))
+      ?.statusChanges.pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((status: FormControlStatus) => {
         if (status === 'DISABLED') {
           this.disabled.set(true);
@@ -617,6 +744,35 @@ export class NgxMaterialIntlTelInputComponent
   }
 
   /**
+   * Converts a lowercase ISO2 code to the uppercase region code expected by libphonenumber-js.
+   */
+  private toRegion(
+    iso2: CountryISO | string | undefined | null
+  ): LibCountryCode | undefined {
+    return iso2 ? (iso2.toUpperCase() as LibCountryCode) : undefined;
+  }
+
+  /**
+   * Returns the calling code understood by libphonenumber-js. Dataset dial
+   * codes may include a NANP area code, such as 1767 for Dominica, while the
+   * parser expects the shared country calling code 1.
+   */
+  private getParsingCallingCode(
+    iso2: CountryISO | string | undefined,
+    fallback?: string
+  ): string {
+    const region = this.toRegion(iso2);
+    if (!region) {
+      return fallback || '';
+    }
+    try {
+      return getCountryCallingCode(region);
+    } catch {
+      return fallback || '';
+    }
+  }
+
+  /**
    * Sets the cursor position in the input element after formatting the phone number.
    *
    * @param inputElement - The HTML input element where the cursor position is to be set.
@@ -633,9 +789,9 @@ export class NgxMaterialIntlTelInputComponent
     if (!this.numberValidation()) {
       return;
     }
-    const nationalNumber = this.phoneNumberUtil.format(
+    const nationalNumber = formatPhoneNumber(
       parsed,
-      this.includeDialCode()
+      this.requiresDialCode(this.prefixCtrl.value?.iso2)
         ? this.outputNumberFormat()
         : PhoneNumberFormat.NATIONAL
     );
@@ -699,7 +855,7 @@ export class NgxMaterialIntlTelInputComponent
   /**
    * Gets the maximum input length for a given country code.
    * This is used to set the maxlength attribute on the input field.
-   * Dynamically adjusts based on whether the current number is valid/formatted.
+   * A generous cap only: exact too-long detection is the validator's job.
    *
    * @param countryCode ISO2 country code
    * @returns Maximum allowed length for the input field
@@ -708,177 +864,14 @@ export class NgxMaterialIntlTelInputComponent
     if (!countryCode) {
       return 25; // Default fallback with generous space
     }
-
-    try {
-      const baseMaxLength = getMaxPhoneNumberLength(countryCode);
-      const currentValue = this.telForm.get('numberControl')?.value || '';
-
-      // Check if the current number is valid and formatted
-      const isCurrentNumberValid = this.isCurrentNumberValidAndFormatted(
-        currentValue,
-        countryCode
-      );
-
-      if (isCurrentNumberValid) {
-        // For valid numbers, allow full formatting space
-        const formattingBuffer = this.calculateFormattingBuffer(
-          countryCode,
-          baseMaxLength
-        );
-        const safetyMargin = this.calculateSafetyMargin();
-        return baseMaxLength + formattingBuffer + safetyMargin;
-      } else {
-        // For invalid numbers, be more restrictive to prevent overly long input
-        // Only allow the base number length plus minimal buffer for dial code if included
-        let minimalBuffer = this.includeDialCode() ? 4 : 2;
-
-        // Special case: RFC3966 with includeDialCode needs more space even for invalid numbers
-        // because "tel:" prefix takes significant space during typing
-        if (
-          this.includeDialCode() &&
-          this.outputNumberFormat() === PhoneNumberFormat.RFC3966
-        ) {
-          minimalBuffer = 8; // Extra space for "tel:" prefix and formatting
-        }
-
-        return baseMaxLength + minimalBuffer;
-      }
-    } catch (_) {
-      // If any errors occur, fall back to a conservative default
-      const baseMaxLength = getMaxPhoneNumberLength(countryCode);
-      return baseMaxLength + 3; // Minimal fallback buffer
+    let buffer = this.includeDialCode() ? 8 : 6;
+    if (
+      this.includeDialCode() &&
+      normalizePhoneNumberFormat(this.outputNumberFormat()) ===
+        PhoneNumberFormat.RFC3966
+    ) {
+      buffer += 6; // room for the "tel:" prefix and separators while typing
     }
-  };
-
-  /**
-   * Checks if the current number is valid and properly formatted.
-   * Valid formatted numbers contain spaces/separators.
-   *
-   * @param currentValue Current input value
-   * @param countryCode ISO2 country code
-   * @returns True if number is valid and formatted
-   */
-  private isCurrentNumberValidAndFormatted = (
-    currentValue: string,
-    countryCode: string
-  ): boolean => {
-    if (!currentValue || currentValue.length < 3) {
-      return false; // Too short to be valid
-    }
-
-    try {
-      // Try to parse the current value
-      const fullNumber = this.includeDialCode()
-        ? currentValue
-        : `+${this.prefixCtrl.value?.dialCode}${currentValue}`;
-
-      const parsedNumber = this.phoneNumberUtil.parse(fullNumber, countryCode);
-      const isValid = this.phoneNumberUtil.isValidNumber(parsedNumber);
-
-      // Check if the number contains formatting characters (spaces, dashes, etc.)
-      const hasFormatting = /[\s\-()]/.test(currentValue);
-
-      return isValid && hasFormatting;
-    } catch (_) {
-      return false;
-    }
-  };
-
-  /**
-   * Calculates an appropriate safety margin based on component configuration.
-   * Different configurations require different buffer spaces.
-   * Uses conservative margins to prevent overly long input that requires JS correction.
-   *
-   * @returns Calculated safety margin
-   */
-  private calculateSafetyMargin = (): number => {
-    let safetyMargin = 1; // Reduced base safety margin
-
-    // If dial code is included in the input, we need slightly more space
-    // because the user types the dial code along with the number
-    if (this.includeDialCode()) {
-      safetyMargin += 1; // Reduced from 2 to 1
-    }
-
-    // Different output formats have different space requirements
-    switch (this.outputNumberFormat()) {
-      case PhoneNumberFormat.RFC3966:
-        // RFC3966 format (tel: URI) requires additional space for "tel:" prefix
-        safetyMargin += 2; // Reduced from 4 to 2
-        break;
-      case PhoneNumberFormat.E164:
-        // E164 is the most compact format, minimal extra space needed
-        safetyMargin += 0; // Reduced from 1 to 0 (only base margin)
-        break;
-      case PhoneNumberFormat.INTERNATIONAL:
-      default:
-        // International format includes country code and international formatting
-        safetyMargin += 1; // Reduced from 2 to 1
-        break;
-    }
-
-    return safetyMargin;
-  };
-
-  /**
-   * Calculates the formatting buffer needed for a country's phone number formatting.
-   * Analyzes example formatted numbers to determine space requirements.
-   *
-   * @param countryCode ISO2 country code
-   * @param baseLength Base maximum number length
-   * @returns Calculated formatting buffer
-   */
-  private calculateFormattingBuffer = (
-    countryCode: string,
-    baseLength: number
-  ): number => {
-    try {
-      const phoneUtil = PhoneNumberUtil.getInstance();
-
-      // Get example numbers for analysis
-      const numberTypes = [
-        PhoneNumberType.MOBILE,
-        PhoneNumberType.FIXED_LINE,
-        PhoneNumberType.FIXED_LINE_OR_MOBILE
-      ];
-
-      let maxFormattingOverhead = 0;
-
-      for (const numberType of numberTypes) {
-        try {
-          const exampleNumber = phoneUtil.getExampleNumberForType(
-            countryCode.toUpperCase(),
-            numberType
-          );
-
-          if (exampleNumber) {
-            // Format the number and calculate the overhead
-            const formattedNational = phoneUtil.format(
-              exampleNumber,
-              PhoneNumberFormat.NATIONAL
-            );
-
-            const nationalNumber =
-              exampleNumber.getNationalNumber()?.toString() || '';
-            const formattingOverhead =
-              formattedNational.length - nationalNumber.length;
-
-            maxFormattingOverhead = Math.max(
-              maxFormattingOverhead,
-              formattingOverhead
-            );
-          }
-        } catch (_) {
-          // Continue with next type if this one fails
-        }
-      }
-
-      // If we couldn't analyze any examples, use a reasonable default
-      // Most international formatting adds 2-4 characters for spaces and separators
-      return maxFormattingOverhead > 0 ? maxFormattingOverhead : 4;
-    } catch (_) {
-      // Fallback to a standard formatting buffer
-      return 4;
-    }
+    return getMaxPhoneNumberLength(countryCode) + buffer;
   };
 }

@@ -3,6 +3,14 @@ module.exports = {
   preset: '../../jest.preset.js',
   setupFilesAfterEnv: ['<rootDir>/src/test-setup.ts'],
   coverageDirectory: '../../coverage/libs/ngx-material-intl-tel-input-lib',
+  coverageThreshold: {
+    global: {
+      statements: 95,
+      branches: 80,
+      functions: 90,
+      lines: 95
+    }
+  },
   transform: {
     '^.+\\.(ts|mjs|js|html)$': [
       'jest-preset-angular',

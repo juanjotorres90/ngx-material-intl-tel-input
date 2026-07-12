@@ -4,21 +4,16 @@ import {
   inject,
   signal
 } from '@angular/core';
-import {
-  FormBuilder,
-  FormGroup,
-  ReactiveFormsModule,
-  Validators
-} from '@angular/forms';
+import { FormBuilder, FormGroup, ReactiveFormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
 import { RouterModule } from '@angular/router';
-import { PhoneNumberFormat } from 'google-libphonenumber';
 import {
   NgxMaterialIntlTelInputComponent,
+  PhoneNumberFormat,
   TextLabels
 } from 'ngx-material-intl-tel-input';
 
@@ -63,7 +58,7 @@ export class AppComponent {
 
   constructor() {
     this.formTestGroup = this.fb.group({
-      phone: ['', [Validators.required]],
+      phone: [''],
       setPhoneTextbox: ['']
     });
   }
@@ -81,7 +76,7 @@ export class AppComponent {
    * Submits the form data by setting the submitted phone value to the current phone value from the form group.
    */
   onSubmit(): void {
-    this.submittedPhoneValue.set(this.formTestGroup.value['phone']);
+    this.submittedPhoneValue.set(this.formTestGroup.value['phone'] ?? '');
   }
 
   /**

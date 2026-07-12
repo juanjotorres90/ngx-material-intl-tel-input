@@ -1,46 +1,54 @@
 import { inject, Injectable } from '@angular/core';
 import { Country } from '../../types/country.model';
-import {
-  PhoneNumberFormat,
-  PhoneNumberType,
-  PhoneNumberUtil
-} from 'google-libphonenumber';
 import { CountryCode, CountryData } from '../../data/country-code';
 import { CountryISO } from '../../enums/country-iso.enum';
+import {
+  PhoneNumberFormat,
+  PhoneNumberOutputFormat
+} from '../../enums/phone-number-format.enum';
+import {
+  formatPhoneNumber,
+  getExampleMobileNumber
+} from '../../utils/phone-number.utils';
 import { CountryDisplayNameService } from '../country-display-name/country-display-name.service';
+
+export type ProcessCountriesOptions = {
+  enablePlaceholder?: boolean;
+  includeDialCode?: boolean;
+  visibleCountries?: (CountryISO | string)[];
+  preferredCountries?: (CountryISO | string)[];
+  excludedCountries?: (CountryISO | string)[];
+  useMask?: boolean;
+  forceSelectedCountryCode?: boolean;
+  showMaskPlaceholder?: boolean;
+  outputNumberFormat?: PhoneNumberOutputFormat;
+  localizeCountryNames?: boolean;
+};
 
 @Injectable()
 export class CountryDataService {
   private readonly countryDisplayNameService: CountryDisplayNameService =
     inject(CountryDisplayNameService);
 
-  phoneNumberUtil = PhoneNumberUtil.getInstance();
-
   /**
-   * Retrieves a Country object based on the provided country data and placeholder flag.
+   * Retrieves a Country object based on the provided country data and options.
    *
    * @param {CountryData} countryData - the country data used to create the Country object
-   * @param {boolean} enablePlaceholder - a flag indicating whether to include a placeholder value
+   * @param {ProcessCountriesOptions} options - processing options
    * @return {Country} the generated Country object
    */
   private getCountryObject(
     countryData: CountryData,
-    enablePlaceholder: boolean,
-    includeDialCode: boolean,
-    useMask: boolean,
-    forceSelectedCountryCode: boolean,
-    showMaskPlaceholder: boolean,
-    outputNumberFormat: PhoneNumberFormat,
-    localizeCountryNames: boolean
+    options: ProcessCountriesOptions
   ): Country {
     const phoneNumberPlaceholder = this.getPhoneNumberPlaceholder(
       countryData[2].toString().toUpperCase(),
-      includeDialCode,
-      outputNumberFormat
+      !!options.includeDialCode,
+      options.outputNumberFormat ?? PhoneNumberFormat.INTERNATIONAL
     );
     const isoCode = countryData[2].toString();
     const fallbackName = countryData[1].toString();
-    const countryName = localizeCountryNames
+    const countryName = options.localizeCountryNames
       ? this.countryDisplayNameService.getCountryName(isoCode, fallbackName)
       : fallbackName;
     const country: Country = {
@@ -52,16 +60,16 @@ export class CountryDataService {
       areaCodes: (countryData[5] as string[]) || undefined,
       htmlId: `country-code__${countryData[2].toString()}`,
       flagClass: `country-code__${countryData[2].toString().toLocaleLowerCase()}`,
-      placeHolder: enablePlaceholder ? phoneNumberPlaceholder : ''
+      placeHolder: options.enablePlaceholder ? phoneNumberPlaceholder : ''
     };
-    if (useMask) {
+    if (options.useMask) {
       const mask = this.formatPhoneNumberWithPrefix(
         phoneNumberPlaceholder,
-        !forceSelectedCountryCode
+        !options.forceSelectedCountryCode
       );
       country.mask = {
         mask: mask,
-        lazy: !showMaskPlaceholder
+        lazy: !options.showMaskPlaceholder
       };
     }
     return country;
@@ -76,7 +84,7 @@ export class CountryDataService {
    */
   private sortCountries(
     allCountries: Country[],
-    preferredCountries?: string[]
+    preferredCountries?: (CountryISO | string)[]
   ): Country[] {
     if (preferredCountries?.length) {
       return allCountries.sort((a, b) => {
@@ -107,58 +115,34 @@ export class CountryDataService {
   protected getPhoneNumberPlaceholder(
     countryCode: string,
     includeDialCode: boolean,
-    outputNumberFormat: PhoneNumberFormat
+    outputNumberFormat: PhoneNumberOutputFormat
   ): string {
-    try {
-      return this.phoneNumberUtil.format(
-        this.phoneNumberUtil.getExampleNumberForType(
-          countryCode,
-          PhoneNumberType.MOBILE
-        ),
-        includeDialCode || countryCode === 'MP'
-          ? outputNumberFormat
-          : PhoneNumberFormat.NATIONAL
-      );
-    } catch {
+    const exampleNumber = getExampleMobileNumber(countryCode);
+    if (!exampleNumber) {
       return '';
     }
+    return formatPhoneNumber(
+      exampleNumber,
+      includeDialCode || countryCode === 'MP'
+        ? outputNumberFormat
+        : PhoneNumberFormat.NATIONAL
+    );
   }
 
   /**
-   * Process the list of countries based on the provided data and parameters.
+   * Process the list of countries based on the provided data and options.
    *
    * @param {CountryCode} countryCodeData - the data containing country codes
-   * @param {boolean} enablePlaceholder - flag to enable placeholder
-   * @param {(CountryISO | string)[]} [visibleCountries] - optional array of visible country ISO codes or country names
-   * @param {(CountryISO | string)[]} [preferredCountries] - optional array of preferred country ISO codes or country names
-   * @param {(CountryISO | string)[]} [excludedCountries] - optional array of excluded country ISO codes or country names
+   * @param {ProcessCountriesOptions} options - filtering, sorting and formatting options
    * @return {Country[]} the processed and sorted list of countries
    */
   processCountries(
     countryCodeData: CountryCode,
-    enablePlaceholder: boolean,
-    includeDialCode: boolean,
-    visibleCountries?: (CountryISO | string)[],
-    preferredCountries?: (CountryISO | string)[],
-    excludedCountries?: (CountryISO | string)[],
-    useMask = false,
-    forceSelectedCountryCode = false,
-    showMaskPlaceholder = false,
-    outputNumberFormat = PhoneNumberFormat.INTERNATIONAL,
-    localizeCountryNames = false
+    options: ProcessCountriesOptions = {}
   ): Country[] {
+    const { visibleCountries, excludedCountries, preferredCountries } = options;
     const allCountries: Country[] = countryCodeData.allCountries.map(
-      (countryData: CountryData) =>
-        this.getCountryObject(
-          countryData,
-          enablePlaceholder,
-          includeDialCode,
-          useMask,
-          forceSelectedCountryCode,
-          showMaskPlaceholder,
-          outputNumberFormat,
-          localizeCountryNames
-        )
+      (countryData: CountryData) => this.getCountryObject(countryData, options)
     );
     const filteredVisibleCountries = visibleCountries?.length
       ? allCountries.filter((country) =>
@@ -170,11 +154,7 @@ export class CountryDataService {
           (country) => !excludedCountries.includes(country.iso2)
         )
       : filteredVisibleCountries;
-    const sortedCountries = this.sortCountries(
-      filteredCountries,
-      preferredCountries
-    );
-    return sortedCountries;
+    return this.sortCountries(filteredCountries, preferredCountries);
   }
 
   /**

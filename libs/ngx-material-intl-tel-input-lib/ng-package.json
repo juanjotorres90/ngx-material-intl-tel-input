@@ -11,5 +11,10 @@
   "lib": {
     "entryFile": "src/index.ts"
   },
-  "allowedNonPeerDependencies": ["."]
+  "allowedNonPeerDependencies": [
+    "angular-imask",
+    "google-libphonenumber",
+    "libphonenumber-js",
+    "tslib"
+  ]
 }
