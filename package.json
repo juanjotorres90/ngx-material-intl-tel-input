@@ -55,6 +55,7 @@
     "@types/jest": "^30.0.0",
     "@types/node": "^24.10.3",
     "@typescript-eslint/utils": "^8.46.0",
+    "angular-eslint": "^22.0.0",
     "autoprefixer": "^10.4.0",
     "eslint": "^10.0.3",
     "eslint-config-prettier": "^10.1.5",
