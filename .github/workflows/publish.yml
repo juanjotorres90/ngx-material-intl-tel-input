@@ -1,0 +1,44 @@
+name: Publish
+
+on:
+  push:
+    tags:
+      - '[0-9]+.[0-9]+.[0-9]+'
+      - '[0-9]+.[0-9]+.[0-9]+-*'
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: 'npm'
+          registry-url: 'https://registry.npmjs.org'
+
+      - run: npm ci
+
+      - name: Verify tag matches library version
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          PKG_VERSION=$(node -p "require('./libs/ngx-material-intl-tel-input-lib/package.json').version")
+          if [ "$TAG" != "$PKG_VERSION" ]; then
+            echo "Tag $TAG does not match libs/ngx-material-intl-tel-input-lib/package.json version $PKG_VERSION"
+            exit 1
+          fi
+
+      - run: npx nx run ngx-material-intl-tel-input-lib:build:production
+
+      - name: Publish to npm
+        working-directory: dist/libs/ngx-material-intl-tel-input-lib
+        run: npm publish --access public --provenance
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}

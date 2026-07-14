@@ -1,9 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { AppComponent } from './app.component';
-import { provideHttpClient, withFetch } from '@angular/common/http';
 import { ComponentFixture } from '@angular/core/testing';
 import { ReactiveFormsModule } from '@angular/forms';
-import { BrowserAnimationsModule } from '@angular/platform-browser/animations';
 import { PhoneNumberFormat } from 'google-libphonenumber';
 
 describe('AppComponent', () => {
@@ -12,8 +10,7 @@ describe('AppComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [AppComponent, ReactiveFormsModule, BrowserAnimationsModule],
-      providers: [provideHttpClient(withFetch())]
+      imports: [AppComponent, ReactiveFormsModule]
     }).compileComponents();
 
     fixture = TestBed.createComponent(AppComponent);
