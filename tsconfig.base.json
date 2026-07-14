@@ -17,7 +17,12 @@
       "ngx-material-intl-tel-input": [
         "./libs/ngx-material-intl-tel-input-lib/src/index.ts"
       ]
-    }
+    },
+    "strict": false,
+    "noUncheckedSideEffectImports": false,
+    "types": ["*"],
+    "esModuleInterop": false,
+    "ignoreDeprecations": "6.0"
   },
   "exclude": ["node_modules", "tmp"]
 }
