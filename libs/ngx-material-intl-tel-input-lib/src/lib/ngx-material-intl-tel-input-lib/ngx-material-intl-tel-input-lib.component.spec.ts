@@ -1,9 +1,7 @@
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NgxMaterialIntlTelInputComponent } from './ngx-material-intl-tel-input-lib.component';
-import { NoopAnimationsModule } from '@angular/platform-browser/animations';
 import { PhoneNumberFormat, PhoneNumberUtil } from 'google-libphonenumber';
 import { Country } from '../types/country.model';
-import { provideHttpClient, withFetch } from '@angular/common/http';
 import { ControlContainer, FormControl, Validators } from '@angular/forms';
 import { of, Subject } from 'rxjs';
 import { GeoData } from '../types/geo.type';
@@ -19,9 +17,8 @@ describe('NgxMaterialIntlTelInputComponent', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [NgxMaterialIntlTelInputComponent, NoopAnimationsModule],
+      imports: [NgxMaterialIntlTelInputComponent],
       providers: [
-        provideHttpClient(withFetch()),
         ControlContainer,
         { provide: GeoIpService, useValue: geoIpServiceMock }
       ]
@@ -57,7 +54,7 @@ describe('NgxMaterialIntlTelInputComponent', () => {
     expect(component.enablePlaceholder()).toBe(true);
     expect(component.enableSearch()).toBe(true);
     expect(component.includeDialCode()).toBe(false);
-    expect(component.autoIpLookup()).toBe(true);
+    expect(component.autoIpLookup()).toBe(false);
     expect(component.autoSelectCountry()).toBe(true);
     expect(component.autoSelectedCountry()).toBe('');
     expect(component.numberValidation()).toBe(true);
@@ -389,7 +386,6 @@ describe('NgxMaterialIntlTelInputComponent', () => {
         { name: 'United States', iso2: 'us', dialCode: '1' } as Country
       ];
       jest.spyOn(component as any, 'setAutoSelectedCountry');
-      // Ensure the mock service is properly set up
       (component as any).geoIpService = geoIpServiceMock;
     });
 

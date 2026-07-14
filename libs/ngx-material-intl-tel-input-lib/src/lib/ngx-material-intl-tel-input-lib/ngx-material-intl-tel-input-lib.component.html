@@ -5,7 +5,7 @@
   <div
     class="tel-form"
     [formGroup]="telForm"
-    [ngClass]="{ 'is-focused': isFocused() && appearance() !== 'outline' }"
+    [class.is-focused]="isFocused() && appearance() !== 'outline'"
   >
     <mat-form-field
       [appearance]="appearance()"
@@ -35,7 +35,7 @@
               } @else {
                 <div
                   class="country-option-flag"
-                  [ngClass]="$safeNavigationMigration(prefixCtrl.value?.flagClass)"
+                  [class]="prefixCtrl.value?.flagClass"
                 ></div>
               }
             </div>
@@ -89,7 +89,7 @@
                 } @else {
                   <div
                     class="country-option-flag"
-                    [ngClass]="country.flagClass"
+                    [class]="country.flagClass"
                   ></div>
                 }
               </div>
@@ -115,11 +115,11 @@
         [required]="required()"
         [attr.maxlength]="
           enableInputMaxLength()
-            ? getMaxInputLength($safeNavigationMigration(prefixCtrl.value?.iso2))
+            ? getMaxInputLength(prefixCtrl.value?.iso2)
             : null
         "
         #numberInput
-        [imask]="$safeNavigationMigration(prefixCtrl.value?.mask)"
+        [imask]="prefixCtrl.value?.mask"
       />
 
       @if (!hidePhoneIcon()) {
