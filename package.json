@@ -35,6 +35,7 @@
     "@angular-eslint/eslint-plugin": "22.1.0",
     "@angular-eslint/eslint-plugin-template": "22.1.0",
     "@angular-eslint/template-parser": "22.1.0",
+    "@angular/build": "~22.0.4",
     "@angular/cli": "22.0.6",
     "@angular/compiler-cli": "22.0.6",
     "@angular/language-service": "22.0.6",
