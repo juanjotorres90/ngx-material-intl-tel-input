@@ -174,7 +174,7 @@ To start your development once you have cloned this project, you must execute:
 
 - Using Nodejs:
 
-Node `^20.19.0`, `^22.12.0`, or `>=24.0.0` is required.
+Node `^22.22.3`, `^24.15.0`, or `>=26.0.0` is required.
 
 ```bash
 npm install
