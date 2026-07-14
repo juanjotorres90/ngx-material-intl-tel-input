@@ -5,7 +5,6 @@ import {
   provideHttpClientTesting
 } from '@angular/common/http/testing';
 import { GeoData } from '../../types/geo.type';
-import { provideHttpClient, withFetch } from '@angular/common/http';
 
 describe('GeoIpService', () => {
   let service: GeoIpService;
@@ -13,11 +12,7 @@ describe('GeoIpService', () => {
 
   beforeEach(() => {
     TestBed.configureTestingModule({
-      providers: [
-        GeoIpService,
-        provideHttpClientTesting(),
-        provideHttpClient(withFetch())
-      ]
+      providers: [GeoIpService, provideHttpClientTesting()]
     });
     service = TestBed.inject(GeoIpService);
     httpMock = TestBed.inject(HttpTestingController);
@@ -62,11 +57,12 @@ describe('GeoIpService', () => {
       org: 'The Tor Project, Inc.'
     };
 
-    service.geoIpLookup().subscribe((data) => {
-      expect(data).toEqual(mockGeoData);
-      const req = httpMock.expectOne('https://ipapi.co/json');
-      expect(req.request.method).toBe('GET');
-      req.flush(mockGeoData);
-    });
+    service
+      .geoIpLookup()
+      .subscribe((data) => expect(data).toEqual(mockGeoData));
+
+    const req = httpMock.expectOne('https://ipapi.co/json');
+    expect(req.request.method).toBe('GET');
+    req.flush(mockGeoData);
   });
 });

@@ -1,11 +1,5 @@
-const { FlatCompat } = require('@eslint/eslintrc');
-const js = require('@eslint/js');
+const angular = require('angular-eslint');
 const nx = require('@nx/eslint-plugin');
-
-const compat = new FlatCompat({
-  baseDirectory: __dirname,
-  recommendedConfig: js.configs.recommended
-});
 
 module.exports = [
   ...nx.configs['flat/base'],
@@ -29,45 +23,35 @@ module.exports = [
       ]
     }
   },
-  ...compat
-    .config({
-      extends: [
-        'plugin:@nx/angular',
-        'plugin:@angular-eslint/template/process-inline-templates'
+  { files: ['**/*.ts'], processor: angular.processInlineTemplates },
+  ...nx.configs['flat/angular'].map((config) => ({
+    ...config,
+    files: ['**/*.ts'],
+    rules: {
+      ...config.rules,
+      '@angular-eslint/directive-selector': [
+        'error',
+        {
+          type: 'attribute',
+          prefix: 'ngxMaterialIntlTelInput',
+          style: 'camelCase'
+        }
+      ],
+      '@angular-eslint/component-selector': [
+        'error',
+        {
+          type: 'element',
+          prefix: 'ngx-material-intl-tel-input',
+          style: 'kebab-case'
+        }
       ]
-    })
-    .map((config) => ({
-      ...config,
-      files: ['**/*.ts'],
-      rules: {
-        ...config.rules,
-        '@angular-eslint/directive-selector': [
-          'error',
-          {
-            type: 'attribute',
-            prefix: 'ngxMaterialIntlTelInput',
-            style: 'camelCase'
-          }
-        ],
-        '@angular-eslint/component-selector': [
-          'error',
-          {
-            type: 'element',
-            prefix: 'ngx-material-intl-tel-input',
-            style: 'kebab-case'
-          }
-        ]
-      }
-    })),
-  ...compat
-    .config({
-      extends: ['plugin:@nx/angular-template']
-    })
-    .map((config) => ({
-      ...config,
-      files: ['**/*.html'],
-      rules: {
-        ...config.rules
-      }
-    }))
+    }
+  })),
+  ...nx.configs['flat/angular-template'].map((config) => ({
+    ...config,
+    files: ['**/*.html'],
+    rules: {
+      ...config.rules
+    }
+  }))
 ];

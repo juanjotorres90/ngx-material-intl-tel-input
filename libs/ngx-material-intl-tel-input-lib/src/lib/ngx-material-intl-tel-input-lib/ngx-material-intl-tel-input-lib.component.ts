@@ -1,4 +1,4 @@
-import { AsyncPipe, NgClass } from '@angular/common';
+import { AsyncPipe } from '@angular/common';
 import {
   AfterViewInit,
   ChangeDetectionStrategy,
@@ -64,7 +64,6 @@ import { PhoneIconComponent } from '../components/phone-icon/phone-icon.componen
     MatSelectModule,
     NgxMatSelectSearchModule,
     ReactiveFormsModule,
-    NgClass,
     MatFormFieldModule,
     MatInputModule,
     MatTooltipModule,
@@ -126,7 +125,7 @@ export class NgxMaterialIntlTelInputComponent
   disabled = model<boolean>(false);
   appearance = input<MatFormFieldAppearance>('fill');
   enablePlaceholder = input<boolean>(true);
-  autoIpLookup = input<boolean>(true);
+  autoIpLookup = input<boolean>(false);
   autoSelectCountry = input<boolean>(true);
   autoSelectedCountry = input<CountryISO | string>('');
   numberValidation = input<boolean>(true);
