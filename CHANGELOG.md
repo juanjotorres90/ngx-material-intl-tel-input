@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](http://semver.org/spec/v2.0.0.
 
 ### Added
 
-- Add support for Angular 22.
+- Add support for Angular 22 ([#77](https://github.com/juanjotorres90/ngx-material-intl-tel-input/issues/77)).
 
 ## [21.1.0] - 2026-05-23
 
