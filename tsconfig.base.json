@@ -4,13 +4,12 @@
     "rootDir": ".",
     "sourceMap": true,
     "declaration": false,
-    "moduleResolution": "node",
-    "emitDecoratorMetadata": true,
+    "moduleResolution": "bundler",
     "experimentalDecorators": true,
     "importHelpers": true,
-    "target": "es2015",
-    "module": "esnext",
-    "lib": ["es2020", "dom"],
+    "target": "es2022",
+    "module": "preserve",
+    "lib": ["es2022", "dom"],
     "skipLibCheck": true,
     "skipDefaultLibCheck": true,
     "paths": {
@@ -18,11 +17,10 @@
         "./libs/ngx-material-intl-tel-input-lib/src/index.ts"
       ]
     },
-    "strict": false,
-    "noUncheckedSideEffectImports": false,
-    "types": ["*"],
-    "esModuleInterop": false,
-    "ignoreDeprecations": "6.0"
+    "strict": true,
+    "noUncheckedSideEffectImports": true,
+    "types": [],
+    "esModuleInterop": true
   },
   "exclude": ["node_modules", "tmp"]
 }
