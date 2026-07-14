@@ -35,7 +35,7 @@
               } @else {
                 <div
                   class="country-option-flag"
-                  [ngClass]="prefixCtrl.value?.flagClass"
+                  [ngClass]="$safeNavigationMigration(prefixCtrl.value?.flagClass)"
                 ></div>
               }
             </div>
@@ -115,11 +115,11 @@
         [required]="required()"
         [attr.maxlength]="
           enableInputMaxLength()
-            ? getMaxInputLength(prefixCtrl.value?.iso2)
+            ? getMaxInputLength($safeNavigationMigration(prefixCtrl.value?.iso2))
             : null
         "
         #numberInput
-        [imask]="prefixCtrl.value?.mask"
+        [imask]="$safeNavigationMigration(prefixCtrl.value?.mask)"
       />
 
       @if (!hidePhoneIcon()) {
