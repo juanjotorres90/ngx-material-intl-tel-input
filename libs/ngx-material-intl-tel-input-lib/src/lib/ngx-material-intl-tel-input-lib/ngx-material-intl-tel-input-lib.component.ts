@@ -10,6 +10,7 @@ import {
   effect,
   inject,
   input,
+  isDevMode,
   model,
   output,
   signal,
@@ -21,9 +22,17 @@ import {
   FormControl,
   FormControlStatus,
   FormGroup,
+  NgControl,
   ReactiveFormsModule,
+  ValidatorFn,
   Validators
 } from '@angular/forms';
+import {
+  FORM_FIELD,
+  FormValueControl,
+  ValidationError,
+  WithOptionalFieldTree
+} from '@angular/forms/signals';
 import {
   MAT_SELECT_CONFIG,
   MatSelect,
@@ -79,15 +88,35 @@ import { PhoneIconComponent } from '../components/phone-icon/phone-icon.componen
     GeoIpService,
     CountryDataService
   ],
+  host: {
+    '(focusout)': 'onHostFocusOut()'
+  },
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class NgxMaterialIntlTelInputComponent
-  implements OnInit, AfterViewInit, OnDestroy
+  implements FormValueControl<string>, OnInit, AfterViewInit, OnDestroy
 {
+  private readonly hostElement = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly countryCodeData = inject(CountryCode);
   private readonly geoIpService = inject(GeoIpService);
   private readonly countryDataService = inject(CountryDataService);
-  private readonly controlContainer = inject(ControlContainer);
+  private readonly controlContainer = inject(ControlContainer, {
+    optional: true
+  });
+  private readonly signalFormField = inject(FORM_FIELD, {
+    optional: true,
+    self: true
+  });
+  private readonly ngControl = inject(NgControl, {
+    optional: true,
+    self: true
+  });
+  private readonly fallbackFieldControl = new FormControl('');
+  private isInitialized = false;
+  private writingFieldControlFromInternalControls = false;
+  private valueFromInternalControls: string | undefined;
+  private validationControl: AbstractControl | null = null;
+  private telephoneValidator: ValidatorFn | null = null;
 
   /** control for the selected country prefix */
   public prefixCtrl: FormControl<Country | null> =
@@ -119,10 +148,19 @@ export class NgxMaterialIntlTelInputComponent
 
   fieldControl = model<
     FormControl | AbstractControl<string | null, string | null> | null
-  >(new FormControl(''));
+  >(this.fallbackFieldControl);
   fieldControlName = input<string>('');
+  value = model<string>('');
   required = model<boolean>(false);
   disabled = model<boolean>(false);
+  invalid = input<boolean>(false);
+  touched = input<boolean>(false);
+  dirty = input<boolean>(false);
+  pending = input<boolean>(false);
+  readonly = input<boolean>(false);
+  name = input<string>('');
+  errors = input<readonly WithOptionalFieldTree<ValidationError>[]>([]);
+  touch = output<void>();
   appearance = input<MatFormFieldAppearance>('fill');
   enablePlaceholder = input<boolean>(true);
   autoIpLookup = input<boolean>(false);
@@ -165,6 +203,7 @@ export class NgxMaterialIntlTelInputComponent
   currentCountryISO = output<string>();
   isFocused = signal<boolean>(false);
   isLoading = signal<boolean>(true);
+  private readonly locallyTouched = signal(false);
   resolvedMainLabel = computed(
     () => this.mainLabel() || this.textLabels().mainLabel
   );
@@ -177,6 +216,18 @@ export class NgxMaterialIntlTelInputComponent
       this.setRequiredValidators();
       this.setDisabledState();
     });
+    effect(() => {
+      const value = this.value();
+      const cameFromInternalControls = value === this.valueFromInternalControls;
+      this.valueFromInternalControls = undefined;
+      const fieldControl = this.fieldControl();
+      if ((fieldControl?.value || '') !== value) {
+        fieldControl?.setValue(value, { emitEvent: false });
+      }
+      if (this.isInitialized && !cameFromInternalControls) {
+        this.applyValueToInternalControls(value);
+      }
+    });
   }
 
   /**
@@ -184,6 +235,7 @@ export class NgxMaterialIntlTelInputComponent
    *
    */
   ngOnInit(): void {
+    this.assertBindingCompatibility();
     this.setFieldControl();
     this.fetchCountryData();
     this.addValidations();
@@ -232,16 +284,18 @@ export class NgxMaterialIntlTelInputComponent
   private addValidations(): void {
     this.setRequiredValidators();
     this.setDisabledState();
-    if (this.numberValidation()) {
-      this.fieldControl()?.addValidators(
-        TelValidators.isValidNumber(
-          this.telForm,
-          this.includeDialCode(),
-          this.allCountries,
-          this.outputNumberFormat()
-        )
-      );
+    if (!this.numberValidation() || this.signalFormField) {
+      return;
     }
+    this.validationControl = this.ngControl?.control || this.fieldControl();
+    this.telephoneValidator = TelValidators.isValidNumber(
+      this.telForm,
+      this.includeDialCode(),
+      this.allCountries,
+      this.outputNumberFormat()
+    );
+    this.validationControl?.addValidators(this.telephoneValidator);
+    this.validationControl?.updateValueAndValidity({ emitEvent: false });
   }
 
   /**
@@ -255,6 +309,7 @@ export class NgxMaterialIntlTelInputComponent
     } else {
       this.fieldControl()?.removeValidators(Validators.required);
     }
+    this.fieldControl()?.updateValueAndValidity({ emitEvent: false });
   }
 
   /**
@@ -264,11 +319,11 @@ export class NgxMaterialIntlTelInputComponent
    */
   setDisabledState(): void {
     if (this.disabled()) {
-      this.telForm?.disable();
-      this.fieldControl()?.disable();
+      this.telForm.disable({ emitEvent: false });
+      this.fieldControl()?.disable({ emitEvent: false });
     } else {
-      this.telForm?.enable();
-      this.fieldControl()?.enable();
+      this.telForm.enable({ emitEvent: false });
+      this.fieldControl()?.enable({ emitEvent: false });
     }
   }
 
@@ -286,6 +341,10 @@ export class NgxMaterialIntlTelInputComponent
    *
    */
   ngOnDestroy(): void {
+    if (this.telephoneValidator) {
+      this.validationControl?.removeValidators(this.telephoneValidator);
+      this.validationControl?.updateValueAndValidity({ emitEvent: false });
+    }
     this._onDestroy.next();
     this._onDestroy.complete();
   }
@@ -394,6 +453,81 @@ export class NgxMaterialIntlTelInputComponent
     this.isFocused.set(false);
   }
 
+  /** Marks the logical telephone control touched after focus leaves it. */
+  onHostFocusOut(): void {
+    queueMicrotask(() => {
+      const host = this.hostElement.nativeElement;
+      if (host.matches(':focus-within') || this.singleSelect()?.panelOpen) {
+        return;
+      }
+      this.locallyTouched.set(true);
+      this.touch.emit();
+      if (this.isLegacyBindingActive()) {
+        this.fieldControl()?.markAsTouched();
+      }
+    });
+  }
+
+  /** Focuses the telephone number input. */
+  focus(options?: FocusOptions): void {
+    this.numberInput()?.nativeElement?.focus(options);
+  }
+
+  /** Resets the public value and internal form state. */
+  reset(): void {
+    this.value.set('');
+    this.fieldControl()?.setValue('', { emitEvent: false });
+    this.fieldControl()?.markAsPristine();
+    this.fieldControl()?.markAsUntouched();
+    this.telForm.get('numberControl')?.reset('', { emitEvent: false });
+    this.telForm.markAsPristine();
+    this.telForm.markAsUntouched();
+    this.locallyTouched.set(false);
+    this.currentValue.emit('');
+  }
+
+  /** Returns whether the unified form state contains an error kind. */
+  hasControlError(kind: string): boolean {
+    return (
+      this.errors().some((error) => error.kind === kind) ||
+      !!this.fieldControl()?.hasError(kind)
+    );
+  }
+
+  /** Returns a Signal Forms message or the component's fallback label. */
+  getControlErrorMessage(kind: string, fallback: string): string {
+    return (
+      this.errors().find((error) => error.kind === kind)?.message || fallback
+    );
+  }
+
+  /** Returns whether either supported form system marks the field invalid. */
+  isControlInvalid(): boolean {
+    return this.invalid() || !!this.fieldControl()?.invalid;
+  }
+
+  /** Returns whether either supported form system marks the field interacted. */
+  isControlInteracted(): boolean {
+    return (
+      this.dirty() ||
+      this.touched() ||
+      !!this.fieldControl()?.dirty ||
+      !!this.fieldControl()?.touched
+    );
+  }
+
+  /** Returns whether focus has left the logical telephone control. */
+  shouldShowErrors(): boolean {
+    return (
+      this.locallyTouched() || this.touched() || !!this.fieldControl()?.touched
+    );
+  }
+
+  /** Returns whether the logical telephone value is valid. */
+  isControlValid(): boolean {
+    return !this.isControlInvalid();
+  }
+
   /**
    * Listens for changes in the telForm value and updates the fieldControl accordingly.
    */
@@ -421,7 +555,7 @@ export class NgxMaterialIntlTelInputComponent
               parsed,
               this.outputNumberFormat()
             );
-            this.fieldControl()?.setValue(formatted);
+            this.writeFieldControlFromInternalControls(formatted);
             this.setCursorPosition(
               inputElement,
               cursorPosition,
@@ -429,12 +563,22 @@ export class NgxMaterialIntlTelInputComponent
               currentValue
             );
           } catch {
-            this.fieldControl()?.setValue(value);
+            this.writeFieldControlFromInternalControls(value);
           }
         } else {
-          this.fieldControl()?.setValue('');
+          this.writeFieldControlFromInternalControls('');
         }
       });
+  }
+
+  /** Commits a user edit without parsing it back into the visible control. */
+  private writeFieldControlFromInternalControls(value: string): void {
+    this.writingFieldControlFromInternalControls = true;
+    try {
+      this.fieldControl()?.setValue(value);
+    } finally {
+      this.writingFieldControlFromInternalControls = false;
+    }
   }
 
   /**
@@ -463,7 +607,8 @@ export class NgxMaterialIntlTelInputComponent
    * Sets the initial telephone value based on the initial value.
    */
   private setInitialTelValue(): void {
-    if (!this.initialValue()) {
+    const initialValue = this.value() || this.initialValue();
+    if (!initialValue) {
       // set initial selection
       if (this.autoSelectCountry()) {
         if (this.autoIpLookup()) {
@@ -476,41 +621,67 @@ export class NgxMaterialIntlTelInputComponent
         this.isLoading.set(false);
       }
     } else {
-      try {
-        const parsedNumber = this.phoneNumberUtil.parse(this.initialValue());
-        const countryCode = parsedNumber.getCountryCode();
-        const country = this.allCountries?.find((c) => {
-          if (c.dialCode === countryCode?.toString()) {
-            if (c.areaCodes) {
-              return c.areaCodes?.find((ac) =>
-                parsedNumber.getNationalNumber()?.toString().startsWith(ac)
-              );
-            } else if (c.priority === 0) {
-              return c;
-            }
-          }
-          return undefined;
-        });
-        if (country) {
+      this.applyValueToInternalControls(initialValue, true);
+    }
+    this.isInitialized = true;
+  }
+
+  /** Applies a public formatted value to the internal display controls. */
+  private applyValueToInternalControls(
+    value: string,
+    preserveInitialEvents = false
+  ): void {
+    if (!value) {
+      this.telForm.get('numberControl')?.setValue('', { emitEvent: false });
+      return;
+    }
+
+    try {
+      const parsedNumber = this.phoneNumberUtil.parse(value);
+      const countryCode = parsedNumber.getCountryCode();
+      const country = this.allCountries?.find((candidate) => {
+        if (candidate.dialCode !== countryCode?.toString()) {
+          return false;
+        }
+        if (candidate.areaCodes) {
+          return candidate.areaCodes.some((areaCode) =>
+            parsedNumber.getNationalNumber()?.toString().startsWith(areaCode)
+          );
+        }
+        return candidate.priority === 0;
+      });
+      if (country) {
+        if (preserveInitialEvents) {
           this.prefixCtrl.setValue(country);
+        } else {
+          this.prefixCtrl.setValue(country, { emitEvent: false });
         }
-        const formattedOnlyNumber = this.phoneNumberUtil.format(
-          parsedNumber,
-          this.includeDialCode() ||
-            this.telForm?.value?.prefixCtrl?.iso2 === 'mp'
-            ? this.outputNumberFormat()
-            : PhoneNumberFormat.NATIONAL
-        );
-        if (formattedOnlyNumber) {
-          this.telForm.get('numberControl')?.setValue(formattedOnlyNumber);
-        }
-      } catch {
-        this.telForm.get('numberControl')?.setValue(this.initialValue());
-        this.fieldControl()?.setValue(this.initialValue());
-        this.fieldControl()?.markAsDirty();
-      } finally {
-        this.isLoading.set(false);
       }
+      const formattedOnlyNumber = this.phoneNumberUtil.format(
+        parsedNumber,
+        this.includeDialCode() || country?.iso2 === 'mp'
+          ? this.outputNumberFormat()
+          : PhoneNumberFormat.NATIONAL
+      );
+      if (preserveInitialEvents) {
+        this.telForm.get('numberControl')?.setValue(formattedOnlyNumber);
+      } else {
+        this.telForm
+          .get('numberControl')
+          ?.setValue(formattedOnlyNumber, { emitEvent: false });
+      }
+    } catch {
+      if (preserveInitialEvents) {
+        this.telForm.get('numberControl')?.setValue(value);
+        this.fieldControl()?.setValue(value);
+        this.fieldControl()?.markAsDirty();
+      } else {
+        this.telForm
+          .get('numberControl')
+          ?.setValue(value, { emitEvent: false });
+      }
+    } finally {
+      this.isLoading.set(false);
     }
   }
 
@@ -564,7 +735,14 @@ export class NgxMaterialIntlTelInputComponent
         this.telForm.get('numberControl')?.setValue('', { emitEvent: false });
         this.fieldControl()?.setValue('', { emitEvent: false });
       }
-      this.currentValue?.emit(this.fieldControl()?.value || data);
+      const currentValue = this.fieldControl()?.value || data || '';
+      if (this.value() !== currentValue) {
+        if (this.writingFieldControlFromInternalControls) {
+          this.valueFromInternalControls = currentValue;
+        }
+        this.value.set(currentValue);
+      }
+      this.currentValue.emit(currentValue);
       this.currentCountryCode?.emit(
         this.prefixCtrl.value?.dialCode
           ? `+${this.prefixCtrl.value?.dialCode}`
@@ -597,6 +775,7 @@ export class NgxMaterialIntlTelInputComponent
    */
   private setFieldControl(): void {
     if (
+      !this.hasDirectiveBinding() &&
       this.fieldControlName() &&
       this.controlContainer?.control?.get(this.fieldControlName())
     ) {
@@ -606,6 +785,9 @@ export class NgxMaterialIntlTelInputComponent
     }
     if (this.fieldControl()?.value) {
       this.initialValue.set(this.fieldControl()?.value);
+      this.value.set(this.fieldControl()?.value);
+    } else if (this.initialValue() && !this.value()) {
+      this.value.set(this.initialValue());
     }
     if (this.fieldControl()?.hasValidator(Validators.required)) {
       this.required.set(true);
@@ -613,6 +795,43 @@ export class NgxMaterialIntlTelInputComponent
     if (this.fieldControl()?.disabled) {
       this.disabled.set(true);
     }
+  }
+
+  /** Returns whether a consumer supplied a legacy Reactive Forms binding. */
+  private isLegacyBindingActive(): boolean {
+    if (this.hasDirectiveBinding()) {
+      return false;
+    }
+    return (
+      !!this.fieldControlName() ||
+      this.fieldControl() !== this.fallbackFieldControl
+    );
+  }
+
+  /** Returns whether Angular owns the value through a forms directive. */
+  private hasDirectiveBinding(): boolean {
+    return !!this.signalFormField || !!this.ngControl;
+  }
+
+  /** Reports ambiguous combinations of native and legacy form bindings. */
+  private assertBindingCompatibility(): void {
+    if (!this.hasDirectiveBinding()) {
+      return;
+    }
+    const hasConflict =
+      !!this.fieldControlName() ||
+      this.fieldControl() !== this.fallbackFieldControl;
+    if (!hasConflict) {
+      return;
+    }
+    if (isDevMode()) {
+      throw new Error(
+        'ngx-material-intl-tel-input accepts only one form binding. ' +
+          'Do not combine formField/formControlName with fieldControlName ' +
+          'or fieldControl.'
+      );
+    }
+    this.fieldControl.set(this.fallbackFieldControl);
   }
 
   /**

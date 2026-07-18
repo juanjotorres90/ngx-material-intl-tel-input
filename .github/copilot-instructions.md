@@ -8,11 +8,11 @@ This is an **Angular library project** that provides a Material Design internati
 
 - **Library**: `libs/ngx-material-intl-tel-input-lib/` - The publishable npm package
 - **Demo App**: `apps/ngx-material-intl-tel-input/` - Development and testing application
-- **Nx Monorepo**: Uses Nx 22.3.1 with Angular 21 support
+- **Nx Monorepo**: Uses Nx 23.1.0 with Angular 22 support
 
 ### Key Dependencies
 
-- **Core**: Angular 21, Angular Material, Angular CDK
+- **Core**: Angular 22, Angular Material, Angular CDK
 - **Phone Validation**: `google-libphonenumber` for international phone number validation
 - **UI Enhancement**: `ngx-mat-select-search` for searchable country selection
 - **Input Masking**: `angular-imask` for phone number formatting
@@ -121,7 +121,7 @@ The library uses extensive CSS custom properties for theming:
 
 ### Dependency Management
 
-- **Peer Dependencies**: Angular core packages (^21.0.0)
+- **Peer Dependencies**: Angular core packages (>=22.0.0)
 - **Direct Dependencies**: Material components, libphonenumber, utility libraries
 - **Side Effects**: Marked as `false` for better tree-shaking
 
@@ -139,6 +139,7 @@ The library uses extensive CSS custom properties for theming:
 - Uses Google's libphonenumber for validation
 - Supports multiple output formats: `INTERNATIONAL`, `E164`, `RFC3966`
 - Custom Angular validators in `libs/ngx-material-intl-tel-input-lib/src/lib/validators/`
+- Signal Forms schema (`telephoneNumberSchema()` from `@angular/forms/signals`) in `validators/telephone-number.schema.ts`, exported from the library entry point
 
 ## ⚠️ Important Development Notes
 

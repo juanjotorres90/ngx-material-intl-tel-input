@@ -1,4 +1,56 @@
 <section>
+  <h2>Signal Forms</h2>
+  <form [formRoot]="signalPhoneForm">
+    <ngx-material-intl-tel-input
+      [formField]="signalPhoneForm.phone"
+      [autoIpLookup]="false"
+      [textLabels]="textLabels"
+    />
+    <div class="demo-actions">
+      <button
+        mat-flat-button
+        type="submit"
+        [disabled]="signalPhoneForm().invalid()"
+      >
+        Submit
+      </button>
+      <button mat-flat-button type="button" (click)="setSignalPhone()">
+        Set example
+      </button>
+      <button mat-flat-button type="button" (click)="resetSignalPhone()">
+        Reset
+      </button>
+    </div>
+    <mat-checkbox
+      [checked]="signalPhoneDisabled()"
+      (change)="toggleSignalPhoneDisabled()"
+    >
+      Disabled by schema
+    </mat-checkbox>
+  </form>
+  <div>Signal model: {{ signalPhoneModel().phone || 'No value' }}</div>
+  @if (submittedSignalPhone()) {
+    <div>Submitted signal value: {{ submittedSignalPhone() }}</div>
+  }
+
+  <h2>Reactive Forms</h2>
+  <form [formGroup]="reactivePhoneForm">
+    <ngx-material-intl-tel-input
+      formControlName="phone"
+      [autoIpLookup]="false"
+      [textLabels]="textLabels"
+    />
+  </form>
+
+  <h2>Standalone signal value</h2>
+  <ngx-material-intl-tel-input
+    [(value)]="standalonePhone"
+    [autoIpLookup]="false"
+    [textLabels]="textLabels"
+  />
+  <div>Standalone value: {{ standalonePhone() || 'No value' }}</div>
+
+  <h2>Legacy fieldControlName</h2>
   <form [formGroup]="formTestGroup" (ngSubmit)="onSubmit()">
     <ngx-material-intl-tel-input
       (currentValue)="getValue($event)"

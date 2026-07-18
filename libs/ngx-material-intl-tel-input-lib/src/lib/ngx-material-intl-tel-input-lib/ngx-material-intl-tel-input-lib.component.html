@@ -6,6 +6,7 @@
     class="tel-form"
     [formGroup]="telForm"
     [class.is-focused]="isFocused() && appearance() !== 'outline'"
+    [class.is-invalid]="isControlInvalid() && isControlInteracted()"
   >
     <mat-form-field
       [appearance]="appearance()"
@@ -22,6 +23,8 @@
         #singleSelect
         panelClass="tel-mat-select-panel"
         [required]="required()"
+        [class.is-readonly]="readonly()"
+        [attr.aria-readonly]="readonly()"
       >
         <mat-select-trigger>
           <div class="country-option">
@@ -110,6 +113,10 @@
         formControlName="numberControl"
         [placeholder]="prefixCtrl.value?.placeHolder || ''"
         autocomplete="off"
+        [readonly]="readonly()"
+        [attr.name]="name() || null"
+        [attr.aria-invalid]="isControlInvalid()"
+        [attr.aria-required]="required()"
         (focus)="onInputFocus()"
         (blur)="onInputBlur()"
         [required]="required()"
@@ -124,10 +131,8 @@
 
       @if (!hidePhoneIcon()) {
         <mat-icon matSuffix>
-          @if (
-            iconMakeCall() && fieldControl()?.valid && fieldControl()?.value
-          ) {
-            <a href="tel:{{ fieldControl()?.value }}">
+          @if (iconMakeCall() && isControlValid() && value()) {
+            <a href="tel:{{ value() }}">
               <ngx-material-intl-tel-input-phone-icon></ngx-material-intl-tel-input-phone-icon>
             </a>
           } @else {
@@ -141,21 +146,22 @@
   @if (textLabels().hintLabel) {
     <mat-hint>{{ textLabels().hintLabel }}</mat-hint>
   }
-  @if (
-    fieldControl()?.hasError('required') &&
-    textLabels().requiredError &&
-    fieldControl()?.dirty
-  ) {
-    <mat-error>{{ textLabels().requiredError }}</mat-error>
+  @if (hasControlError('required') && shouldShowErrors()) {
+    <mat-error>{{
+      getControlErrorMessage('required', textLabels().requiredError)
+    }}</mat-error>
   }
-  @if (
-    fieldControl()?.hasError('invalidNumber') && textLabels().invalidNumberError
-  ) {
-    <mat-error>{{ textLabels().invalidNumberError }}</mat-error>
+  @if (hasControlError('invalidNumber') && shouldShowErrors()) {
+    <mat-error>{{
+      getControlErrorMessage('invalidNumber', textLabels().invalidNumberError)
+    }}</mat-error>
   }
-  @if (
-    fieldControl()?.hasError('numberTooLong') && textLabels().numberTooLongError
-  ) {
-    <mat-error>{{ textLabels().numberTooLongError }}</mat-error>
+  @if (hasControlError('numberTooLong') && shouldShowErrors()) {
+    <mat-error>{{
+      getControlErrorMessage(
+        'numberTooLong',
+        textLabels().numberTooLongError || ''
+      )
+    }}</mat-error>
   }
 </section>

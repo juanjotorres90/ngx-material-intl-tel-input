@@ -10,6 +10,14 @@ import {
   ReactiveFormsModule,
   Validators
 } from '@angular/forms';
+import {
+  apply,
+  disabled,
+  form,
+  FormField,
+  FormRoot,
+  required
+} from '@angular/forms/signals';
 import { MatButtonModule } from '@angular/material/button';
 import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatChipsModule } from '@angular/material/chips';
@@ -19,12 +27,15 @@ import { RouterModule } from '@angular/router';
 import { PhoneNumberFormat } from 'google-libphonenumber';
 import {
   NgxMaterialIntlTelInputComponent,
+  telephoneNumberSchema,
   TextLabels
 } from 'ngx-material-intl-tel-input';
 
 @Component({
   imports: [
     NgxMaterialIntlTelInputComponent,
+    FormField,
+    FormRoot,
     RouterModule,
     ReactiveFormsModule,
     MatButtonModule,
@@ -41,6 +52,29 @@ import {
 export class AppComponent {
   private readonly fb = inject(FormBuilder);
   title = 'ngx-material-intl-tel-input';
+  readonly signalPhoneModel = signal({ phone: '' });
+  readonly signalPhoneDisabled = signal(false);
+  readonly submittedSignalPhone = signal('');
+  readonly signalPhoneForm = form(
+    this.signalPhoneModel,
+    (path) => {
+      required(path.phone);
+      disabled(path.phone, { when: () => this.signalPhoneDisabled() });
+      apply(path.phone, telephoneNumberSchema());
+    },
+    {
+      submission: {
+        action: (field) => {
+          this.submittedSignalPhone.set(field().value().phone);
+          return Promise.resolve(undefined);
+        }
+      }
+    }
+  );
+  readonly reactivePhoneForm = this.fb.group({
+    phone: ['', Validators.required]
+  });
+  readonly standalonePhone = signal('');
   currentPhoneValue = signal<string>('');
   currentCountryCode = signal<string>('');
   currentCountryISO = signal<string>('');
@@ -66,6 +100,22 @@ export class AppComponent {
       phone: ['', [Validators.required]],
       setPhoneTextbox: ['']
     });
+  }
+
+  /** Sets a valid value through the Signal Forms model. */
+  setSignalPhone(): void {
+    this.signalPhoneForm.phone().value.set('+34 612 34 56 78');
+  }
+
+  /** Clears Signal Forms value and interaction state. */
+  resetSignalPhone(): void {
+    this.signalPhoneForm().reset({ phone: '' });
+    this.submittedSignalPhone.set('');
+  }
+
+  /** Toggles schema-owned disabled state in the Signal Forms demo. */
+  toggleSignalPhoneDisabled(): void {
+    this.signalPhoneDisabled.update((disabledState) => !disabledState);
   }
 
   /**

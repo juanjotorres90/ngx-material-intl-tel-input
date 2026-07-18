@@ -24,7 +24,7 @@ This is an **Angular library project** that provides a Material Design internati
 
 - **Library**: `libs/ngx-material-intl-tel-input-lib/` - The publishable npm package
 - **Demo App**: `apps/ngx-material-intl-tel-input/` - Development and testing application
-- **Nx Monorepo**: Uses Nx 22.3.1 with Angular 21 support
+- **Nx Monorepo**: Uses Nx 23.1.0 with Angular 22 support
 
 ### Library Structure
 
@@ -70,7 +70,7 @@ npm run build:all
 
 ### Key Dependencies
 
-- **Core**: Angular 21, Angular Material, Angular CDK
+- **Core**: Angular 22, Angular Material, Angular CDK
 - **Phone Validation**: `google-libphonenumber` for international phone number validation
 - **UI Enhancement**: `ngx-mat-select-search` for searchable country selection
 - **Input Masking**: `angular-imask` for phone number formatting
@@ -85,6 +85,10 @@ The `NgxMaterialIntlTelInputComponent` follows Angular standalone component patt
 - Implements `ControlValueAccessor` for Angular Forms integration
 - Supports both `fieldControl` (FormControl) and `fieldControlName` (string) patterns
 - Emits events: `currentValue`, `currentCountryCode`, `currentCountryISO`
+
+### Signal Forms Support
+
+For Angular Signal Forms (`@angular/forms/signals`), the library exports `telephoneNumberSchema()` and `analyzeTelephoneNumber()` from `libs/ngx-material-intl-tel-input-lib/src/lib/validators/telephone-number.schema.ts` — a reusable `Schema<string>` for phone validation (error kinds: `invalidNumber`, `numberTooLong`; empty values stay valid so it composes with `required`).
 
 ### Form Integration Example
 
@@ -116,14 +120,14 @@ Key customization variables:
 
 ## Technology Stack
 
-- **Angular 21.0.6** with standalone components and signals
-- **Angular Material 21.0.3** with CDK
+- **Angular 22.0.6** with standalone components and signals
+- **Angular Material 22.0.4** with CDK
 - **Google libphonenumber** for validation
-- **Nx 22.3.1** for monorepo management
-- **Jest** for testing with `jest-preset-angular`
+- **Nx 23.1.0** for monorepo management
+- **Jest 30** for testing with `jest-preset-angular`
 - **ESLint** for linting with Angular-specific rules
 - **Prettier** for code formatting
-- **TypeScript 5.9.3** with strict typing
+- **TypeScript 6.0.3** with strict typing
 
 ## Key Development Patterns
 

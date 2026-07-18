@@ -20,6 +20,7 @@ Validation with [google-libphonenumber](https://github.com/google/libphonenumber
 
 | ngx-material-intl-tel-input | Angular |
 | --------------------------- | ------- |
+| 22.1.0                      | 22      |
 | 22.0.0                      | 22      |
 | 21.0.0 - 21.1.0             | 21      |
 | 20.0.0 - 20.1.2             | 20      |
@@ -45,6 +46,65 @@ Include the NgxMaterialIntlTelInputComponent in the imports array of the standal
 imports: [NgxMaterialIntlTelInputComponent];
 ```
 
+### Signal Forms (Angular 22)
+
+The component implements `FormValueControl<string>` and can be bound directly
+with Angular Signal Forms. Import `FormField` in the consuming standalone
+component and compose the exported telephone schema with application rules:
+
+```typescript
+import { signal } from '@angular/core';
+import { apply, form, FormField, required } from '@angular/forms/signals';
+import {
+  NgxMaterialIntlTelInputComponent,
+  telephoneNumberSchema
+} from 'ngx-material-intl-tel-input';
+
+readonly phoneModel = signal({ phone: '' });
+readonly phoneForm = form(this.phoneModel, (path) => {
+  required(path.phone, { message: 'Phone number is required' });
+  apply(
+    path.phone,
+    telephoneNumberSchema({
+      messages: { invalidNumber: 'Enter a valid phone number' }
+    })
+  );
+});
+
+// Add both to the component imports.
+imports: [FormField, NgxMaterialIntlTelInputComponent];
+```
+
+```html
+<ngx-material-intl-tel-input [formField]="phoneForm.phone" />
+```
+
+`telephoneNumberSchema()` treats `''` as optional so requiredness stays an
+application rule. It emits `invalidNumber` or `numberTooLong`. A message set in
+the schema takes precedence; otherwise the matching `textLabels` value is
+shown.
+
+Standard Reactive Forms and standalone signal values are also supported:
+
+```html
+<!-- Reactive Forms -->
+<ngx-material-intl-tel-input formControlName="phone" />
+
+<!-- Standalone signal value -->
+<ngx-material-intl-tel-input [(value)]="phone" />
+```
+
+Use exactly one binding mode per component: `[formField]`, `formControlName` or
+`[formControl]`, legacy `fieldControlName` or `[fieldControl]`, or `[(value)]`.
+Conflicting native and legacy bindings throw an error in development builds.
+
+| Binding mode                             | Angular 22 support |
+| ---------------------------------------- | ------------------ |
+| Signal Forms `[formField]`               | Supported          |
+| Reactive `formControlName`               | Supported          |
+| Legacy `fieldControlName`/`fieldControl` | Supported          |
+| Standalone `[(value)]`                   | Supported          |
+
 ## Example
 
 ```html
@@ -59,6 +119,7 @@ imports: [NgxMaterialIntlTelInputComponent];
 | ------------------------ | ---------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | fieldControl             | `FormControl \| AbstractControl \| null` | `FormControl('')`                                                                                                                                                                                                                                                                                                                                      | Form control used to retrieve and set the value.                                                                                                                                                                                                                                    |
 | fieldControlName         | `string`                                 | `''`                                                                                                                                                                                                                                                                                                                                                   | Form control name to assign the control from a FormGroup.                                                                                                                                                                                                                           |
+| value                    | `string`                                 | `''`                                                                                                                                                                                                                                                                                                                                                   | Canonical formatted value for Signal Forms or standalone two-way binding.                                                                                                                                                                                                           |
 | required                 | `boolean`                                | `false`                                                                                                                                                                                                                                                                                                                                                | Telephone field input required.                                                                                                                                                                                                                                                     |
 | disabled                 | `boolean`                                | `false`                                                                                                                                                                                                                                                                                                                                                | Telephone field input disabled.                                                                                                                                                                                                                                                     |
 | appearance               | `'fill' \| 'outline'`                    | `fill`                                                                                                                                                                                                                                                                                                                                                 | Material form field appearance. With `'outline'`, the main label renders inside the country selector's notched outline (matching Material Design); with `'fill'`, it renders above the form field. Set `textLabels.nationalNumberLabel` to also render a label on the number input. |
