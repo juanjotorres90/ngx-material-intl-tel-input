@@ -48,6 +48,10 @@ Do not suggest `formControlName="phone"` on the component. The
 `fieldControlName` input resolves a control from the parent `ControlContainer`;
 `fieldControl` accepts an existing `FormControl`/`AbstractControl`.
 
+Signal Forms are also supported: the component implements
+`FormValueControl<string>`, so bind it with `[formField]="form.phone"` and use
+the exported `validPhoneNumber` schema validator.
+
 ## Validation shortcuts
 
 ```bash

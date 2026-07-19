@@ -75,6 +75,10 @@ and Vitest 4 through Angular's `@angular/build:unit-test` builder.
 - Reactive Forms integration is explicit:
   - use `fieldControlName="phone"` inside a parent `[formGroup]`; or
   - pass an existing control with `[fieldControl]="phoneControl"`.
+- Signal Forms integration: the component implements `FormValueControl<string>`
+  (`value` model, `touch` output), so it binds via `[formField]="form.phone"`.
+  The exported `validPhoneNumber` validator provides schema-side number
+  validation.
 - Do not put `formControlName` or `[formControl]` on the component unless the
   implementation is intentionally changed to a real value accessor.
 - The component mutates the supplied control's value, validators, dirty state,

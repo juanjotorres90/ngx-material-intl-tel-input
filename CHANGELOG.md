@@ -8,9 +8,18 @@ and this project adheres to
 
 ## [22.1.0] - 2026-??-??
 
+### Added
+
+- Add Angular Signal Forms support: the component now implements the `FormValueControl<string>` contract, so it can be bound directly to a field with `[formField]="form.phone"` — no `fieldControl` or parent `[formGroup]` required. Schema `required(...)` and `disabled(...)` rules are reflected in the Material field, and the field is marked touched on input blur.
+- Add exported `validPhoneNumber` Signal Forms schema validator that checks the emitted international number with `google-libphonenumber` and reports an `invalidNumber` error kind (use with `validate(path.phone, validPhoneNumber)`).
+
 ### Changed
 
 - Migrate project from Jest to Vitest for unit testing.
+
+### Fixed
+
+- Allow using the component without a parent Reactive Forms directive: the `ControlContainer` dependency is now optional instead of throwing at creation.
 
 ## [22.0.0] - 2026-07-14
 

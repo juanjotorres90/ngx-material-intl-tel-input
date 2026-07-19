@@ -1,11 +1,20 @@
+import { Component, signal, viewChild } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NgxMaterialIntlTelInputComponent } from './ngx-material-intl-tel-input-lib.component';
 import { PhoneNumberFormat, PhoneNumberUtil } from 'google-libphonenumber';
 import { Country } from '../types/country.model';
 import { ControlContainer, FormControl, Validators } from '@angular/forms';
+import {
+  disabled,
+  form,
+  FormField,
+  required,
+  validate
+} from '@angular/forms/signals';
 import { of, Subject } from 'rxjs';
 import { GeoData } from '../types/geo.type';
 import { GeoIpService } from '../services/geo-ip/geo-ip.service';
+import { validPhoneNumber } from '../validators/tel-signal.validators';
 
 describe('NgxMaterialIntlTelInputComponent', () => {
   let component: NgxMaterialIntlTelInputComponent;
@@ -1686,5 +1695,119 @@ describe('NgxMaterialIntlTelInputComponent', () => {
       ).toBeDefined();
       expect(component.singleSelect()?.placeholder).toBe('Code');
     });
+  });
+});
+
+@Component({
+  imports: [NgxMaterialIntlTelInputComponent, FormField],
+  template: `<ngx-material-intl-tel-input
+    [formField]="phoneForm.phone"
+    [autoSelectCountry]="false"
+  />`
+})
+class SignalFormsHostComponent {
+  telInput = viewChild.required(NgxMaterialIntlTelInputComponent);
+  model = signal({ phone: '' });
+  phoneForm = form(this.model, (path) => {
+    required(path.phone);
+    validate(path.phone, validPhoneNumber);
+  });
+}
+
+@Component({
+  imports: [NgxMaterialIntlTelInputComponent, FormField],
+  template: `<ngx-material-intl-tel-input [formField]="phoneForm.phone" />`
+})
+class DisabledSignalFormsHostComponent {
+  telInput = viewChild.required(NgxMaterialIntlTelInputComponent);
+  model = signal({ phone: '' });
+  phoneForm = form(this.model, (path) => {
+    disabled(path.phone);
+  });
+}
+
+describe('NgxMaterialIntlTelInputComponent with Signal Forms', () => {
+  let hostFixture: ComponentFixture<SignalFormsHostComponent>;
+  let host: SignalFormsHostComponent;
+  const geoIpServiceMock = {
+    geoIpLookup: vi.fn().mockReturnValue(of({} as GeoData))
+  };
+
+  beforeEach(async () => {
+    await TestBed.configureTestingModule({
+      imports: [SignalFormsHostComponent, DisabledSignalFormsHostComponent],
+      providers: [{ provide: GeoIpService, useValue: geoIpServiceMock }]
+    }).compileComponents();
+
+    hostFixture = TestBed.createComponent(SignalFormsHostComponent);
+    host = hostFixture.componentInstance;
+    hostFixture.detectChanges();
+  });
+
+  afterEach(() => {
+    hostFixture?.destroy();
+    vi.clearAllMocks();
+  });
+
+  it('should create when bound via the formField directive without a ControlContainer', () => {
+    expect(host.telInput()).toBeTruthy();
+  });
+
+  it('should propagate a field value set on the form into the component', async () => {
+    host.phoneForm.phone().value.set('+34612345678');
+    hostFixture.detectChanges();
+    await hostFixture.whenStable();
+    hostFixture.detectChanges();
+
+    expect(host.telInput().fieldControl()?.value).toBe('+34 612 34 56 78');
+  });
+
+  it('should propagate typed input back into the form model', async () => {
+    const telInput = host.telInput();
+    const spain = telInput.allCountries.find((c) => c.iso2 === 'es');
+    telInput.prefixCtrl.setValue(spain ?? null);
+    telInput.telForm.get('numberControl')?.setValue('612345678');
+    hostFixture.detectChanges();
+    await hostFixture.whenStable();
+
+    expect(host.model().phone).toBe('+34 612 34 56 78');
+    expect(host.phoneForm.phone().valid()).toBe(true);
+  });
+
+  it('should mark the field as invalid for an invalid phone number', async () => {
+    host.phoneForm.phone().value.set('+34 123');
+    hostFixture.detectChanges();
+    await hostFixture.whenStable();
+
+    expect(host.phoneForm.phone().invalid()).toBe(true);
+    expect(
+      host.phoneForm
+        .phone()
+        .errors()
+        .some((error) => error.kind === 'invalidNumber')
+    ).toBe(true);
+  });
+
+  it('should mark the field as touched on input blur', async () => {
+    expect(host.phoneForm.phone().touched()).toBe(false);
+    host.telInput().onInputBlur();
+    hostFixture.detectChanges();
+    await hostFixture.whenStable();
+
+    expect(host.phoneForm.phone().touched()).toBe(true);
+  });
+
+  it('should disable the component when the schema disables the field', async () => {
+    const disabledFixture = TestBed.createComponent(
+      DisabledSignalFormsHostComponent
+    );
+    disabledFixture.detectChanges();
+    await disabledFixture.whenStable();
+
+    expect(disabledFixture.componentInstance.telInput().disabled()).toBe(true);
+    expect(disabledFixture.componentInstance.telInput().telForm.disabled).toBe(
+      true
+    );
+    disabledFixture.destroy();
   });
 });

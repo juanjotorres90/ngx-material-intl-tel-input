@@ -94,6 +94,44 @@ notifications.
 </form>
 ```
 
+### Signal Forms
+
+The component implements the Signal Forms `FormValueControl<string>` contract,
+so it can be bound directly to a field with the `[formField]` directive — no
+`fieldControl` or parent `[formGroup]` needed:
+
+```typescript
+import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
+import { form, FormField, FormRoot, required, validate } from '@angular/forms/signals';
+import { NgxMaterialIntlTelInputComponent, validPhoneNumber } from 'ngx-material-intl-tel-input';
+
+@Component({
+  selector: 'app-contact-form',
+  imports: [FormRoot, FormField, NgxMaterialIntlTelInputComponent],
+  templateUrl: './contact-form.component.html',
+  changeDetection: ChangeDetectionStrategy.OnPush
+})
+export class ContactFormComponent {
+  readonly model = signal({ phone: '' });
+  readonly form = form(this.model, (path) => {
+    required(path.phone);
+    validate(path.phone, validPhoneNumber);
+  });
+}
+```
+
+```html
+<form [formRoot]="form">
+  <ngx-material-intl-tel-input [formField]="form.phone"></ngx-material-intl-tel-input>
+</form>
+```
+
+The exported `validPhoneNumber` schema validator checks the emitted
+international number with `google-libphonenumber` and reports an
+`invalidNumber` error kind. Empty values are left to `required()`. Schema
+`disabled(...)` and `required(...)` rules are reflected in the Material field,
+and the field is marked touched on blur.
+
 ## Options
 
 ### Form state

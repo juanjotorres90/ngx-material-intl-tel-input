@@ -24,6 +24,7 @@ import {
   ReactiveFormsModule,
   Validators
 } from '@angular/forms';
+import type { FormValueControl } from '@angular/forms/signals';
 import {
   MAT_SELECT_CONFIG,
   MatSelect,
@@ -82,12 +83,14 @@ import { PhoneIconComponent } from '../components/phone-icon/phone-icon.componen
   changeDetection: ChangeDetectionStrategy.OnPush
 })
 export class NgxMaterialIntlTelInputComponent
-  implements OnInit, AfterViewInit, OnDestroy
+  implements OnInit, AfterViewInit, OnDestroy, FormValueControl<string>
 {
   private readonly countryCodeData = inject(CountryCode);
   private readonly geoIpService = inject(GeoIpService);
   private readonly countryDataService = inject(CountryDataService);
-  private readonly controlContainer = inject(ControlContainer);
+  private readonly controlContainer = inject(ControlContainer, {
+    optional: true
+  });
 
   /** control for the selected country prefix */
   public prefixCtrl: FormControl<Country | null> =
@@ -119,6 +122,10 @@ export class NgxMaterialIntlTelInputComponent
     numberControl: new FormControl('')
   });
 
+  /** two-way value binding used by Signal Forms via the [formField] directive */
+  value = model<string>('');
+  /** marks the Signal Forms field as touched on blur */
+  touch = output<void>();
   fieldControl = model<
     FormControl | AbstractControl<string | null, string | null> | null
   >(new FormControl(''));
@@ -178,6 +185,12 @@ export class NgxMaterialIntlTelInputComponent
     effect(() => {
       this.setRequiredValidators();
       this.setDisabledState();
+    });
+    effect(() => {
+      const value = this.value();
+      if (value !== (this.fieldControl()?.value ?? '')) {
+        this.fieldControl()?.setValue(value);
+      }
     });
   }
 
@@ -397,6 +410,7 @@ export class NgxMaterialIntlTelInputComponent
    */
   onInputBlur(): void {
     this.isFocused.set(false);
+    this.touch.emit();
   }
 
   /**
@@ -569,6 +583,7 @@ export class NgxMaterialIntlTelInputComponent
         this.telForm.get('numberControl')?.setValue('', { emitEvent: false });
         this.fieldControl()?.setValue('', { emitEvent: false });
       }
+      this.value.set(this.fieldControl()?.value || '');
       this.currentValue?.emit(this.fieldControl()?.value || data);
       this.currentCountryCode?.emit(
         this.prefixCtrl.value?.dialCode
@@ -611,6 +626,8 @@ export class NgxMaterialIntlTelInputComponent
     }
     if (this.fieldControl()?.value) {
       this.initialValue.set(this.fieldControl()?.value);
+    } else if (this.value()) {
+      this.initialValue.set(this.value());
     }
     if (this.fieldControl()?.hasValidator(Validators.required)) {
       this.required.set(true);

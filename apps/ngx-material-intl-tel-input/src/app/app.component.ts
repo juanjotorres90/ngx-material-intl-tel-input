@@ -15,11 +15,19 @@ import { MatCheckboxModule } from '@angular/material/checkbox';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatFormFieldModule } from '@angular/material/form-field';
 import { MatInputModule } from '@angular/material/input';
+import {
+  form,
+  FormField,
+  FormRoot,
+  required,
+  validate
+} from '@angular/forms/signals';
 import { RouterModule } from '@angular/router';
 import { PhoneNumberFormat } from 'google-libphonenumber';
 import {
   NgxMaterialIntlTelInputComponent,
-  TextLabels
+  TextLabels,
+  validPhoneNumber
 } from 'ngx-material-intl-tel-input';
 
 @Component({
@@ -31,7 +39,9 @@ import {
     MatChipsModule,
     MatFormFieldModule,
     MatInputModule,
-    MatCheckboxModule
+    MatCheckboxModule,
+    FormRoot,
+    FormField
   ],
   selector: 'ngx-material-intl-tel-input-root',
   templateUrl: './app.component.html',
@@ -61,11 +71,25 @@ export class AppComponent {
     numberTooLongError: 'Phone number is too long'
   };
 
+  signalModel = signal({ phone: '' });
+  signalPhoneForm = form(this.signalModel, (path) => {
+    required(path.phone);
+    validate(path.phone, validPhoneNumber);
+  });
+  submittedSignalPhoneValue = signal<string>('');
+
   constructor() {
     this.formTestGroup = this.fb.group({
       phone: ['', [Validators.required]],
       setPhoneTextbox: ['']
     });
+  }
+
+  /**
+   * Submits the signal form by storing the current signal model phone value.
+   */
+  onSignalSubmit(): void {
+    this.submittedSignalPhoneValue.set(this.signalModel().phone);
   }
 
   /**
