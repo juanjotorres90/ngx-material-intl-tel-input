@@ -16,6 +16,15 @@
       @if (isOutlineWithLabel()) {
         <mat-label>{{ resolvedMainLabel() }}</mat-label>
       }
+      <!-- invisible spacer so the field grows to fit the label: the notched
+           outline is absolutely positioned and cannot size the field itself.
+           Kept in a separate @if so each block has a single root node and
+           mat-label still projects into the form field's label slot. -->
+      @if (isOutlineWithLabel()) {
+        <span class="main-label-spacer" aria-hidden="true">{{
+          resolvedMainLabel()
+        }}</span>
+      }
       <mat-select
         formControlName="prefixCtrl"
         [placeholder]="(!isLoading() && textLabels().codePlaceholder) || ''"
@@ -114,7 +123,7 @@
         (blur)="onInputBlur()"
         [required]="required()"
         [attr.maxlength]="
-          enableInputMaxLength()
+          enableInputMaxLength() && !useMask()
             ? getMaxInputLength(prefixCtrl.value?.iso2)
             : null
         "

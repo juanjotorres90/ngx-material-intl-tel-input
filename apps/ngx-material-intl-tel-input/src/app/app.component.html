@@ -81,7 +81,16 @@
         <ngx-material-intl-tel-input
           [formField]="signalPhoneForm.phone"
           [autoIpLookup]="false"
-          mainLabel="Phone number (signal form)"
+          mainLabel="Phone number"
+          [emojiFlags]="true"
+          [includeDialCode]="true"
+          [useMask]="true"
+          [forceSelectedCountryCode]="true"
+          [showMaskPlaceholder]="true"
+          [localizeCountryNames]="true"
+          [outputNumberFormat]="PhoneNumberFormat.INTERNATIONAL"
+          [appearance]="'outline'"
+          [textLabels]="textLabels"
         ></ngx-material-intl-tel-input>
         <div class="actions">
           <button

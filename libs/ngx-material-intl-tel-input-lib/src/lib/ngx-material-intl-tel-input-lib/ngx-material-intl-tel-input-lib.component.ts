@@ -4,8 +4,10 @@ import {
   ChangeDetectionStrategy,
   Component,
   ElementRef,
+  Injector,
   OnDestroy,
   OnInit,
+  afterNextRender,
   computed,
   effect,
   inject,
@@ -91,6 +93,7 @@ export class NgxMaterialIntlTelInputComponent
   private readonly controlContainer = inject(ControlContainer, {
     optional: true
   });
+  private readonly injector = inject(Injector);
 
   /** control for the selected country prefix */
   public prefixCtrl: FormControl<Country | null> =
@@ -116,6 +119,10 @@ export class NgxMaterialIntlTelInputComponent
 
   allCountries: Country[] = [];
   phoneNumberUtil = PhoneNumberUtil.getInstance();
+
+  /** true while fieldControl is being updated from telForm, so the
+   * fieldControl listener can tell internal echoes from external writes */
+  private isInternalValueUpdate = false;
 
   telForm = new FormGroup({
     prefixCtrl: this.prefixCtrl,
@@ -440,7 +447,7 @@ export class NgxMaterialIntlTelInputComponent
               parsed,
               this.outputNumberFormat()
             );
-            this.fieldControl()?.setValue(formatted);
+            this.setFieldControlValue(formatted);
             this.setCursorPosition(
               inputElement,
               cursorPosition,
@@ -448,12 +455,26 @@ export class NgxMaterialIntlTelInputComponent
               currentValue
             );
           } catch {
-            this.fieldControl()?.setValue(value);
+            this.setFieldControlValue(value);
           }
         } else {
-          this.fieldControl()?.setValue('');
+          this.setFieldControlValue('');
         }
       });
+  }
+
+  /**
+   * Sets the fieldControl value from an internal telForm change, flagging the
+   * update so the fieldControl listener does not repaint telForm with it.
+   */
+  private setFieldControlValue(value: string): void {
+    const control = this.fieldControl();
+    if (!control) {
+      return;
+    }
+    this.isInternalValueUpdate = true;
+    control.setValue(value);
+    this.isInternalValueUpdate = false;
   }
 
   /**
@@ -466,9 +487,41 @@ export class NgxMaterialIntlTelInputComponent
       .pipe(takeUntil(this._onDestroy))
       .subscribe((data) => {
         if (this.includeDialCode() && data?.dialCode) {
-          this.telForm
-            .get('numberControl')
-            ?.setValue('+' + data?.dialCode, { emitEvent: false });
+          if (this.useMask()) {
+            // the mask renders the new dial code itself as fixed characters.
+            // Clear synchronously (without events) so the telForm emission
+            // triggered by this country change sees an empty number —
+            // otherwise the validator parses the old number and reverts the
+            // country selection
+            this.telForm
+              .get('numberControl')
+              ?.setValue('', { emitEvent: false });
+            // when the mask binding swaps, imask remasks the old displayed
+            // text into garbage (e.g. +34 placeholders become +38_ ...), so
+            // reset the control and display again after render
+            afterNextRender(
+              () => {
+                this.telForm.get('numberControl')?.setValue('');
+                // the value clear can be a no-op for imask (its internal
+                // value is already empty — the garbage only lives in the DOM
+                // element), so clear the element through a real input event,
+                // a path imask fully processes and re-renders from
+                const inputElement: HTMLInputElement | undefined =
+                  this.numberInput()?.nativeElement;
+                if (inputElement) {
+                  inputElement.value = '';
+                  inputElement.dispatchEvent(
+                    new Event('input', { bubbles: true })
+                  );
+                }
+              },
+              { injector: this.injector }
+            );
+          } else {
+            this.telForm
+              .get('numberControl')
+              ?.setValue('+' + data?.dialCode, { emitEvent: false });
+          }
         }
         if (!this.isLoading()) {
           setTimeout(() => {
@@ -497,19 +550,7 @@ export class NgxMaterialIntlTelInputComponent
     } else {
       try {
         const parsedNumber = this.phoneNumberUtil.parse(this.initialValue());
-        const countryCode = parsedNumber.getCountryCode();
-        const country = this.allCountries?.find((c) => {
-          if (c.dialCode === countryCode?.toString()) {
-            if (c.areaCodes) {
-              return c.areaCodes?.find((ac) =>
-                parsedNumber.getNationalNumber()?.toString().startsWith(ac)
-              );
-            } else if (c.priority === 0) {
-              return c;
-            }
-          }
-          return undefined;
-        });
+        const country = this.getCountryFromParsedNumber(parsedNumber);
         if (country) {
           this.prefixCtrl.setValue(country);
         }
@@ -531,6 +572,28 @@ export class NgxMaterialIntlTelInputComponent
         this.isLoading.set(false);
       }
     }
+  }
+
+  /**
+   * Finds the country matching a parsed phone number's country code,
+   * considering area codes and country priority.
+   */
+  private getCountryFromParsedNumber(
+    parsedNumber: PhoneNumber
+  ): Country | undefined {
+    const countryCode = parsedNumber.getCountryCode();
+    return this.allCountries?.find((c) => {
+      if (c.dialCode === countryCode?.toString()) {
+        if (c.areaCodes) {
+          return c.areaCodes?.find((ac) =>
+            parsedNumber.getNationalNumber()?.toString().startsWith(ac)
+          );
+        } else if (c.priority === 0) {
+          return c;
+        }
+      }
+      return undefined;
+    });
   }
 
   /**
@@ -565,6 +628,7 @@ export class NgxMaterialIntlTelInputComponent
     const valueChanges = this.fieldControl()
       ?.valueChanges as Observable<string>;
     valueChanges.pipe(takeUntil(this._onDestroy)).subscribe((data: string) => {
+      const isExternalUpdate = !this.isInternalValueUpdate;
       if (data) {
         try {
           const parsed = this.phoneNumberUtil.parse(
@@ -576,8 +640,16 @@ export class NgxMaterialIntlTelInputComponent
             this.outputNumberFormat()
           );
           this.fieldControl()?.setValue(formatted, { emitEvent: false });
+          if (isExternalUpdate) {
+            this.applyExternalValueToTelForm(parsed);
+          }
         } catch {
           this.fieldControl()?.setValue(data, { emitEvent: false });
+          if (isExternalUpdate) {
+            this.telForm
+              .get('numberControl')
+              ?.setValue(data, { emitEvent: false });
+          }
         }
       } else {
         this.telForm.get('numberControl')?.setValue('', { emitEvent: false });
@@ -592,6 +664,29 @@ export class NgxMaterialIntlTelInputComponent
       );
       this.currentCountryISO?.emit(this.prefixCtrl.value?.iso2 || '');
     });
+  }
+
+  /**
+   * Repaints the country selector and number input from a phone number that
+   * was set on the fieldControl from outside (Reactive Forms `setValue` or a
+   * Signal Forms field value change), mirroring the initial-value behavior.
+   * All telForm updates suppress events to avoid echoing back into
+   * fieldControl.
+   */
+  private applyExternalValueToTelForm(parsedNumber: PhoneNumber): void {
+    const country = this.getCountryFromParsedNumber(parsedNumber);
+    if (country && country.iso2 !== this.telForm?.value?.prefixCtrl?.iso2) {
+      this.prefixCtrl.setValue(country, { emitEvent: false });
+    }
+    const formattedNumber = this.phoneNumberUtil.format(
+      parsedNumber,
+      this.includeDialCode() || this.telForm?.value?.prefixCtrl?.iso2 === 'mp'
+        ? this.outputNumberFormat()
+        : PhoneNumberFormat.NATIONAL
+    );
+    this.telForm
+      .get('numberControl')
+      ?.setValue(formattedNumber, { emitEvent: false });
   }
 
   /**
@@ -651,7 +746,10 @@ export class NgxMaterialIntlTelInputComponent
     parsed: PhoneNumber,
     currentValue: string
   ): void {
-    if (!this.numberValidation()) {
+    // with useMask, imask owns the input's value and caret: the position
+    // captured here is stale (taken before imask repositions past mask
+    // separators), so restoring it would pull the cursor back
+    if (!this.numberValidation() || this.useMask()) {
       return;
     }
     const nationalNumber = this.phoneNumberUtil.format(

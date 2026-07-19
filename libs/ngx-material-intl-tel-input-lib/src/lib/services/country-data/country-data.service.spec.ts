@@ -111,6 +111,25 @@ describe('CountryDataService', () => {
       getCountryNameSpy.mockRestore();
     });
 
+    it('should escape imask definition characters (0/9) in the dial code mask', () => {
+      mockPhoneNumberUtil.format.mockReturnValue('+380 12 345 6789');
+
+      const result = service.processCountries(
+        mockCountryCodeData,
+        true,
+        true,
+        undefined,
+        undefined,
+        undefined,
+        true, // useMask
+        true, // forceSelectedCountryCode keeps the original prefix digits
+        false,
+        PhoneNumberFormat.INTERNATIONAL
+      );
+
+      expect(result[0].mask?.mask).toBe('+{38\\0} 00 000 0000');
+    });
+
     it('should filter visible countries correctly', () => {
       const visibleCountries = [CountryISO.UnitedStates, CountryISO.Germany];
 

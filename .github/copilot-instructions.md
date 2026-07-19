@@ -48,6 +48,10 @@ The outputs `currentValue`, `currentCountryCode`, and `currentCountryISO` are
 notifications. The supplied/resolved form control remains the form-state
 source of truth.
 
+Signal Forms are also supported: the component implements
+`FormValueControl<string>`, so bind it with `[formField]="form.phone"` and use
+the exported `validPhoneNumber` schema validator for number validation.
+
 ## Implementation conventions
 
 - Use standalone declarations, signals, `input()`/`model()`/`output()`,

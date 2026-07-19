@@ -20,6 +20,12 @@ and this project adheres to
 ### Fixed
 
 - Allow using the component without a parent Reactive Forms directive: the `ControlContainer` dependency is now optional instead of throwing at creation.
+- Repaint the country selector and number input when the control value is set externally (Reactive Forms `setValue` or a Signal Forms field write) while `numberValidation` is disabled; previously only the validator's side effects updated the visible input.
+- Fix the `'outline'` appearance with a main label: long labels no longer overflow the country selector's notched outline and get struck through by the number field's border — the selector now grows to fit the label. Focus and error states are also mirrored across both outlined fields so the fused control no longer shows a mismatched seam.
+- Fix the cursor jumping back one position while typing with `useMask` enabled: the manual cursor restore now defers to the mask, which already manages the caret.
+- Fix typing being completely blocked with `useMask` when the masked value fills the input (e.g. `includeDialCode` with `showMaskPlaceholder`): the `maxlength` attribute is no longer set in mask mode — the mask itself enforces the exact length.
+- Fix broken masks for countries whose dial code contains a `0` or `9` (e.g. +380 Ukraine, +90 Turkey): those digits are imask definition characters and became editable slots — they are now escaped to stay literal.
+- Fix changing the country with `useMask` and `includeDialCode`: the old number was pushed through the previous country's mask (mangling the dial code) and the validator then reverted the country selection. The number input is now cleared on country change and the new mask renders its own dial code.
 
 ## [22.0.0] - 2026-07-14
 

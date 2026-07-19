@@ -100,6 +100,41 @@
           }
         }
       }
+
+      // the two fused fields are one control visually, so mirror focus and
+      // error state onto the sibling field's outline to avoid a mismatched seam
+      &:has(.mdc-text-field--focused) {
+        // widths are set per side: a blanket border-width would give the
+        // notch's normally zero-width vertical borders a visible thickness
+        mat-form-field::ng-deep .mdc-notched-outline > * {
+          border-color: var(
+            --mat-outline-tel-form-focus-outline-color,
+            var(--mat-sys-primary, var(--mat-theme-primary, rgb(32, 159, 252)))
+          );
+          border-top-width: 2px;
+          border-bottom-width: 2px;
+        }
+        mat-form-field::ng-deep .mdc-notched-outline__leading {
+          border-left-width: 2px;
+        }
+        mat-form-field::ng-deep .mdc-notched-outline__trailing {
+          border-right-width: 2px;
+        }
+      }
+      &:has(.number-form-field.mat-form-field-invalid) {
+        mat-form-field::ng-deep .mdc-notched-outline > * {
+          border-color: var(
+            --mat-tel-form-error-color,
+            var(--mat-sys-error, var(--mat-theme-error, #f44336))
+          );
+        }
+        .prefix-form-field::ng-deep .mdc-floating-label {
+          color: var(
+            --mat-tel-form-error-color,
+            var(--mat-sys-error, var(--mat-theme-error, #f44336))
+          );
+        }
+      }
     }
 
     .tel-form {
@@ -151,8 +186,27 @@
           }
           &.has-main-label {
             width: auto;
+            // grow to fit the label spacer; the spacer itself is capped so a
+            // long label cannot crush the number input
+            min-width: max-content;
+            // drop the infix's fixed 180px default so the field sizes to the
+            // label/trigger content instead of always being 180px wide
+            &::ng-deep .mat-mdc-form-field-infix {
+              width: auto;
+            }
             &::ng-deep .mdc-notched-outline__notch {
-              max-width: none;
+              max-width: calc(100% - 12px);
+            }
+            .main-label-spacer {
+              display: block;
+              width: max-content;
+              max-width: min(60vw, 360px);
+              height: 0;
+              overflow: hidden;
+              visibility: hidden;
+              white-space: nowrap;
+              font-size: var(--mdc-outlined-text-field-label-text-size, 16px);
+              padding-right: 16px;
             }
           }
           &::ng-deep .mdc-text-field {

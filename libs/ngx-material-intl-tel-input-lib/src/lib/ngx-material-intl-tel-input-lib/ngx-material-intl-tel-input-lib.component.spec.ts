@@ -123,6 +123,114 @@ describe('NgxMaterialIntlTelInputComponent', () => {
     expect(component.prefixCtrl.value).toEqual(country);
   });
 
+  it('should repaint the country selector and number input when the fieldControl value is set externally', () => {
+    component.fieldControl()?.setValue('+41446681800');
+    expect(component.prefixCtrl.value?.iso2).toBe('ch');
+    expect(component.telForm.get('numberControl')?.value).toBe('044 668 18 00');
+    expect(component.fieldControl()?.value).toBe('+41 44 668 18 00');
+  });
+
+  it('should not set maxlength on the input when useMask is enabled, so mask placeholders cannot block typing', () => {
+    const localFixture = TestBed.createComponent(
+      NgxMaterialIntlTelInputComponent
+    );
+    localFixture.componentRef.setInput('useMask', true);
+    localFixture.detectChanges();
+    const input: HTMLInputElement =
+      localFixture.nativeElement.querySelector('input[matInput]');
+    expect(input.getAttribute('maxlength')).toBeNull();
+    localFixture.destroy();
+  });
+
+  it('should set maxlength on the input when useMask is disabled', () => {
+    const input: HTMLInputElement =
+      fixture.nativeElement.querySelector('input[matInput]');
+    expect(input.getAttribute('maxlength')).not.toBeNull();
+  });
+
+  it('should clear the number and keep the selection when the country changes with useMask and includeDialCode', () => {
+    const localFixture = TestBed.createComponent(
+      NgxMaterialIntlTelInputComponent
+    );
+    localFixture.componentRef.setInput('useMask', true);
+    localFixture.componentRef.setInput('includeDialCode', true);
+    localFixture.detectChanges();
+    const localComponent = localFixture.componentInstance;
+    localComponent.telForm
+      .get('numberControl')
+      ?.setValue('+380 50 123 4567', { emitEvent: false });
+
+    const ukraine = localComponent.allCountries.find((c) => c.iso2 === 'ua');
+    localComponent.prefixCtrl.setValue(ukraine ?? null);
+
+    // the old number is cleared before the telForm emission, so the
+    // validator cannot parse it and revert the country selection
+    expect(localComponent.telForm.get('numberControl')?.value).toBe('');
+    expect(localComponent.prefixCtrl.value?.iso2).toBe('ua');
+    localFixture.destroy();
+  });
+
+  it('should not force the cursor position when useMask is enabled', () => {
+    vi.useFakeTimers();
+    const localFixture = TestBed.createComponent(
+      NgxMaterialIntlTelInputComponent
+    );
+    localFixture.componentRef.setInput('useMask', true);
+    localFixture.detectChanges();
+    const localComponent = localFixture.componentInstance;
+    const inputElement = {
+      setSelectionRange: vi.fn()
+    } as unknown as HTMLInputElement;
+    const parsed = PhoneNumberUtil.getInstance().parse('+34675432198');
+
+    localComponent['setCursorPosition'](inputElement, 4, parsed, '675 4');
+    vi.runAllTimers();
+
+    expect(inputElement.setSelectionRange).not.toHaveBeenCalled();
+    localFixture.destroy();
+    vi.useRealTimers();
+  });
+
+  it('should restore the cursor position when useMask is disabled', () => {
+    vi.useFakeTimers();
+    const inputElement = {
+      setSelectionRange: vi.fn()
+    } as unknown as HTMLInputElement;
+    const parsed = PhoneNumberUtil.getInstance().parse('+34675432198');
+
+    component['setCursorPosition'](inputElement, 4, parsed, '675 4');
+    vi.runAllTimers();
+
+    expect(inputElement.setSelectionRange).toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+
+  it('should repaint the country selector and number input on external set when numberValidation is disabled', () => {
+    const localFixture = TestBed.createComponent(
+      NgxMaterialIntlTelInputComponent
+    );
+    localFixture.componentRef.setInput('numberValidation', false);
+    localFixture.detectChanges();
+    const localComponent = localFixture.componentInstance;
+
+    localComponent.fieldControl()?.setValue('+41446681800');
+
+    expect(localComponent.prefixCtrl.value?.iso2).toBe('ch');
+    expect(localComponent.telForm.get('numberControl')?.value).toBe(
+      '044 668 18 00'
+    );
+    localFixture.destroy();
+  });
+
+  it('should format the typed number in the input when typing updates the fieldControl internally', () => {
+    const spain = component.allCountries.find((c) => c.iso2 === 'es');
+    component.prefixCtrl.setValue(spain ?? null);
+    component.telForm.get('numberControl')?.setValue('612345678');
+    // the validator reformats the input to national format while typing
+    expect(component.telForm.get('numberControl')?.value).toBe('612 34 56 78');
+    expect(component.fieldControl()?.value).toBe('+34 612 34 56 78');
+  });
+
   describe('startFieldControlValueChangesListener', () => {
     let valueChangesSubject: Subject<string>;
 
@@ -1716,6 +1824,21 @@ class SignalFormsHostComponent {
 
 @Component({
   imports: [NgxMaterialIntlTelInputComponent, FormField],
+  template: `<ngx-material-intl-tel-input
+    [formField]="phoneForm.phone"
+    [autoSelectCountry]="false"
+  />`
+})
+class PrepopulatedSignalFormsHostComponent {
+  telInput = viewChild.required(NgxMaterialIntlTelInputComponent);
+  model = signal({ phone: '+41446681800' });
+  phoneForm = form(this.model, (path) => {
+    validate(path.phone, validPhoneNumber);
+  });
+}
+
+@Component({
+  imports: [NgxMaterialIntlTelInputComponent, FormField],
   template: `<ngx-material-intl-tel-input [formField]="phoneForm.phone" />`
 })
 class DisabledSignalFormsHostComponent {
@@ -1735,7 +1858,11 @@ describe('NgxMaterialIntlTelInputComponent with Signal Forms', () => {
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [SignalFormsHostComponent, DisabledSignalFormsHostComponent],
+      imports: [
+        SignalFormsHostComponent,
+        PrepopulatedSignalFormsHostComponent,
+        DisabledSignalFormsHostComponent
+      ],
       providers: [{ provide: GeoIpService, useValue: geoIpServiceMock }]
     }).compileComponents();
 
@@ -1760,6 +1887,36 @@ describe('NgxMaterialIntlTelInputComponent with Signal Forms', () => {
     hostFixture.detectChanges();
 
     expect(host.telInput().fieldControl()?.value).toBe('+34 612 34 56 78');
+  });
+
+  it('should repaint the country selector and number input when the field value is set on the form', async () => {
+    host.phoneForm.phone().value.set('+34612345678');
+    hostFixture.detectChanges();
+    await hostFixture.whenStable();
+    hostFixture.detectChanges();
+
+    const telInput = host.telInput();
+    expect(telInput.prefixCtrl.value?.iso2).toBe('es');
+    expect(telInput.telForm.get('numberControl')?.value).toBe('612 34 56 78');
+  });
+
+  it('should populate the input and country from a pre-populated form model on init', async () => {
+    const prepopulatedFixture = TestBed.createComponent(
+      PrepopulatedSignalFormsHostComponent
+    );
+    prepopulatedFixture.detectChanges();
+    await prepopulatedFixture.whenStable();
+    await new Promise((resolve) => setTimeout(resolve));
+    prepopulatedFixture.detectChanges();
+
+    const telInput = prepopulatedFixture.componentInstance.telInput();
+    expect(telInput.prefixCtrl.value?.iso2).toBe('ch');
+    expect(telInput.telForm.get('numberControl')?.value).toBe('044 668 18 00');
+    expect(telInput.fieldControl()?.value).toBe('+41 44 668 18 00');
+    expect(
+      prepopulatedFixture.componentInstance.phoneForm.phone().valid()
+    ).toBe(true);
+    prepopulatedFixture.destroy();
   });
 
   it('should propagate typed input back into the form model', async () => {
@@ -1795,6 +1952,41 @@ describe('NgxMaterialIntlTelInputComponent with Signal Forms', () => {
     await hostFixture.whenStable();
 
     expect(host.phoneForm.phone().touched()).toBe(true);
+  });
+
+  it('should mark the field as dirty when the user types a number', async () => {
+    expect(host.phoneForm.phone().dirty()).toBe(false);
+    const telInput = host.telInput();
+    const spain = telInput.allCountries.find((c) => c.iso2 === 'es');
+    telInput.prefixCtrl.setValue(spain ?? null);
+    telInput.telForm.get('numberControl')?.setValue('612345678');
+    hostFixture.detectChanges();
+    await hostFixture.whenStable();
+
+    expect(host.phoneForm.phone().dirty()).toBe(true);
+  });
+
+  it('should stay consistent through alternating external writes and typed input', async () => {
+    const telInput = host.telInput();
+
+    host.phoneForm.phone().value.set('+34612345678');
+    hostFixture.detectChanges();
+    await hostFixture.whenStable();
+
+    host.phoneForm.phone().value.set('+41446681800');
+    hostFixture.detectChanges();
+    await hostFixture.whenStable();
+    hostFixture.detectChanges();
+
+    expect(telInput.prefixCtrl.value?.iso2).toBe('ch');
+    expect(telInput.telForm.get('numberControl')?.value).toBe('044 668 18 00');
+
+    telInput.telForm.get('numberControl')?.setValue('446681801');
+    hostFixture.detectChanges();
+    await hostFixture.whenStable();
+
+    expect(host.model().phone).toBe('+41 44 668 18 01');
+    expect(telInput.fieldControl()?.value).toBe('+41 44 668 18 01');
   });
 
   it('should disable the component when the schema disables the field', async () => {
