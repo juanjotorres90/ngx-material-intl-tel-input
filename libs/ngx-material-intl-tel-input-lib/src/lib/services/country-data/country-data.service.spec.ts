@@ -1,8 +1,10 @@
+import type { Mocked } from 'vitest';
 import { TestBed } from '@angular/core/testing';
 import { CountryDataService } from './country-data.service';
 import { Country } from '../../types/country.model';
 import { CountryCode, CountryData } from '../../data/country-code';
 import { CountryISO } from '../../enums/country-iso.enum';
+import { CountryDisplayNameService } from '../country-display-name/country-display-name.service';
 import {
   PhoneNumberFormat,
   PhoneNumberType,
@@ -11,7 +13,7 @@ import {
 
 describe('CountryDataService', () => {
   let service: CountryDataService;
-  let mockPhoneNumberUtil: jest.Mocked<PhoneNumberUtil>;
+  let mockPhoneNumberUtil: Mocked<PhoneNumberUtil>;
   let mockCountryCodeData: CountryCode;
 
   // Mock data for testing
@@ -25,15 +27,15 @@ describe('CountryDataService', () => {
   beforeEach(() => {
     // Create mock PhoneNumberUtil
     mockPhoneNumberUtil = {
-      getInstance: jest.fn(),
-      format: jest.fn(),
-      getExampleNumberForType: jest.fn()
+      getInstance: vi.fn(),
+      format: vi.fn(),
+      getExampleNumberForType: vi.fn()
     } as any;
 
     // Mock the static getInstance method
-    jest
-      .spyOn(PhoneNumberUtil, 'getInstance')
-      .mockReturnValue(mockPhoneNumberUtil);
+    vi.spyOn(PhoneNumberUtil, 'getInstance').mockReturnValue(
+      mockPhoneNumberUtil
+    );
 
     // Create mock CountryCode data
     mockCountryCodeData = {
@@ -48,7 +50,7 @@ describe('CountryDataService', () => {
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('Service Initialization', () => {
@@ -80,6 +82,33 @@ describe('CountryDataService', () => {
       expect(result[0].iso2).toBe(CountryISO.UnitedStates);
       expect(result[0].dialCode).toBe('1');
       expect(result[0].emojiFlag).toBe('🇺🇸');
+    });
+
+    it('should localize country names when localizeCountryNames is true', () => {
+      const getCountryNameSpy = vi
+        .spyOn(CountryDisplayNameService.prototype, 'getCountryName')
+        .mockReturnValue('Localized Name');
+
+      const result = service.processCountries(
+        mockCountryCodeData,
+        true,
+        true,
+        undefined,
+        undefined,
+        undefined,
+        false,
+        false,
+        false,
+        PhoneNumberFormat.INTERNATIONAL,
+        true
+      );
+
+      expect(getCountryNameSpy).toHaveBeenCalledWith(
+        CountryISO.UnitedStates,
+        'United States'
+      );
+      expect(result[0].name).toBe('Localized Name');
+      getCountryNameSpy.mockRestore();
     });
 
     it('should filter visible countries correctly', () => {

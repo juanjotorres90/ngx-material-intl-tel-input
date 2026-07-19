@@ -1,28 +1,26 @@
+import type { MockInstance } from 'vitest';
 import { FormControl, FormGroup } from '@angular/forms';
-import { PhoneNumberFormat } from 'google-libphonenumber';
+import { PhoneNumberFormat, PhoneNumberUtil } from 'google-libphonenumber';
 import TelValidators from './tel.validators';
 import { Country } from '../types/country.model';
 import { CountryISO } from '../enums/country-iso.enum';
-import * as phoneNumberUtils from '../utils/phone-number.utils';
-
-// Mock the phone number utils
-jest.mock('../utils/phone-number.utils', () => ({
-  isValidPhoneNumberLength: jest.fn()
-}));
+import { phoneNumberUtils } from '../utils/phone-number.utils';
 
 describe('TelValidators', () => {
   let mockAllCountries: Country[];
   let telForm: FormGroup;
   let control: FormControl;
-  let mockIsValidPhoneNumberLength: jest.MockedFunction<
+  let mockIsValidPhoneNumberLength: MockInstance<
     typeof phoneNumberUtils.isValidPhoneNumberLength
   >;
 
   beforeEach(() => {
-    mockIsValidPhoneNumberLength =
-      phoneNumberUtils.isValidPhoneNumberLength as jest.MockedFunction<
-        typeof phoneNumberUtils.isValidPhoneNumberLength
-      >;
+    // vi.mock on relative imports is unsupported by the Angular unit-test
+    // builder, so spy on the phoneNumberUtils object the validator calls into
+    mockIsValidPhoneNumberLength = vi.spyOn(
+      phoneNumberUtils,
+      'isValidPhoneNumberLength'
+    );
 
     // Setup mock countries with various scenarios
     mockAllCountries = [
@@ -119,7 +117,7 @@ describe('TelValidators', () => {
     });
 
     // Reset mocks
-    jest.clearAllMocks();
+    vi.clearAllMocks();
     mockIsValidPhoneNumberLength.mockReturnValue(true);
   });
 
@@ -335,7 +333,7 @@ describe('TelValidators', () => {
       it('should execute area code matching logic when countries have area codes', () => {
         // This test specifically targets the area code matching logic in lines 38-39
         // Create a scenario where we can verify the area code logic is executed
-        const spyFind = jest.spyOn(Array.prototype, 'find');
+        const spyFind = vi.spyOn(Array.prototype, 'find');
 
         control.setValue('+1 767 225 1234');
         const validator = TelValidators.isValidNumber(
@@ -467,7 +465,7 @@ describe('TelValidators', () => {
 
       it('should not update prefix control if country is already correct', () => {
         telForm.get('prefixCtrl')?.setValue(mockAllCountries[0]); // US
-        const prefixSetValueSpy = jest.spyOn(
+        const prefixSetValueSpy = vi.spyOn(
           telForm.get('prefixCtrl')!,
           'setValue'
         );
@@ -488,7 +486,7 @@ describe('TelValidators', () => {
     describe('number formatting', () => {
       it('should format number in NATIONAL format by default', () => {
         control.setValue('+1 201 555 0123');
-        const numberControlSetValueSpy = jest.spyOn(
+        const numberControlSetValueSpy = vi.spyOn(
           telForm.get('numberControl')!,
           'setValue'
         );
@@ -508,7 +506,7 @@ describe('TelValidators', () => {
 
       it('should format number in INTERNATIONAL format when includeDialCode is true', () => {
         control.setValue('+1 201 555 0123');
-        const numberControlSetValueSpy = jest.spyOn(
+        const numberControlSetValueSpy = vi.spyOn(
           telForm.get('numberControl')!,
           'setValue'
         );
@@ -529,7 +527,7 @@ describe('TelValidators', () => {
       it('should format Northern Mariana Islands numbers in INTERNATIONAL format', () => {
         telForm.get('prefixCtrl')?.setValue(mockAllCountries[5]); // Northern Mariana Islands
         control.setValue('+1 670 234 5678');
-        const numberControlSetValueSpy = jest.spyOn(
+        const numberControlSetValueSpy = vi.spyOn(
           telForm.get('numberControl')!,
           'setValue'
         );
@@ -599,6 +597,97 @@ describe('TelValidators', () => {
         const result = validator(control);
 
         expect(result).toBeNull();
+      });
+
+      it('should not match a country without area codes and non-zero priority', () => {
+        const nonPriorityCountries = [
+          {
+            emojiFlag: '🏳️',
+            name: 'Fake Country',
+            iso2: 'xx',
+            dialCode: '1',
+            priority: 1,
+            htmlId: 'xx',
+            flagClass: 'xx',
+            placeHolder: ''
+          } as Country
+        ];
+        telForm.get('prefixCtrl')?.setValue(null);
+        control.setValue('+1 201 555 0123');
+        const validator = TelValidators.isValidNumber(
+          telForm,
+          false,
+          nonPriorityCountries
+        );
+
+        const result = validator(control);
+
+        expect(result).toBeNull();
+        expect(telForm.get('prefixCtrl')?.value).toBeNull();
+      });
+
+      it('should skip length validation when no country can be resolved', () => {
+        telForm.get('prefixCtrl')?.setValue(null);
+        control.setValue('+34 612 34 56 78');
+        const validator = TelValidators.isValidNumber(telForm, false, []);
+
+        const result = validator(control);
+
+        expect(result).toBeNull();
+        expect(mockIsValidPhoneNumberLength).not.toHaveBeenCalled();
+      });
+
+      it('should skip prefix detection when no dial code can be resolved', () => {
+        const fakeParsed = {
+          getCountryCode: () => 0,
+          getNationalNumber: () => ({
+            toString: () => '2015550123',
+            startsWith: () => false
+          })
+        };
+        const parseSpy = vi
+          .spyOn(PhoneNumberUtil.prototype, 'parse')
+          .mockReturnValue(fakeParsed as any);
+        const formatSpy = vi
+          .spyOn(PhoneNumberUtil.prototype, 'format')
+          .mockReturnValue('201 555 0123');
+        const isValidSpy = vi
+          .spyOn(PhoneNumberUtil.prototype, 'isValidNumber')
+          .mockReturnValue(true);
+
+        telForm.get('prefixCtrl')?.setValue(null);
+        control.setValue('201 555 0123');
+        const validator = TelValidators.isValidNumber(
+          telForm,
+          true,
+          mockAllCountries
+        );
+
+        const result = validator(control);
+
+        expect(result).toBeNull();
+        expect(telForm.get('prefixCtrl')?.value).toBeNull();
+
+        parseSpy.mockRestore();
+        formatSpy.mockRestore();
+        isValidSpy.mockRestore();
+      });
+
+      it('should fall back to the parsed country code when prefixCtrl is empty and dial code is included', () => {
+        telForm.get('prefixCtrl')?.setValue(null);
+        control.setValue('+1 201 555 0123');
+        const validator = TelValidators.isValidNumber(
+          telForm,
+          true,
+          mockAllCountries
+        );
+
+        const result = validator(control);
+
+        expect(result).toBeNull();
+        expect(telForm.get('prefixCtrl')?.value?.iso2).toBe(
+          CountryISO.UnitedStates
+        );
       });
     });
 
@@ -674,11 +763,8 @@ describe('TelValidators', () => {
       });
 
       it('should not emit events when setting form control values', () => {
-        const prefixEmitSpy = jest.spyOn(
-          telForm.get('prefixCtrl')!,
-          'setValue'
-        );
-        const numberEmitSpy = jest.spyOn(
+        const prefixEmitSpy = vi.spyOn(telForm.get('prefixCtrl')!, 'setValue');
+        const numberEmitSpy = vi.spyOn(
           telForm.get('numberControl')!,
           'setValue'
         );

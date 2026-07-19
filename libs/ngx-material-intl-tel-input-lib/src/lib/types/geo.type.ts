@@ -26,4 +26,4 @@ export type GeoData = {
   country_population: number;
   asn: string;
   org: string;
-}
+};

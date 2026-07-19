@@ -159,7 +159,7 @@ This project adheres to modern Angular best practices, emphasizing maintainabili
 
 ## General Angular Component Rules
 
-- You are an expert Angular programmer using TypeScript, Angular 21 and Jest that focuses on producing clear, readable code.
+- You are an expert Angular programmer using TypeScript, Angular 22 and Vitest that focuses on producing clear, readable code.
 - You are thoughtful, give nuanced answers, and are brilliant at reasoning.
 - You carefully provide accurate, factual, thoughtful answers and are a genius at reasoning.
 - Before providing an answer, think step by step, and provide a detailed, thoughtful answer.
@@ -179,11 +179,11 @@ This project adheres to modern Angular best practices, emphasizing maintainabili
 
 ---
 
-# Jest Testing Guidelines
+# Vitest Testing Guidelines
 
 ## Persona
 
-You are an expert developer with deep knowledge of Jest and TypeScript, tasked with creating unit tests for JavaScript/TypeScript applications.
+You are an expert developer with deep knowledge of Vitest and TypeScript, tasked with creating unit tests for JavaScript/TypeScript applications.
 
 ## Auto-detect TypeScript Usage
 
@@ -193,7 +193,7 @@ Adjust syntax based on this detection.
 ## Unit Testing Focus
 
 Create unit tests that focus on critical functionality (business logic, utility functions)
-Mock dependencies (API calls, external modules) before imports
+Mock dependencies (API calls, external services) via Angular TestBed providers or vi.spyOn
 Test various data scenarios (valid inputs, invalid inputs, edge cases)
 Write maintainable tests with descriptive names grouped in describe blocks
 Do not ever mock the 'TranslateService' in the tests. Just add the 'provideTranslateService()' provider when configuring the testbed.
@@ -201,7 +201,7 @@ Do not ever mock the 'TranslateService' in the tests. Just add the 'provideTrans
 ## Best Practices
 
 **1** **Critical Functionality**: Prioritize testing business logic and utility functions
-**2** **Dependency Mocking**: Always mock dependencies before imports with jest.mock()
+**2** **Dependency Mocking**: Mock dependencies via TestBed providers or vi.spyOn(); vi.mock() on relative imports is NOT supported by the Angular unit-test builder
 **3** **Data Scenarios**: Test valid inputs, invalid inputs, and edge cases
 **4** **Descriptive Naming**: Use clear test names indicating expected behavior
 **5** **Test Organization**: Group related tests in describe/context blocks
@@ -217,22 +217,23 @@ To run tests, use the following command:
 npx nx test <project-name>
 ```
 
-Use '--testPathPatterns' in plural instead of '--testPathPattern' to run tests for a specific file or test case. This is very important.
+Use `--include` to run a specific spec file (glob) and `--coverage` to generate a coverage report. Tests run with Vitest via the `@angular/build:unit-test` builder; `describe`/`it`/`expect`/`vi` are globals — do not import them from 'vitest' (only type-only imports are allowed).
 
 ## Example Unit Test
 
 ```js
-// Mock dependencies before imports
-jest.mock('../api/taxRate', () => ({
-  getTaxRate: jest.fn(() => 0.1) // Mock tax rate as 10%
-}));
-
-// Import module under test
 const { calculateTotal } = require('../utils/calculateTotal');
+const taxRate = require('../api/taxRate');
 
 describe('calculateTotal', () => {
   beforeEach(() => {
-    jest.clearAllMocks();
+    // Spy on dependencies instead of module mocking (vi.mock on relative
+    // imports is unsupported by the Angular unit-test builder)
+    vi.spyOn(taxRate, 'getTaxRate').mockReturnValue(0.1);
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('should calculate total for valid items with tax', () => {
@@ -268,13 +269,8 @@ describe('calculateTotal', () => {
 ## TypeScript Example
 
 ```ts
-// Mock dependencies before imports
-jest.mock('../api/userService', () => ({
-  fetchUser: jest.fn()
-}));
-
-// Import the mocked module and the function to test
-import { fetchUser } from '../api/userService';
+import type { MockInstance } from 'vitest';
+import * as userService from '../api/userService';
 import { getUserData } from '../utils/userUtils';
 
 // Define TypeScript interfaces
@@ -285,26 +281,32 @@ interface User {
 }
 
 describe('getUserData', () => {
+  let fetchUserSpy: MockInstance<typeof userService.fetchUser>;
+
   beforeEach(() => {
-    jest.clearAllMocks();
+    fetchUserSpy = vi.spyOn(userService, 'fetchUser');
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('should return user data when fetch is successful', async () => {
     // Arrange
     const mockUser: User = { id: 1, name: 'John Doe', email: 'john@example.com' };
-    (fetchUser as jest.Mock).mockResolvedValue(mockUser);
+    fetchUserSpy.mockResolvedValue(mockUser);
 
     // Act
     const result = await getUserData(1);
 
     // Assert
-    expect(fetchUser).toHaveBeenCalledWith(1);
+    expect(fetchUserSpy).toHaveBeenCalledWith(1);
     expect(result).toEqual(mockUser);
   });
 
   it('should throw error when user is not found', async () => {
     // Arrange
-    (fetchUser as jest.Mock).mockResolvedValue(null);
+    fetchUserSpy.mockResolvedValue(null);
 
     // Act & Assert
     await expect(getUserData(999)).rejects.toThrow('User not found');
@@ -312,7 +314,7 @@ describe('getUserData', () => {
 
   it('should handle API errors gracefully', async () => {
     // Arrange
-    (fetchUser as jest.Mock).mockRejectedValue(new Error('Network error'));
+    fetchUserSpy.mockRejectedValue(new Error('Network error'));
 
     // Act & Assert
     await expect(getUserData(1)).rejects.toThrow('Failed to fetch user: Network error');

@@ -109,6 +109,8 @@ export class NgxMaterialIntlTelInputComponent
   /** Subject that emits when the component has been destroyed. */
   protected _onDestroy = new Subject<void>();
 
+  private initialTelValueTimeout?: ReturnType<typeof setTimeout>;
+
   allCountries: Country[] = [];
   phoneNumberUtil = PhoneNumberUtil.getInstance();
 
@@ -197,7 +199,7 @@ export class NgxMaterialIntlTelInputComponent
       });
     this.startTelFormValueChangesListener();
     this.startPrefixValueChangesListener();
-    setTimeout(() => {
+    this.initialTelValueTimeout = setTimeout(() => {
       this.setInitialTelValue();
     });
     this.startFieldControlValueChangesListener();
@@ -286,6 +288,7 @@ export class NgxMaterialIntlTelInputComponent
    *
    */
   ngOnDestroy(): void {
+    clearTimeout(this.initialTelValueTimeout);
     this._onDestroy.next();
     this._onDestroy.complete();
   }
@@ -328,8 +331,10 @@ export class NgxMaterialIntlTelInputComponent
         // this needs to be done after the filteredCountries are loaded initially
         // and after the mat-option elements are available
         const singleSelectInstance = this.singleSelect() as MatSelect;
-        singleSelectInstance.compareWith = (a: Country, b: Country) =>
-          a && b && a.iso2 === b.iso2;
+        if (singleSelectInstance) {
+          singleSelectInstance.compareWith = (a: Country, b: Country) =>
+            a && b && a.iso2 === b.iso2;
+        }
       });
   }
 

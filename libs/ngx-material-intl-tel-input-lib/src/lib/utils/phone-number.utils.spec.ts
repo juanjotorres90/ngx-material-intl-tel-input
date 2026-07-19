@@ -1,3 +1,4 @@
+import type { Mocked } from 'vitest';
 import { PhoneNumberType, PhoneNumberUtil } from 'google-libphonenumber';
 import {
   getMaxPhoneNumberLength,
@@ -5,30 +6,30 @@ import {
 } from './phone-number.utils';
 
 describe('Phone Number Utils', () => {
-  let mockPhoneNumberUtil: jest.Mocked<PhoneNumberUtil>;
+  let mockPhoneNumberUtil: Mocked<PhoneNumberUtil>;
   let mockExampleNumber: any;
 
   beforeEach(() => {
     // Create mock example number
     mockExampleNumber = {
-      getNationalNumber: jest.fn()
+      getNationalNumber: vi.fn()
     };
 
     // Create mock PhoneNumberUtil
     mockPhoneNumberUtil = {
-      getInstance: jest.fn(),
-      getExampleNumberForType: jest.fn(),
-      parse: jest.fn()
+      getInstance: vi.fn(),
+      getExampleNumberForType: vi.fn(),
+      parse: vi.fn()
     } as any;
 
     // Mock the static getInstance method
-    jest
-      .spyOn(PhoneNumberUtil, 'getInstance')
-      .mockReturnValue(mockPhoneNumberUtil);
+    vi.spyOn(PhoneNumberUtil, 'getInstance').mockReturnValue(
+      mockPhoneNumberUtil
+    );
   });
 
   afterEach(() => {
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   describe('getMaxPhoneNumberLength', () => {
@@ -138,7 +139,7 @@ describe('Phone Number Utils', () => {
       });
 
       it('should handle PhoneNumberUtil getInstance failure', () => {
-        jest.spyOn(PhoneNumberUtil, 'getInstance').mockImplementation(() => {
+        vi.spyOn(PhoneNumberUtil, 'getInstance').mockImplementation(() => {
           throw new Error('PhoneNumberUtil error');
         });
 
@@ -154,7 +155,7 @@ describe('Phone Number Utils', () => {
 
     beforeEach(() => {
       mockParsedNumber = {
-        getNationalNumber: jest.fn()
+        getNationalNumber: vi.fn()
       };
       mockPhoneNumberUtil.parse.mockReturnValue(mockParsedNumber);
     });
@@ -263,7 +264,7 @@ describe('Phone Number Utils', () => {
       });
 
       it('should return false when PhoneNumberUtil getInstance fails', () => {
-        jest.spyOn(PhoneNumberUtil, 'getInstance').mockImplementation(() => {
+        vi.spyOn(PhoneNumberUtil, 'getInstance').mockImplementation(() => {
           throw new Error('PhoneNumberUtil error');
         });
 

@@ -16,7 +16,7 @@ This is an **Angular library project** that provides a Material Design internati
 - Multiple output formats (International, E164, RFC3966)
 - Localization support for country names
 - Extensive CSS custom properties for theming
-- Angular Forms integration via ControlValueAccessor
+- Angular Reactive Forms integration via `fieldControl` and `fieldControlName`
 
 ## Architecture
 
@@ -82,7 +82,8 @@ npm run build:all
 The `NgxMaterialIntlTelInputComponent` follows Angular standalone component pattern:
 
 - Uses **signals** for reactive state management
-- Implements `ControlValueAccessor` for Angular Forms integration
+- Integrates with Angular Reactive Forms through a supplied or resolved form
+  control; it is not a `ControlValueAccessor`
 - Supports both `fieldControl` (FormControl) and `fieldControlName` (string) patterns
 - Emits events: `currentValue`, `currentCountryCode`, `currentCountryISO`
 
@@ -120,7 +121,7 @@ Key customization variables:
 - **Angular Material 21.0.3** with CDK
 - **Google libphonenumber** for validation
 - **Nx 22.3.1** for monorepo management
-- **Jest** for testing with `jest-preset-angular`
+- **Vitest** for testing via the `@angular/build:unit-test` builder
 - **ESLint** for linting with Angular-specific rules
 - **Prettier** for code formatting
 - **TypeScript 5.9.3** with strict typing
@@ -130,10 +131,10 @@ Key customization variables:
 - **Standalone Components** using Angular's new component architecture
 - **Signals** for reactive state management over traditional properties
 - **OnPush change detection** for performance
-- **ControlValueAccessor** for form integration
+- **`fieldControl` / `fieldControlName` inputs** for Reactive Forms integration
 - **CSS custom properties** for theming
 - **Extensive use of RxJS** for async operations
-- **Jest** for unit testing with mocking of external dependencies
+- **Vitest** for unit testing with mocking of external dependencies
 
 ## Important Notes
 

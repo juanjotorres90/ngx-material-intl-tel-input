@@ -88,3 +88,13 @@ export const isValidPhoneNumberLength = (
     return false;
   }
 };
+
+/**
+ * Object wrapper around the phone number utils so consumers call them as
+ * methods, which keeps them spyable in tests (vi.mock is not supported for
+ * relative imports under the Angular unit-test builder).
+ */
+export const phoneNumberUtils = {
+  getMaxPhoneNumberLength,
+  isValidPhoneNumberLength
+};

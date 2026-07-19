@@ -40,7 +40,7 @@ npx nx run-many --target=build --all
 
 ### Testing Strategy
 
-- **Jest** for unit testing with `jest-preset-angular`
+- **Vitest** for unit testing via the `@angular/build:unit-test` builder (use `--coverage` for reports)
 - Coverage reports generated to `coverage/` directory
 - Use `nx test <project>` for individual project testing
 - All components should include `.spec.ts` files
@@ -109,9 +109,9 @@ The library uses extensive CSS custom properties for theming:
 
 ### Nx Configuration
 
-- **Plugins**: ESLint and Jest plugins auto-configured
+- **Plugins**: ESLint plugin auto-configured; test targets use the `@angular/build:unit-test` executor
 - **Target Defaults**: Automatic caching and dependency management
-- **Generator Defaults**: SCSS styling, Jest testing, ESLint linting
+- **Generator Defaults**: SCSS styling, Vitest testing (`vitest-angular`), ESLint linting
 
 ### Library Publishing
 
