@@ -1,169 +1,86 @@
-# CLAUDE.md
+# Claude Code guidance
 
-This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+@AGENTS.md
 
-## Project Overview
+`AGENTS.md` is the canonical engineering and agent guide. Read it before
+changing this repository. This file adds only Claude Code-specific orientation
+to avoid maintaining duplicate instructions.
 
-This is an **Angular library project** that provides a Material Design international telephone input component. The project is structured as an **Nx monorepo** with the core library and a demo application.
+## Start every task
 
-**Main Component**: `NgxMaterialIntlTelInputComponent` - Material Design international telephone input with country selection, validation, and formatting.
+1. Inspect the worktree and preserve unrelated uncommitted changes.
+2. Use Nx workspace/project context for repository questions.
+3. Use CodeGraph before reading or editing indexed TypeScript symbols.
+4. Verify claims against current source and configuration, not this file.
+5. Choose the smallest relevant Nx target for validation.
 
-**Key Features**:
+## Project facts
 
-- International phone number validation using Google's libphonenumber
-- Country selection with searchable dropdown and flag display
-- Automatic country detection via IP geolocation
-- Multiple output formats (International, E164, RFC3966)
-- Localization support for country names
-- Extensive CSS custom properties for theming
-- Angular Reactive Forms integration via `fieldControl` and `fieldControlName`
+- Published package: `ngx-material-intl-tel-input`.
+- Library project: `ngx-material-intl-tel-input-lib`.
+- Demo project: `ngx-material-intl-tel-input`.
+- Stack: Angular 22, Material 22, Nx 23, TypeScript 6, and Vitest 4.
+- Main component:
+  `NgxMaterialIntlTelInputComponent`.
+- Public exports:
+  `libs/ngx-material-intl-tel-input-lib/src/index.ts`.
 
-## Architecture
+## Forms contract
 
-### Workspace Structure
+The component is not a `ControlValueAccessor` and does not register
+`NG_VALUE_ACCESSOR`. Use one of its explicit Reactive Forms APIs:
 
-- **Library**: `libs/ngx-material-intl-tel-input-lib/` - The publishable npm package
-- **Demo App**: `apps/ngx-material-intl-tel-input/` - Development and testing application
-- **Nx Monorepo**: Uses Nx 22.3.1 with Angular 21 support
-
-### Library Structure
-
-```
-libs/ngx-material-intl-tel-input-lib/src/lib/
-├── ngx-material-intl-tel-input-lib/     # Main component
-├── components/                          # Reusable UI components
-├── services/                           # Business logic & external APIs
-│   ├── geo-ip/                        # IP-based country detection
-│   └── country-data/                  # Country information service
-├── types/                             # TypeScript interfaces
-├── enums/                             # Enumerations (CountryISO)
-├── data/                              # Static country codes data
-├── utils/                             # Utility functions
-├── validators/                        # Form validators
-└── assets/                            # Static resources (flags, etc.)
+```html
+<form [formGroup]="form">
+  <ngx-material-intl-tel-input fieldControlName="phone"></ngx-material-intl-tel-input>
+</form>
 ```
 
-## Development Commands
+or:
 
-### Development Workflow
+```html
+<form [formGroup]="form">
+  <ngx-material-intl-tel-input [fieldControl]="form.controls.phone"></ngx-material-intl-tel-input>
+</form>
+```
+
+Do not suggest `formControlName="phone"` on the component. The
+`fieldControlName` input resolves a control from the parent `ControlContainer`;
+`fieldControl` accepts an existing `FormControl`/`AbstractControl`.
+
+## Validation shortcuts
 
 ```bash
-# Start development server (demo app)
-npx nx serve ngx-material-intl-tel-input
-
-# Build library for production
-npx nx build ngx-material-intl-tel-input-lib
-
-# Run all tests
-npm run unit-tests:all
-
-# Run tests for specific project
 npx nx test ngx-material-intl-tel-input-lib
-npx nx test ngx-material-intl-tel-input
-
-# Lint all projects
-npm run lint:all
-
-# Build everything
-npm run build:all
+npx nx test ngx-material-intl-tel-input-lib --include='**/file.spec.ts'
+npx nx lint ngx-material-intl-tel-input-lib
+npx nx build ngx-material-intl-tel-input-lib
+npx nx affected -t lint test build
 ```
 
-### Key Dependencies
-
-- **Core**: Angular 21, Angular Material, Angular CDK
-- **Phone Validation**: `google-libphonenumber` for international phone number validation
-- **UI Enhancement**: `ngx-mat-select-search` for searchable country selection
-- **Input Masking**: `angular-imask` for phone number formatting
-
-## Component Patterns
-
-### Main Component API
-
-The `NgxMaterialIntlTelInputComponent` follows Angular standalone component pattern:
-
-- Uses **signals** for reactive state management
-- Integrates with Angular Reactive Forms through a supplied or resolved form
-  control; it is not a `ControlValueAccessor`
-- Supports both `fieldControl` (FormControl) and `fieldControlName` (string) patterns
-- Emits events: `currentValue`, `currentCountryCode`, `currentCountryISO`
-
-### Form Integration Example
-
-```typescript
-formTestGroup = this.fb.group({
-  phone: ['', [Validators.required]]
-});
-
-// Template usage
-<ngx-material-intl-tel-input
-  [fieldControl]="formTestGroup.get('phone')"
-  [required]="true">
-</ngx-material-intl-tel-input>
-```
-
-## Styling & Customization
-
-The library uses extensive CSS custom properties for theming:
-
-- Material Design tokens: `--mat-*` and `--mdc-*` prefixes
-- Component-specific variables for colors, borders, and spacing
-- Support for both `fill` and `outline` Material form field appearances
-
-Key customization variables:
-
-- `--mat-filled-tel-form-background`, `--mat-filled-tel-form-container-shape`
-- `--mat-theme-primary`, `--mat-tel-form-error-color`
-- `--mat-tel-form-placeholder-color`, `--mat-tel-form-icon-color`
-
-## Technology Stack
-
-- **Angular 21.0.6** with standalone components and signals
-- **Angular Material 21.0.3** with CDK
-- **Google libphonenumber** for validation
-- **Nx 22.3.1** for monorepo management
-- **Vitest** for testing via the `@angular/build:unit-test` builder
-- **ESLint** for linting with Angular-specific rules
-- **Prettier** for code formatting
-- **TypeScript 5.9.3** with strict typing
-
-## Key Development Patterns
-
-- **Standalone Components** using Angular's new component architecture
-- **Signals** for reactive state management over traditional properties
-- **OnPush change detection** for performance
-- **`fieldControl` / `fieldControlName` inputs** for Reactive Forms integration
-- **CSS custom properties** for theming
-- **Extensive use of RxJS** for async operations
-- **Vitest** for unit testing with mocking of external dependencies
-
-## Important Notes
-
-- Component uses Google's libphonenumber for phone validation - mock this in tests
-- Country data is static but includes localization support via `Intl.DisplayNames`
-- The library is published as `@ngx-material-intl-tel-input/source` to npm
-- Uses Husky for git hooks and conventional commits
-- Supports both emoji flags and custom flag assets
-- Phone number validation can be disabled via `[numberValidation]="false"`
+For Vitest migration-specific constraints, read
+`JEST_TO_VITEST_MIGRATION_GUIDE.md`.
 
 <!-- nx configuration start-->
 <!-- Leave the start & end comments to automatically receive updates. -->
 
-# General Guidelines for working with Nx
+## General Guidelines for working with Nx
 
+- For navigating/exploring the workspace, invoke the `nx-workspace` skill first - it has patterns for querying projects, targets, and dependencies
 - When running tasks (for example build, lint, test, e2e, etc.), always prefer running the task through `nx` (i.e. `nx run`, `nx run-many`, `nx affected`) instead of using the underlying tooling directly
+- Prefix Nx commands with `npx` (for example, `npx nx build`) to avoid using a globally installed CLI
 - You have access to the Nx MCP server and its tools, use them to help the user
-- When answering questions about the repository, use the `nx_workspace` tool first to gain an understanding of the workspace architecture where applicable.
-- When working in individual projects, use the `nx_project_details` mcp tool to analyze and understand the specific project structure and dependencies
-- For questions around nx configuration, best practices or if you're unsure, use the `nx_docs` tool to get relevant, up-to-date docs. Always use this instead of assuming things about nx configuration
-- If the user needs help with an Nx configuration or project graph error, use the `nx_workspace` tool to get any errors
+- For Nx plugin best practices, check `node_modules/@nx/<plugin>/PLUGIN.md`. Not all plugins have this file - proceed without it if unavailable.
+- NEVER guess CLI flags - always check nx_docs or `--help` first when unsure
 
-# CI Error Guidelines
+## Scaffolding & Generators
 
-If the user wants help with fixing an error in their CI pipeline, use the following flow:
+- For scaffolding tasks (creating apps, libs, project structure, setup), ALWAYS invoke the `nx-generate` skill FIRST before exploring or calling MCP tools
 
-- Retrieve the list of current CI Pipeline Executions (CIPEs) using the `nx_cloud_cipe_details` tool
-- If there are any errors, use the `nx_cloud_fix_cipe_failure` tool to retrieve the logs for a specific task
-- Use the task logs to see what's wrong and help the user fix their problem. Use the appropriate tools if necessary
-- Make sure that the problem is fixed by running the task that you passed into the `nx_cloud_fix_cipe_failure` tool
+## When to use nx_docs
+
+- USE for: advanced config options, unfamiliar flags, migration guides, plugin configuration, edge cases
+- DON'T USE for: basic generator syntax (`nx g @nx/react:app`), standard commands, things you already know
+- The `nx-generate` skill handles generator discovery internally - don't call nx_docs just to look up generator syntax
 
 <!-- nx configuration end-->

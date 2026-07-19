@@ -1,0 +1,30 @@
+---
+description: Vitest rules for Angular unit tests in this workspace.
+globs: **/*.spec.ts
+alwaysApply: false
+---
+
+# Angular Vitest rules
+
+Tests run through Angular's `@angular/build:unit-test` builder.
+
+- Use the `describe`, `it`, `expect`, and `vi` globals from `vitest/globals`.
+- Do not runtime-import Vitest globals. Type-only imports are allowed.
+- Do not use `vi.mock()` for relative imports; the Angular builder rejects it.
+- Prefer TestBed provider replacements for injected dependencies.
+- Use `vi.spyOn()` for service instances and class prototypes.
+- For free functions inlined by esbuild, call through an exported object seam
+  and spy on that object.
+- Restore spies and real timers after each test.
+- Destroy fixtures/components when timers, effects, or subscriptions may
+  outlive the test.
+- Test observable behavior and rendered DOM, including valid, invalid, empty,
+  disabled, and lifecycle paths where relevant.
+- Treat unhandled asynchronous errors as product defects.
+- Match neighboring spec conventions and keep tests focused.
+
+Run focused tests with:
+
+```bash
+npx nx test ngx-material-intl-tel-input-lib --include='**/file.spec.ts'
+```

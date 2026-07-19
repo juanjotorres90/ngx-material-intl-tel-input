@@ -1,0 +1,27 @@
+---
+description: Angular 22 and TypeScript rules for this workspace.
+globs: **/*.ts,**/*.html,**/*.scss,**/*.css
+alwaysApply: false
+---
+
+# Angular 22 workspace rules
+
+Read `AGENTS.md` first. It is the canonical source for project facts,
+commands, testing constraints, and completion criteria.
+
+- Keep TypeScript strict. Prefer inference and `unknown`; avoid `any`.
+- Use standalone declarations without explicit `standalone: true`.
+- Use `input()`, `model()`, `output()`, signals, `computed()`, and `inject()`.
+- Set `ChangeDetectionStrategy.OnPush` on components.
+- Use decorator `host` bindings instead of `@HostBinding`/`@HostListener`.
+- Use native `@if`/`@for`/`@switch` template control flow.
+- Use native class/style bindings instead of `NgClass` and `NgStyle`.
+- Keep templates accessible and preserve labels, keyboard behavior, focus,
+  errors, and disabled state.
+- Follow ESLint, Prettier, and EditorConfig without unrelated formatting churn.
+
+`NgxMaterialIntlTelInputComponent` is not a `ControlValueAccessor`. Use
+`fieldControlName` inside a parent `[formGroup]` or bind an existing control
+through `[fieldControl]`. Never put `formControlName` or `[formControl]`
+directly on this component unless it is intentionally converted into a real
+value accessor.

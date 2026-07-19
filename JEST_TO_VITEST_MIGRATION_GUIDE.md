@@ -1,12 +1,30 @@
-# Jest → Vitest Migration Guide for Angular + Nx Monorepos
+# Jest to Vitest migration guide
 
-A battle-tested playbook for migrating unit tests from Jest (`jest-preset-angular` + `@nx/jest`) to Vitest using Angular's official `@angular/build:unit-test` builder. Every step and gotcha below was hit during a real migration of an Angular 22 / Nx 23 monorepo (publishable library + demo app, ~240 tests).
+A project-tested playbook for migrating Angular tests from Jest
+(`jest-preset-angular` and `@nx/jest`) to Vitest with Angular's
+`@angular/build:unit-test` builder. The constraints below were encountered in
+this Angular 22/Nx 23 workspace, which contains a publishable library and a
+demo application.
 
-**Versions this applies to:** Angular ≥ 22, Nx ≥ 23, Vitest 4, TypeScript 6. Most of it also applies to Angular 21 / Nx 22.
+Applies directly to Angular 22, Nx 23, Vitest 4, and TypeScript 6. Most of the
+guide also applies to Angular 21/Nx 22.
 
 ---
 
-## 1. Choose your runner (decision upfront)
+## Repository result
+
+This repository uses:
+
+- explicit `test` targets with `@angular/build:unit-test`;
+- `@angular/build:ng-packagr` for the publishable library;
+- Vitest globals from `vitest/globals`;
+- V8 coverage through `@vitest/coverage-v8`; and
+- Nx caching for executor-based test targets.
+
+The current configuration lives in `nx.json`, each project's `project.json`,
+and `tsconfig.spec.json`.
+
+## 1. Choose the runner first
 
 | Option                           | Executor                                      | Pros                                                                                | Cons                                                                                                                                                    |
 | -------------------------------- | --------------------------------------------- | ----------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -90,7 +108,7 @@ Useful builder options (see the schema for the full list): `filter` (run tests m
 - Also sweep `tsconfig.lib.json` / `tsconfig.app.json` / `tsconfig.editor.json` `exclude` arrays for `jest.config.ts` references.
 - `.vscode/extensions.json`: replace `firsttris.vscode-jest-runner` with `vitest.explorer`.
 
-## 7. Spec file sweep
+## 7. Sweep spec files
 
 The API is ~99% compatible. Mechanical replacements:
 
@@ -135,7 +153,7 @@ Watch for prettier-wrapped bare `jest` tokens at end-of-line (`jest\n  .spyOn(..
    globalThis.Intl.DisplayNames = factory; // new Intl.DisplayNames(...) → instance
    ```
 
-## 8. Failures Jest was hiding (expect to find real bugs)
+## 8. Failures Jest may have hidden
 
 Vitest reports **unhandled async errors** as file-level failures; Jest silently swallowed them. In practice these pointed at genuine defects:
 
@@ -145,12 +163,18 @@ Vitest reports **unhandled async errors** as file-level failures; Jest silently 
 ## 9. Verification checklist
 
 ```bash
-nx test <lib> && nx test <app>            # all specs green, zero unhandled errors
-nx test <lib> --coverage                  # flag is --coverage (NOT --codeCoverage)
-nx build <lib> && nx build <app>
-nx lint <lib> && nx lint <app>
-grep -ri jest --include="*.{ts,js,json,yml,md}" . \
-  --exclude-dir=node_modules --exclude=package-lock.json --exclude=CHANGELOG.md
+npx nx test <lib>
+npx nx test <app>
+npx nx test <lib> --coverage
+npx nx build <lib>
+npx nx build <app>
+npx nx lint <lib>
+npx nx lint <app>
+
+rg -n -i 'jest|jest-preset-angular|@nx/jest' \
+  --glob '!node_modules/**' \
+  --glob '!package-lock.json' \
+  --glob '!CHANGELOG.md' .
 ```
 
 - **If you swapped the lib's build executor**: build once with the old executor first, snapshot `dist/`, and diff after the swap — the ng-packagr output should be byte-identical (modulo your own source changes) before the next npm publish.
@@ -165,7 +189,7 @@ grep -ri jest --include="*.{ts,js,json,yml,md}" . \
 - Components with constructor `effect()`s that call `control.enable()` recompute validity on every effect run, wiping manually-set errors (`setErrors`). Produce error states through **validators** in tests, not `setErrors`.
 - Expect a possible residual "function" v8 maps onto a `viewChild('...')` locator string — a compiler-generated query artifact, not authored code. `/* v8 ignore */` comments do **not** survive esbuild bundling (even with `-- @preserve` the mapping misfires), so document it and move on rather than distort real numbers.
 
-## 11. Order of operations (TL;DR)
+## 11. Order of operations
 
 1. Baseline: build the lib with the old executor, snapshot `dist/`.
 2. Swap dependencies (§2), `npm install`.
