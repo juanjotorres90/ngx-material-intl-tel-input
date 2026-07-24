@@ -1,8 +1,17 @@
 import type { Mocked } from 'vitest';
-import { PhoneNumberType, PhoneNumberUtil } from 'google-libphonenumber';
 import {
+  PhoneNumberFormat,
+  PhoneNumberType,
+  PhoneNumberUtil
+} from 'google-libphonenumber';
+import {
+  calculateFormattingBuffer,
+  calculateSafetyMargin,
+  getMaxInputLength,
   getMaxPhoneNumberLength,
-  isValidPhoneNumberLength
+  isCurrentNumberValidAndFormatted,
+  isValidPhoneNumberLength,
+  phoneNumberUtils
 } from './phone-number.utils';
 
 describe('Phone Number Utils', () => {
@@ -315,6 +324,240 @@ describe('Phone Number Utils', () => {
 
         expect(result).toBe(false); // 16 > 15
       });
+    });
+  });
+});
+
+// Moved verbatim from the component spec when the maxlength math was extracted:
+// same cases and expectations, called directly instead of through the component.
+describe('maxlength budget', () => {
+  const baseOptions = {
+    currentValue: '1234567890',
+    dialCode: '1',
+    includeDialCode: false,
+    outputNumberFormat: PhoneNumberFormat.INTERNATIONAL
+  };
+
+  describe('getMaxInputLength', () => {
+    beforeEach(() => {
+      vi.spyOn(
+        phoneNumberUtils,
+        'isCurrentNumberValidAndFormatted'
+      ).mockReturnValue(false);
+      vi.spyOn(phoneNumberUtils, 'calculateFormattingBuffer').mockReturnValue(
+        4
+      );
+      vi.spyOn(phoneNumberUtils, 'calculateSafetyMargin').mockReturnValue(2);
+    });
+
+    afterEach(() => {
+      vi.restoreAllMocks();
+    });
+
+    it('should return default fallback when no country code provided', () => {
+      const result = getMaxInputLength({ ...baseOptions });
+      expect(result).toBe(25);
+    });
+
+    it('should not restrict an empty input, so a paste is not truncated', () => {
+      expect(
+        getMaxInputLength({
+          ...baseOptions,
+          countryCode: 'es',
+          currentValue: ''
+        })
+      ).toBe(25);
+    });
+
+    it('should not restrict an international number typed into the national input', () => {
+      expect(
+        getMaxInputLength({
+          ...baseOptions,
+          countryCode: 'es',
+          currentValue: '+41 44 668 18 00'
+        })
+      ).toBe(25);
+    });
+
+    it('should keep restricting when includeDialCode renders the leading +', () => {
+      expect(
+        getMaxInputLength({
+          ...baseOptions,
+          countryCode: 'es',
+          currentValue: '+34 612 34 56 78',
+          includeDialCode: true
+        })
+      ).toBeLessThan(25);
+    });
+
+    it('should return extended length for valid formatted numbers', () => {
+      vi.spyOn(
+        phoneNumberUtils,
+        'isCurrentNumberValidAndFormatted'
+      ).mockReturnValue(true);
+      const result = getMaxInputLength({ ...baseOptions, countryCode: 'us' });
+      expect(result).toBeGreaterThan(15); // Base length + formatting + safety margin
+    });
+
+    it('should return restricted length for invalid numbers', () => {
+      vi.spyOn(
+        phoneNumberUtils,
+        'isCurrentNumberValidAndFormatted'
+      ).mockReturnValue(false);
+      const result = getMaxInputLength({ ...baseOptions, countryCode: 'us' });
+      expect(result).toBeLessThan(20); // Base length + minimal buffer
+    });
+
+    it('should handle RFC3966 format with includeDialCode', () => {
+      const result = getMaxInputLength({
+        ...baseOptions,
+        countryCode: 'us',
+        includeDialCode: true,
+        outputNumberFormat: PhoneNumberFormat.RFC3966
+      });
+      expect(result).toBeGreaterThan(15); // Should include extra buffer for RFC3966
+    });
+
+    it('should handle errors gracefully', () => {
+      vi.spyOn(
+        phoneNumberUtils,
+        'isCurrentNumberValidAndFormatted'
+      ).mockImplementation(() => {
+        throw new Error('Test error');
+      });
+
+      const result = getMaxInputLength({ ...baseOptions, countryCode: 'us' });
+      expect(result).toBeGreaterThan(10); // Should return fallback
+    });
+  });
+
+  describe('isCurrentNumberValidAndFormatted', () => {
+    const options = { includeDialCode: false, dialCode: '1' };
+
+    it('should return false for short values', () => {
+      const result = isCurrentNumberValidAndFormatted('12', 'us', options);
+      expect(result).toBe(false);
+    });
+
+    it('should return false for empty values', () => {
+      const result = isCurrentNumberValidAndFormatted('', 'us', options);
+      expect(result).toBe(false);
+    });
+
+    it('should return true for valid formatted numbers', () => {
+      const result = isCurrentNumberValidAndFormatted(
+        '555 123 4567',
+        'us',
+        options
+      );
+      expect(result).toBe(false); // This number is not valid without country code
+    });
+
+    it('should return false for invalid numbers', () => {
+      const result = isCurrentNumberValidAndFormatted('invalid', 'us', options);
+      expect(result).toBe(false);
+    });
+
+    it('should handle includeDialCode scenario', () => {
+      const result = isCurrentNumberValidAndFormatted('+1 555 123 4567', 'us', {
+        includeDialCode: true,
+        dialCode: '1'
+      });
+      expect(result).toBe(false); // Adjust expectation based on actual validation logic
+    });
+  });
+
+  describe('calculateSafetyMargin', () => {
+    it('should return base margin for international format', () => {
+      const result = calculateSafetyMargin({
+        includeDialCode: false,
+        outputNumberFormat: PhoneNumberFormat.INTERNATIONAL
+      });
+      expect(result).toBe(2); // 1 base + 1 for international
+    });
+
+    it('should add margin for includeDialCode', () => {
+      const result = calculateSafetyMargin({
+        includeDialCode: true,
+        outputNumberFormat: PhoneNumberFormat.INTERNATIONAL
+      });
+      expect(result).toBe(3); // 1 base + 1 for includeDialCode + 1 for international
+    });
+
+    it('should handle RFC3966 format', () => {
+      const result = calculateSafetyMargin({
+        includeDialCode: false,
+        outputNumberFormat: PhoneNumberFormat.RFC3966
+      });
+      expect(result).toBe(3); // 1 base + 2 for RFC3966
+    });
+
+    it('should handle E164 format', () => {
+      const result = calculateSafetyMargin({
+        includeDialCode: false,
+        outputNumberFormat: PhoneNumberFormat.E164
+      });
+      expect(result).toBe(1); // 1 base + 0 for E164
+    });
+  });
+
+  describe('branch coverage moved from the component spec', () => {
+    it('should treat a valid but unformatted number as not formatted', () => {
+      expect(
+        isCurrentNumberValidAndFormatted('612345678', 'es', {
+          includeDialCode: false,
+          dialCode: '34'
+        })
+      ).toBe(false);
+    });
+
+    it('should treat a valid formatted number as formatted', () => {
+      expect(
+        isCurrentNumberValidAndFormatted('612 34 56 78', 'es', {
+          includeDialCode: false,
+          dialCode: '34'
+        })
+      ).toBe(true);
+    });
+
+    it('should handle example numbers without a national number when calculating formatting buffer', () => {
+      const exampleSpy = vi
+        .spyOn(PhoneNumberUtil.prototype, 'getExampleNumberForType')
+        .mockReturnValue({ getNationalNumber: () => null } as never);
+      const formatSpy = vi
+        .spyOn(PhoneNumberUtil.prototype, 'format')
+        .mockReturnValue('123 456');
+
+      expect(calculateFormattingBuffer('us')).toBe(7);
+
+      exampleSpy.mockRestore();
+      formatSpy.mockRestore();
+    });
+  });
+
+  describe('calculateFormattingBuffer', () => {
+    it('should calculate formatting buffer based on example numbers', () => {
+      const result = calculateFormattingBuffer('us');
+      expect(result).toBeGreaterThanOrEqual(0);
+    });
+
+    it('should return default buffer when no examples available', () => {
+      const result = calculateFormattingBuffer('xx');
+      expect(result).toBe(4); // Default fallback
+    });
+
+    it('should handle PhoneNumberUtil.getInstance() errors gracefully', () => {
+      // Mock PhoneNumberUtil.getInstance to throw an error
+      const originalGetInstance = PhoneNumberUtil.getInstance;
+      vi.spyOn(PhoneNumberUtil, 'getInstance').mockImplementation(() => {
+        throw new Error('PhoneNumberUtil error');
+      });
+
+      const result = calculateFormattingBuffer('us');
+      expect(result).toBe(4); // Fallback value from outer catch block
+
+      // Restore original implementation
+      PhoneNumberUtil.getInstance = originalGetInstance;
     });
   });
 });

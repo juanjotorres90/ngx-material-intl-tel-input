@@ -2,6 +2,7 @@ import { AbstractControl, FormGroup, ValidatorFn } from '@angular/forms';
 import { PhoneNumberFormat, PhoneNumberUtil } from 'google-libphonenumber';
 import { Country } from '../types/country.model';
 import { phoneNumberUtils } from '../utils/phone-number.utils';
+import { countryUtils } from '../utils/country.utils';
 
 export default class TelValidators {
   static isValidNumber(
@@ -28,25 +29,11 @@ export default class TelValidators {
           allCountries: Country[],
           telForm: FormGroup
         ) => {
-          const country = allCountries.find((c) => {
-            if (c.dialCode === countryCode?.toString()) {
-              if (c.areaCodes) {
-                // Checking the area codes only works because the countries using the same country code as the
-                // US (+1) and UK (+44) are ALL defined earlier in the list of all countries (country-code.ts)
-                // and are checked before defaulting to the US or UK (which are defined without area codes and
-                // have the highest priority (0)).
-                return c.areaCodes?.find((ac) =>
-                  parsed.getNationalNumber()?.toString().startsWith(ac)
-                );
-              } else if (c.priority === 0) {
-                // If a country does NOT have any area codes but shares a country code with another country,
-                // return the country with the highest priority (0), eg. country code '599' belongs to both
-                // 'Carribean Netherlands' (priority 1) and 'Curaçao' (priority 0).
-                return c;
-              }
-            }
-            return undefined;
-          });
+          const country = countryUtils.findCountryByParsedNumber(
+            parsed,
+            allCountries,
+            countryCode
+          );
           if (country && country.iso2 !== telForm?.value?.prefixCtrl?.iso2) {
             telForm.get('prefixCtrl')?.setValue(country, { emitEvent: false });
           }
@@ -59,12 +46,11 @@ export default class TelValidators {
           }
         }
 
-        const formattedOnlyNumber = phoneNumberUtil.format(
-          parsed,
-          includeDialCode || telForm?.value?.prefixCtrl?.iso2 === 'mp'
-            ? outputNumberFormat
-            : PhoneNumberFormat.NATIONAL
-        );
+        const formattedOnlyNumber = countryUtils.formatForNumberInput(parsed, {
+          includeDialCode,
+          iso2: telForm?.value?.prefixCtrl?.iso2,
+          outputNumberFormat
+        });
         telForm
           .get('numberControl')
           ?.setValue(formattedOnlyNumber, { emitEvent: false });
