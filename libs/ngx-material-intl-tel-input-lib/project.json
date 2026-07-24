@@ -7,7 +7,7 @@
   "tags": [],
   "targets": {
     "build": {
-      "executor": "@nx/angular:package",
+      "executor": "@angular/build:ng-packagr",
       "outputs": ["{workspaceRoot}/dist/{projectRoot}"],
       "options": {
         "project": "libs/ngx-material-intl-tel-input-lib/ng-package.json",
@@ -20,6 +20,13 @@
         "development": {}
       },
       "defaultConfiguration": "production"
+    },
+    "test": {
+      "executor": "@angular/build:unit-test",
+      "options": {
+        "tsConfig": "libs/ngx-material-intl-tel-input-lib/tsconfig.spec.json",
+        "buildTarget": "ngx-material-intl-tel-input-lib::development"
+      }
     }
   }
 }

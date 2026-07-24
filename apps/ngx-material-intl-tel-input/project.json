@@ -65,6 +65,13 @@
       "options": {
         "buildTarget": "ngx-material-intl-tel-input:build"
       }
+    },
+    "test": {
+      "executor": "@angular/build:unit-test",
+      "options": {
+        "tsConfig": "apps/ngx-material-intl-tel-input/tsconfig.spec.json",
+        "buildTarget": "ngx-material-intl-tel-input::development"
+      }
     }
   }
 }

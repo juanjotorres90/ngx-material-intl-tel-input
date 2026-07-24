@@ -196,7 +196,7 @@ export class CountryDataService {
       // Determine how to format the prefix based on the maskPrefix parameter
       const formattedPrefix = maskPrefix
         ? `+{${'0'.repeat(prefix.length - 1)}}` // Replace prefix digits with 0s
-        : `+{${prefix.slice(1)}}`; // Keep the original prefix digits
+        : `+{${prefix.slice(1).replace(/[09]/g, '\\$&')}}`; // Keep the original prefix digits, escaping imask definition chars (0/9) so they stay literal
       // Extract the rest of the phone number
       const restOfNumber = phoneNumber.slice(prefix.length);
       // Replace all digits in the rest of the phone number with zeros
