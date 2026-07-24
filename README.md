@@ -136,13 +136,15 @@ and the field is marked touched on blur.
 
 ### Form state
 
-| Input              | Type                                     | Default           | Purpose                              |
-| ------------------ | ---------------------------------------- | ----------------- | ------------------------------------ |
-| `fieldControl`     | `FormControl \| AbstractControl \| null` | `FormControl('')` | Explicit form control.               |
-| `fieldControlName` | `string`                                 | `''`              | Control name in the parent form.     |
-| `required`         | `boolean`                                | `false`           | Adds/removes `Validators.required`.  |
-| `disabled`         | `boolean`                                | `false`           | Disables/enables the control and UI. |
-| `initialValue`     | `string`                                 | `''`              | Initial telephone number.            |
+| Input              | Type                                     | Default           | Purpose                                                                                                                                       |
+| ------------------ | ---------------------------------------- | ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `fieldControl`     | `FormControl \| AbstractControl \| null` | `FormControl('')` | Explicit form control.                                                                                                                        |
+| `fieldControlName` | `string`                                 | `''`              | Control name in the parent form.                                                                                                              |
+| `formField`        | `Field<string>`                          | —                 | Binds a Signal Forms field through the `FormField` directive from `@angular/forms/signals`. Use instead of `fieldControl`/`fieldControlName`. |
+| `value`            | `string`                                 | `''`              | Two-way value backing `[formField]`; bind it directly only when using the component without any form.                                         |
+| `required`         | `boolean`                                | `false`           | Adds/removes `Validators.required`.                                                                                                           |
+| `disabled`         | `boolean`                                | `false`           | Disables/enables the control and UI.                                                                                                          |
+| `initialValue`     | `string`                                 | `''`              | Initial telephone number.                                                                                                                     |
 
 ### Country selection
 
@@ -199,11 +201,12 @@ type TextLabels = {
 
 ## Events
 
-| Event                | Payload  | Description                                    |
-| -------------------- | -------- | ---------------------------------------------- |
-| `currentValue`       | `string` | Current phone number value.                    |
-| `currentCountryCode` | `string` | Selected dial code, including the leading `+`. |
-| `currentCountryISO`  | `string` | Selected lowercase ISO 3166-1 alpha-2 code.    |
+| Event                | Payload  | Description                                                          |
+| -------------------- | -------- | -------------------------------------------------------------------- |
+| `currentValue`       | `string` | Current phone number value.                                          |
+| `currentCountryCode` | `string` | Selected dial code, including the leading `+`.                       |
+| `currentCountryISO`  | `string` | Selected lowercase ISO 3166-1 alpha-2 code.                          |
+| `touch`              | `void`   | Number input blurred; marks the bound Signal Forms field as touched. |
 
 ## CSS custom properties
 
