@@ -102,11 +102,35 @@ npx nx test ngx-material-intl-tel-input-lib
 npx nx test ngx-material-intl-tel-input-lib --include='**/file.spec.ts'
 npx nx test ngx-material-intl-tel-input-lib --coverage
 npx nx build ngx-material-intl-tel-input-lib
-npx nx affected -t lint test build
+npx nx affected -t lint test build e2e
+
+npm run e2e:all
+npx nx e2e ngx-material-intl-tel-input-e2e --skip-nx-cache
 ```
 
 Run the smallest relevant target while iterating. Before handoff, run checks
 proportional to the change and report exactly what ran.
+
+## Browser tests
+
+`apps/ngx-material-intl-tel-input-e2e` holds the Playwright suite (chromium
+only). It drives the demo app's `/e2e` harness route, which renders one
+component instance configured from query params
+(`/e2e?useMask=true&includeDialCode=true&forceSelectedCountryCode=true`) with
+`autoIpLookup` off and country localization off, so Spain (+34) is always the
+default country.
+
+Caret position, mask rendering, and Material layout cannot be asserted in
+jsdom — put those regressions here, not in the component spec. Harness helpers
+live in `apps/ngx-material-intl-tel-input-e2e/src/harness.ts`.
+
+Caret assertions must poll (`expect.poll(() => caretPosition(page))`): the
+component restores the caret inside a `setTimeout`, so a direct read races it.
+
+A `test.fail()` block marks a known product defect, not a broken test. It is
+expected to fail; if the product is fixed, Playwright reports "expected to fail
+but passed" and the marker should be removed. `paste.spec.ts` currently holds
+one for pasting a full international number.
 
 ## Angular and TypeScript rules
 

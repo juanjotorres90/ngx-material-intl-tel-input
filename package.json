@@ -6,7 +6,8 @@
     "prepare": "husky",
     "lint:all": "npx nx run ngx-material-intl-tel-input:lint && npx nx run ngx-material-intl-tel-input-lib:lint",
     "unit-tests:all": "npx nx run ngx-material-intl-tel-input:test && npx nx run ngx-material-intl-tel-input-lib:test",
-    "build:all": "npx nx run ngx-material-intl-tel-input:build && npx nx run ngx-material-intl-tel-input-lib:build"
+    "build:all": "npx nx run ngx-material-intl-tel-input:build && npx nx run ngx-material-intl-tel-input-lib:build",
+    "e2e:all": "npx nx run ngx-material-intl-tel-input-e2e:e2e"
   },
   "private": true,
   "dependencies": {
@@ -40,10 +41,13 @@
     "@commitlint/config-conventional": "^21.2.0",
     "@eslint/eslintrc": "^3.3.3",
     "@eslint/js": "^10.0.1",
+    "@nx/devkit": "23.1.0",
     "@nx/eslint": "23.1.0",
     "@nx/eslint-plugin": "23.1.0",
     "@nx/js": "23.1.0",
+    "@nx/playwright": "23.1.0",
     "@nx/workspace": "23.1.0",
+    "@playwright/test": "^1.37.0",
     "@schematics/angular": "^22.0.6",
     "@swc-node/register": "1.11.1",
     "@swc/core": "1.15.8",
@@ -56,6 +60,7 @@
     "autoprefixer": "^10.4.0",
     "eslint": "^10.0.3",
     "eslint-config-prettier": "^10.1.5",
+    "eslint-plugin-playwright": "^1.6.2",
     "globals": "^17.4.0",
     "husky": "^9.1.7",
     "jsdom": "^26.1.0",

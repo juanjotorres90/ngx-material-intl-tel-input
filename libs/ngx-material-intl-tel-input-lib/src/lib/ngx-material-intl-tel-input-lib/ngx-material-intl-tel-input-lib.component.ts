@@ -432,9 +432,16 @@ export class NgxMaterialIntlTelInputComponent
           const cursorPosition = inputElement?.selectionStart;
           const currentValue = data.numberControl;
           this.fieldControl()?.markAsDirty();
+          // a value already starting with '+' carries its own dial code
+          // (typed or pasted international number), so prefixing the selected
+          // country's code would build an unparseable '+34+41...'
+          const isInternationalEntry = data.numberControl
+            .trim()
+            .startsWith('+');
           const value =
             data?.prefixCtrl?.dialCode &&
             !this.includeDialCode() &&
+            !isInternationalEntry &&
             data?.prefixCtrl?.iso2 !== 'mp'
               ? '+' + data.prefixCtrl.dialCode + data.numberControl
               : data.numberControl;
@@ -826,6 +833,15 @@ export class NgxMaterialIntlTelInputComponent
   getMaxInputLength = (countryCode?: string): number => {
     if (!countryCode) {
       return 25; // Default fallback with generous space
+    }
+
+    const value = this.telForm.get('numberControl')?.value || '';
+    // The selected country's national length cannot bound an empty field (a
+    // paste has not happened yet) or an international number entered into the
+    // national input: its own country is unknown until it parses. Without
+    // this, the browser truncates such a paste before the component sees it.
+    if (!value || (!this.includeDialCode() && value.trim().startsWith('+'))) {
+      return 25;
     }
 
     try {

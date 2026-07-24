@@ -22,10 +22,12 @@ and this project adheres to
 - Fix typing being completely blocked with `useMask` when the masked value fills the input (e.g. `includeDialCode` with `showMaskPlaceholder`): the `maxlength` attribute is no longer set in mask mode — the mask itself enforces the exact length.
 - Fix broken masks for countries whose dial code contains a `0` or `9` (e.g. +380 Ukraine, +90 Turkey): those digits are imask definition characters and became editable slots — they are now escaped to stay literal.
 - Fix changing the country with `useMask` and `includeDialCode`: the old number was pushed through the previous country's mask (mangling the dial code) and the validator then reverted the country selection. The number input is now cleared on country change and the new mask renders its own dial code.
+- Fix pasting or typing a full international number (e.g. `+41 44 668 18 00`) into the national input: the selected country's dial code was prepended to it, emitting an unparseable `+34+41 44 668 18 00`, and the country-specific `maxlength` truncated the paste before the component saw it. A value starting with `+` is now treated as international, and the input length is no longer restricted while it is empty or holds such a value, so the country switches to match the pasted number.
 
 ### Changed
 
 - Migrate project from Jest to Vitest for unit testing.
+- Add a Playwright end-to-end suite (`apps/ngx-material-intl-tel-input-e2e`) that drives the component in a real browser through a query-param harness route in the demo app, covering caret position while typing and editing (masked and unmasked), mask rendering, country switching, pasting, form reset, initial values, Signal Forms binding, and the `'outline'` layout — behavior that jsdom cannot observe. It runs on every pull request through `nx affected -t lint test build e2e`.
 
 ## [22.0.0] - 2026-07-14
 

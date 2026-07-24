@@ -1186,6 +1186,34 @@ describe('NgxMaterialIntlTelInputComponent', () => {
       expect(result).toBe(25);
     });
 
+    it('should not restrict an empty input, so a paste is not truncated', () => {
+      component.telForm = {
+        get: vi.fn().mockReturnValue({ value: '' })
+      } as unknown as typeof component.telForm;
+
+      expect(component.getMaxInputLength('es')).toBe(25);
+    });
+
+    it('should not restrict an international number typed into the national input', () => {
+      component.telForm = {
+        get: vi.fn().mockReturnValue({ value: '+41 44 668 18 00' })
+      } as unknown as typeof component.telForm;
+
+      expect(component.getMaxInputLength('es')).toBe(25);
+    });
+
+    it('should keep restricting when includeDialCode renders the leading +', () => {
+      Object.defineProperty(component, 'includeDialCode', {
+        value: vi.fn().mockReturnValue(true),
+        writable: true
+      });
+      component.telForm = {
+        get: vi.fn().mockReturnValue({ value: '+34 612 34 56 78' })
+      } as unknown as typeof component.telForm;
+
+      expect(component.getMaxInputLength('es')).toBeLessThan(25);
+    });
+
     it('should return extended length for valid formatted numbers', () => {
       vi.spyOn(
         component as any,

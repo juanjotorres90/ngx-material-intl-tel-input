@@ -6,6 +6,7 @@
     "Angular.ng-template",
     "aaron-bond.better-comments",
     "ChakrounAnas.turbo-console-log",
-    "vivaxy.vscode-conventional-commits"
+    "vivaxy.vscode-conventional-commits",
+    "ms-playwright.playwright"
   ]
 }
