@@ -1,6 +1,6 @@
 {
   "name": "@ngx-material-intl-tel-input/source",
-  "version": "22.0.0",
+  "version": "22.1.0",
   "license": "MIT",
   "scripts": {
     "prepare": "husky",
@@ -74,7 +74,6 @@
   },
   "allowScripts": {
     "less@4.5.1": true,
-    "@parcel/watcher@2.5.6": true,
     "@swc/core@1.15.8": true,
     "core-js-pure@3.49.0": true,
     "esbuild@0.28.1": true,
@@ -83,6 +82,7 @@
     "lmdb@3.5.4": true,
     "msgpackr-extract@3.0.4": true,
     "nx@23.1.0": true,
-    "unrs-resolver@1.12.2": true
+    "unrs-resolver@1.12.2": true,
+    "@parcel/watcher@2.6.0": true
   }
 }

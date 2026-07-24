@@ -10,22 +10,22 @@ and this project adheres to
 
 ### Added
 
-- Add Angular Signal Forms support: the component now implements the `FormValueControl<string>` contract, so it can be bound directly to a field with `[formField]="form.phone"` — no `fieldControl` or parent `[formGroup]` required. Schema `required(...)` and `disabled(...)` rules are reflected in the Material field, and the field is marked touched on input blur.
+- Add initial Angular Signal Forms support: the component now implements the `FormValueControl<string>` contract, so it can be bound directly to a field with `[formField]="form.phone"` — no `fieldControl` or parent `[formGroup]` required. Schema `required(...)` and `disabled(...)` rules are reflected in the Material field, and the field is marked touched on input blur.
 - Add exported `validPhoneNumber` Signal Forms schema validator that checks the emitted international number with `google-libphonenumber` and reports an `invalidNumber` error kind (use with `validate(path.phone, validPhoneNumber)`).
-
-### Changed
-
-- Migrate project from Jest to Vitest for unit testing.
 
 ### Fixed
 
 - Allow using the component without a parent Reactive Forms directive: the `ControlContainer` dependency is now optional instead of throwing at creation.
 - Repaint the country selector and number input when the control value is set externally (Reactive Forms `setValue` or a Signal Forms field write) while `numberValidation` is disabled; previously only the validator's side effects updated the visible input.
 - Fix the `'outline'` appearance with a main label: long labels no longer overflow the country selector's notched outline and get struck through by the number field's border — the selector now grows to fit the label. Focus and error states are also mirrored across both outlined fields so the fused control no longer shows a mismatched seam.
-- Fix the cursor jumping back one position while typing with `useMask` enabled: the manual cursor restore now defers to the mask, which already manages the caret.
+- Fix the cursor jumping back one position while typing with `useMask` enabled: the manual cursor restore now defers to the mask, which already manages the caret ([#80](https://github.com/juanjotorres90/ngx-material-intl-tel-input/issues/80)).
 - Fix typing being completely blocked with `useMask` when the masked value fills the input (e.g. `includeDialCode` with `showMaskPlaceholder`): the `maxlength` attribute is no longer set in mask mode — the mask itself enforces the exact length.
 - Fix broken masks for countries whose dial code contains a `0` or `9` (e.g. +380 Ukraine, +90 Turkey): those digits are imask definition characters and became editable slots — they are now escaped to stay literal.
 - Fix changing the country with `useMask` and `includeDialCode`: the old number was pushed through the previous country's mask (mangling the dial code) and the validator then reverted the country selection. The number input is now cleared on country change and the new mask renders its own dial code.
+
+### Changed
+
+- Migrate project from Jest to Vitest for unit testing.
 
 ## [22.0.0] - 2026-07-14
 

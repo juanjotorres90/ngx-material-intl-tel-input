@@ -23,7 +23,7 @@ Validation and formatting are powered by
 
 | ngx-material-intl-tel-input | Angular |
 | --------------------------- | ------- |
-| 22.0.0                      | 22      |
+| 22.0.0 - 22.1.0             | 22      |
 | 21.0.0 - 21.1.0             | 21      |
 | 20.0.0 - 20.1.2             | 20      |
 | 19.0.0 - 19.2.1             | 19      |
@@ -158,15 +158,15 @@ and the field is marked touched on blur.
 
 ### Number handling
 
-| Input                      | Type                | Default                           | Purpose                                 |
-| -------------------------- | ------------------- | --------------------------------- | --------------------------------------- |
-| `numberValidation`         | `boolean`           | `true`                            | Enables libphonenumber validation.      |
-| `includeDialCode`          | `boolean`           | `false`                           | Includes the dial code in the input.    |
-| `useMask`                  | `boolean`           | `false`                           | Enables country-specific input masks.   |
-| `forceSelectedCountryCode` | `boolean`           | `false`                           | Keeps the country code in masked input. |
-| `showMaskPlaceholder`      | `boolean`           | `false`                           | Shows placeholder mask characters.      |
-| `outputNumberFormat`       | `PhoneNumberFormat` | `PhoneNumberFormat.INTERNATIONAL` | `INTERNATIONAL`, `E164`, or `RFC3966`.  |
-| `enableInputMaxLength`     | `boolean`           | `true`                            | Applies a country-aware max length.     |
+| Input                      | Type                | Default                           | Purpose                                                                                                          |
+| -------------------------- | ------------------- | --------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| `numberValidation`         | `boolean`           | `true`                            | Enables libphonenumber validation.                                                                               |
+| `includeDialCode`          | `boolean`           | `false`                           | Includes the dial code in the input.                                                                             |
+| `useMask`                  | `boolean`           | `false`                           | Enables country-specific input masks.                                                                            |
+| `forceSelectedCountryCode` | `boolean`           | `false`                           | Keeps the country code in masked input.                                                                          |
+| `showMaskPlaceholder`      | `boolean`           | `false`                           | Shows placeholder mask characters.                                                                               |
+| `outputNumberFormat`       | `PhoneNumberFormat` | `PhoneNumberFormat.INTERNATIONAL` | `INTERNATIONAL`, `E164`, or `RFC3966`.                                                                           |
+| `enableInputMaxLength`     | `boolean`           | `true`                            | Applies a country-aware max length. Ignored when `useMask` is enabled, since the mask enforces the exact length. |
 
 ### Presentation
 
