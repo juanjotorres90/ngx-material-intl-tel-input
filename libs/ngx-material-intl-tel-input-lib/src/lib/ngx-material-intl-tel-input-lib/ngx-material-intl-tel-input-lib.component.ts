@@ -500,7 +500,11 @@ export class NgxMaterialIntlTelInputComponent
       .subscribe((data) => {
         const dialPrefix = data ? this.getCountryDialPrefix(data) : '';
         if (this.includeDialCode() && dialPrefix) {
-          if (this.useMask()) {
+          // the clear below is for a country the user changed; while still
+          // loading the selection comes from setInitialTelValue, which writes
+          // the initial number right after it — and the queued clear would
+          // wipe that number and the control with it
+          if (this.useMask() && !this.isLoading()) {
             // the mask renders the new dial code itself as fixed characters.
             // Clear synchronously (without events) so the telForm emission
             // triggered by this country change sees an empty number —

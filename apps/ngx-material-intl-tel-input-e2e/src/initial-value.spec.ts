@@ -26,18 +26,25 @@ test.describe('initialValue', () => {
   }
 
   // with includeDialCode the input keeps the dial code, so the preloaded value
-  // must render in the output format rather than the national one
-  test('renders the dial code in the input with includeDialCode', async ({
-    page
-  }) => {
-    await page.goto(
-      `/e2e?includeDialCode=true&initialValue=${encodeURIComponent(SWISS_NUMBER)}`
-    );
+  // must render in the output format rather than the national one.
+  //
+  // With a mask on top, the country selection made by setInitialTelValue also
+  // reaches the country-change handler, whose mask branch clears the input —
+  // and that clear used to wipe the number written right after it.
+  for (const useMask of [false, true]) {
+    test(`renders the dial code in the input with includeDialCode and useMask=${useMask}`, async ({
+      page
+    }) => {
+      await page.goto(
+        `/e2e?includeDialCode=true&useMask=${useMask}&initialValue=${encodeURIComponent(SWISS_NUMBER)}`
+      );
 
-    await expect(countrySelect(page)).toContainText('CH');
-    await expect(telInput(page)).toHaveValue('+41 44 668 18 00');
-    await expect(page.getByTestId('status')).toHaveText('VALID');
-  });
+      await expect(countrySelect(page)).toContainText('CH');
+      await expect(telInput(page)).toHaveValue('+41 44 668 18 00');
+      await expect(page.getByTestId('value')).toHaveText('+41 44 668 18 00');
+      await expect(page.getByTestId('status')).toHaveText('VALID');
+    });
+  }
 
   test('renders a preloaded shared-dial-code number under its territory', async ({
     page

@@ -141,13 +141,16 @@ describe('NgxMaterialIntlTelInputComponent', () => {
     expect(input.getAttribute('maxlength')).not.toBeNull();
   });
 
-  it('should clear the number and keep the selection when the country changes with useMask and includeDialCode', () => {
+  it('should clear the number and keep the selection when the country changes with useMask and includeDialCode', async () => {
     const localFixture = TestBed.createComponent(
       NgxMaterialIntlTelInputComponent
     );
     localFixture.componentRef.setInput('useMask', true);
     localFixture.componentRef.setInput('includeDialCode', true);
     localFixture.detectChanges();
+    // let setInitialTelValue settle: the clear only applies to a country the
+    // user changes, not to the selection made while the component is loading
+    await new Promise((resolve) => setTimeout(resolve));
     const localComponent = localFixture.componentInstance;
     localComponent.telForm
       .get('numberControl')
