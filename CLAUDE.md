@@ -68,9 +68,6 @@ Caret, mask, and layout behavior belongs in the Playwright suite
 harness route — jsdom cannot observe it. See the "Browser tests" section of
 `AGENTS.md`.
 
-For Vitest migration-specific constraints, read
-`JEST_TO_VITEST_MIGRATION_GUIDE.md`.
-
 <!-- nx configuration start-->
 <!-- Leave the start & end comments to automatically receive updates. -->
 

@@ -61,7 +61,6 @@ name alone.
 - `README.md`: public usage plus contributor workflow.
 - `libs/.../README.md`: npm package README; keep its public API sections in
   sync with the root README.
-- `JEST_TO_VITEST_MIGRATION_GUIDE.md`: migration record and reusable playbook.
 
 Current stack: Angular 22, Angular Material 22, Nx 23, TypeScript 6, RxJS 7,
 and Vitest 4 through Angular's `@angular/build:unit-test` builder.
