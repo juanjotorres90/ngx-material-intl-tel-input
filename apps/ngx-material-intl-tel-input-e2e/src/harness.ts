@@ -69,6 +69,44 @@ export async function selectCountry(page: Page, name: string): Promise<void> {
   await expect(page.locator('.tel-mat-select-panel')).toBeHidden();
 }
 
+/** Opens the country panel and waits for its options to render. */
+export async function openCountryPanel(page: Page): Promise<void> {
+  await countrySelect(page).click();
+  await expect(page.locator('.tel-mat-select-panel')).toBeVisible();
+}
+
+/**
+ * The search box lives in a sticky `mat-option`, and ngx-mat-select-search
+ * renders a second, hidden input purely to offset the option list — so the
+ * real field has to be addressed through the inner row.
+ */
+export const countrySearchInput = (page: Page): Locator =>
+  page.locator('.mat-select-search-inner .mat-select-search-input');
+
+/** The country options, excluding the sticky option that holds the search box. */
+export const countryOptions = (page: Page): Locator =>
+  page.locator(
+    '.tel-mat-select-panel mat-option:not(.contains-mat-select-search)'
+  );
+
+/**
+ * Opens the panel and filters it with a search term.
+ *
+ * Typed through the keyboard rather than `fill()`: the search box sits inside
+ * a `mat-option[aria-disabled=true]` (that is how it stays unselectable), so
+ * Playwright's actionability check reports it as disabled. The panel focuses
+ * it on open anyway, which is also the real user's path.
+ */
+export async function searchCountries(
+  page: Page,
+  term: string
+): Promise<Locator> {
+  await openCountryPanel(page);
+  await expect(countrySearchInput(page)).toBeFocused();
+  await page.keyboard.type(term);
+  return countryOptions(page);
+}
+
 /** Reports the caret position in the number input. */
 export const caretPosition = (page: Page): Promise<number> =>
   telInput(page).evaluate((el: HTMLInputElement) => el.selectionStart ?? -1);

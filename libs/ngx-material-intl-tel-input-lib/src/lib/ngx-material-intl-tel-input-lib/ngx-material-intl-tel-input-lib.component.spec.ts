@@ -351,6 +351,24 @@ describe('NgxMaterialIntlTelInputComponent', () => {
       component.onInputBlur();
       expect(component.isFocused()).toBe(false);
     });
+
+    it('should mark the field control as touched on input blur', () => {
+      const control = new FormControl('');
+      component.fieldControl.set(control);
+
+      component.onInputBlur();
+
+      expect(control.touched).toBe(true);
+    });
+
+    it('should emit touch on input blur for Signal Forms', () => {
+      const touchSpy = vi.fn();
+      component.touch.subscribe(touchSpy);
+
+      component.onInputBlur();
+
+      expect(touchSpy).toHaveBeenCalled();
+    });
   });
 
   describe('setRequiredValidators', () => {
@@ -759,6 +777,48 @@ describe('NgxMaterialIntlTelInputComponent', () => {
       expect(
         component.telForm.get('numberControl')?.setValue
       ).toHaveBeenCalledWith('+1670', { emitEvent: false });
+    });
+
+    // the area code is folded into the prefix for every country that has
+    // exactly one, not only the entries whose data was rewritten for MP
+    it.each([
+      { iso2: 'jm', dialCode: '1', areaCodes: ['876'], expected: '+1876' },
+      { iso2: 'gg', dialCode: '44', areaCodes: ['1481'], expected: '+441481' }
+    ])(
+      'should include the area code for $iso2 in the dial prefix',
+      ({ iso2, dialCode, areaCodes, expected }) => {
+        Object.defineProperty(component, 'includeDialCode', {
+          value: vi.fn().mockReturnValue(true),
+          writable: true
+        });
+
+        prefixValueChangesSubject.next({
+          dialCode,
+          iso2,
+          areaCodes
+        } as Country);
+
+        expect(
+          component.telForm.get('numberControl')?.setValue
+        ).toHaveBeenCalledWith(expected, { emitEvent: false });
+      }
+    );
+
+    it('should use only the dial code when a country has several area codes', () => {
+      Object.defineProperty(component, 'includeDialCode', {
+        value: vi.fn().mockReturnValue(true),
+        writable: true
+      });
+
+      prefixValueChangesSubject.next({
+        dialCode: '1',
+        iso2: 'pr',
+        areaCodes: ['787', '939']
+      } as Country);
+
+      expect(
+        component.telForm.get('numberControl')?.setValue
+      ).toHaveBeenCalledWith('+1', { emitEvent: false });
     });
 
     it('should focus number input when not loading', async () => {
@@ -1291,6 +1351,34 @@ describe('NgxMaterialIntlTelInputComponent', () => {
         '612345678'
       );
       expect(localComponent.fieldControl()?.value).toBe('+34 612 34 56 78');
+      localFixture.destroy();
+    });
+
+    // numberValidation off is the discriminating case: only an external write
+    // repaints the input, so a value-source flag left stuck on 'input' by a
+    // throwing write is visible as a missing repaint
+    it('should keep classifying writes after one throws', () => {
+      const localFixture = TestBed.createComponent(
+        NgxMaterialIntlTelInputComponent
+      );
+      localFixture.componentRef.setInput('numberValidation', false);
+      localFixture.detectChanges();
+      const localComponent = localFixture.componentInstance;
+      const control = localComponent.fieldControl()!;
+      vi.spyOn(control, 'setValue').mockImplementationOnce(() => {
+        throw new Error('consumer validator blew up');
+      });
+
+      expect(() =>
+        localComponent['setFieldControlValue']('+34612345678')
+      ).toThrow();
+
+      control.setValue('+41446681800');
+      localFixture.detectChanges();
+
+      expect(localComponent.telForm.get('numberControl')?.value).toBe(
+        '044 668 18 00'
+      );
       localFixture.destroy();
     });
   });

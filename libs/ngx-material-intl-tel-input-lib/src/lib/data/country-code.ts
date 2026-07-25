@@ -1,14 +1,7 @@
 import { Injectable } from '@angular/core';
 import { CountryISO } from '../enums/country-iso.enum';
 
-export type CountryData = [
-  string,
-  string,
-  string,
-  string,
-  number?,
-  (string | number)[]?
-];
+export type CountryData = [string, string, string, string, number?, string[]?];
 
 @Injectable()
 export class CountryCode {
@@ -198,7 +191,7 @@ export class CountryCode {
     ['🇬🇵', 'Guadeloupe', CountryISO.Guadeloupe, '590', 0],
     ['🇬🇺', 'Guam', 'gu', '1', 1, ['671']],
     ['🇬🇹', 'Guatemala', CountryISO.Guatemala, '502'],
-    ['🇬🇬', 'Guernsey', CountryISO.Guernsey, '44', 1, [1481]],
+    ['🇬🇬', 'Guernsey', CountryISO.Guernsey, '44', 1, ['1481']],
     ['🇬🇳', 'Guinea (Guinée)', CountryISO.Guinea, '224'],
     ['🇬🇼', 'Guinea-Bissau (Guiné Bissau)', CountryISO.GuineaBissau, '245'],
     ['🇬🇾', 'Guyana', CountryISO.Guyana, '592'],
@@ -212,12 +205,12 @@ export class CountryCode {
     ['🇮🇷', 'Iran (‫ایران‬‎)', CountryISO.Iran, '98'],
     ['🇮🇶', 'Iraq (‫العراق‬‎)', CountryISO.Iraq, '964'],
     ['🇮🇪', 'Ireland', CountryISO.Ireland, '353'],
-    ['🇮🇲', 'Isle of Man', CountryISO.IsleOfMan, '44', 2, [1624]],
+    ['🇮🇲', 'Isle of Man', CountryISO.IsleOfMan, '44', 2, ['1624']],
     ['🇮🇱', 'Israel (‫ישראל‬‎)', CountryISO.Israel, '972'],
     ['🇮🇹', 'Italy (Italia)', CountryISO.Italy, '39', 0],
     ['🇯🇲', 'Jamaica', 'jm', '1', 1, ['876']],
     ['🇯🇵', 'Japan (日本)', CountryISO.Japan, '81'],
-    ['🇯🇪', 'Jersey', CountryISO.Jersey, '44', 3, [1534]],
+    ['🇯🇪', 'Jersey', CountryISO.Jersey, '44', 3, ['1534']],
     ['🇯🇴', 'Jordan (‫الأردن‬‎)', CountryISO.Jordan, '962'],
     ['🇰🇿', 'Kazakhstan (Казахстан)', CountryISO.Kazakhstan, '7', 1],
     ['🇰🇪', 'Kenya', CountryISO.Kenya, '254'],

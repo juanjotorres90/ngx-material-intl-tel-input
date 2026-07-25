@@ -120,17 +120,25 @@ component instance configured from query params
 `autoIpLookup` off and country localization off, so Spain (+34) is always the
 default country.
 
-Caret position, mask rendering, and Material layout cannot be asserted in
-jsdom — put those regressions here, not in the component spec. Harness helpers
-live in `apps/ngx-material-intl-tel-input-e2e/src/harness.ts`.
+Caret position, mask rendering, Material layout, the overlay-hosted country
+search, and the rendered error state cannot be asserted in jsdom — put those
+regressions here, not in the component spec. Harness helpers live in
+`apps/ngx-material-intl-tel-input-e2e/src/harness.ts`.
 
 Caret assertions must poll (`expect.poll(() => caretPosition(page))`): the
 component restores the caret inside a `setTimeout`, so a direct read races it.
 
+The country search box sits inside a `mat-option[aria-disabled="true"]`, so
+Playwright reports it as disabled: drive it with `searchCountries()`, which
+types through the keyboard instead of `fill()`.
+
+Numbers longer than 16 digits cannot be round-tripped: google-libphonenumber's
+JS port holds the national number in a double, so it comes back corrupted.
+Keep length-bound specs below that cliff.
+
 A `test.fail()` block marks a known product defect, not a broken test. It is
 expected to fail; if the product is fixed, Playwright reports "expected to fail
-but passed" and the marker should be removed. `paste.spec.ts` currently holds
-one for pasting a full international number.
+but passed" and the marker should be removed. The suite currently has none.
 
 ## Angular and TypeScript rules
 

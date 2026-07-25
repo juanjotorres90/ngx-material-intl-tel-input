@@ -414,10 +414,16 @@ export class NgxMaterialIntlTelInputComponent
 
   /**
    * A method that handles the blur event for the input.
+   *
+   * Both forms APIs are notified: `touch` for the Signal Forms field, and
+   * `markAsTouched` for the Reactive Forms control, which otherwise never
+   * leaves its untouched state — the component already propagates dirty the
+   * same way.
    */
   onInputBlur(): void {
     this.isFocused.set(false);
     this.touch.emit();
+    this.fieldControl()?.markAsTouched();
   }
 
   /**
@@ -480,8 +486,13 @@ export class NgxMaterialIntlTelInputComponent
       return;
     }
     this.valueUpdateSource = 'input';
-    control.setValue(value);
-    this.valueUpdateSource = 'external';
+    try {
+      control.setValue(value);
+    } finally {
+      // a throwing consumer validator or subscriber must not leave the source
+      // stuck on 'input', which would misclassify every later external write
+      this.valueUpdateSource = 'external';
+    }
   }
 
   /**
