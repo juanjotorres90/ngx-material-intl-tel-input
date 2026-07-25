@@ -8,6 +8,7 @@ import {
 } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import {
+  disabled,
   form,
   FormField,
   FormRoot,
@@ -55,6 +56,9 @@ const flag = (value: string | undefined, fallback = false): boolean =>
         <ngx-material-intl-tel-input
           [formField]="signalForm.phone"
           [autoIpLookup]="false"
+          [autoSelectCountry]="autoSelectCountry()"
+          [autoSelectedCountry]="autoSelectedCountry()"
+          [excludedCountries]="excludedCountries()"
           [useMask]="useMask()"
           [includeDialCode]="includeDialCode()"
           [showMaskPlaceholder]="showMaskPlaceholder()"
@@ -75,6 +79,49 @@ const flag = (value: string | undefined, fallback = false): boolean =>
         >
           Submit
         </button>
+
+        <mat-form-field>
+          <mat-label>Value to set</mat-label>
+          <input
+            matInput
+            type="text"
+            data-testid="signal-set-value"
+            #signalSetValue
+          />
+        </mat-form-field>
+        <button
+          mat-flat-button
+          type="button"
+          data-testid="signal-apply-value"
+          (click)="applySignalValue(signalSetValue.value)"
+        >
+          Apply value
+        </button>
+        <button
+          mat-flat-button
+          type="button"
+          data-testid="signal-toggle-disabled"
+          (click)="signalDisabled.set(!signalDisabled())"
+        >
+          Toggle disabled
+        </button>
+        <!-- reset() clears touched/dirty only; the value needs to be passed -->
+        <button
+          mat-flat-button
+          type="button"
+          data-testid="signal-reset"
+          (click)="signalForm.phone().reset()"
+        >
+          Reset state
+        </button>
+        <button
+          mat-flat-button
+          type="button"
+          data-testid="signal-reset-value"
+          (click)="signalForm.phone().reset('')"
+        >
+          Reset value
+        </button>
       </form>
       <output data-testid="signal-value">{{ signalModel().phone }}</output>
       <output data-testid="signal-valid">{{
@@ -82,6 +129,12 @@ const flag = (value: string | undefined, fallback = false): boolean =>
       }}</output>
       <output data-testid="signal-touched">{{
         signalForm.phone().touched()
+      }}</output>
+      <output data-testid="signal-dirty">{{
+        signalForm.phone().dirty()
+      }}</output>
+      <output data-testid="signal-disabled">{{
+        signalForm.phone().disabled()
       }}</output>
       <output data-testid="signal-submitted">{{
         submittedSignalValue()
@@ -91,6 +144,9 @@ const flag = (value: string | undefined, fallback = false): boolean =>
         <ngx-material-intl-tel-input
           fieldControlName="phone"
           [autoIpLookup]="false"
+          [autoSelectCountry]="autoSelectCountry()"
+          [autoSelectedCountry]="autoSelectedCountry()"
+          [excludedCountries]="excludedCountries()"
           [useMask]="useMask()"
           [includeDialCode]="includeDialCode()"
           [showMaskPlaceholder]="showMaskPlaceholder()"
@@ -179,6 +235,16 @@ export class E2eHarnessComponent {
   outputNumberFormatParam = input<string | undefined>(undefined, {
     alias: 'outputNumberFormat'
   });
+  autoSelectCountryParam = input<string | undefined>(undefined, {
+    alias: 'autoSelectCountry'
+  });
+  autoSelectedCountryParam = input<string | undefined>(undefined, {
+    alias: 'autoSelectedCountry'
+  });
+  /** `?excludedCountries=ch,es` — comma separated ISO2 codes */
+  excludedCountriesParam = input<string | undefined>(undefined, {
+    alias: 'excludedCountries'
+  });
   /* eslint-enable @angular-eslint/no-input-rename */
 
   forms = computed(() => this.formsParam() ?? 'reactive');
@@ -197,6 +263,11 @@ export class E2eHarnessComponent {
   );
   mainLabel = computed(() => this.mainLabelParam() ?? '');
   initialValue = computed(() => this.initialValueParam() ?? '');
+  autoSelectCountry = computed(() => flag(this.autoSelectCountryParam(), true));
+  autoSelectedCountry = computed(() => this.autoSelectedCountryParam() ?? '');
+  excludedCountries = computed(() =>
+    (this.excludedCountriesParam() ?? '').split(',').filter(Boolean)
+  );
   outputNumberFormat = computed(() => {
     switch (this.outputNumberFormatParam()) {
       case 'E164':
@@ -212,9 +283,12 @@ export class E2eHarnessComponent {
     phone: ['', [Validators.required]]
   });
 
+  /** drives the schema-level `disabled` rule, not the component input */
+  signalDisabled = signal(false);
   signalModel = signal({ phone: '' });
   signalForm = form(this.signalModel, (path) => {
     required(path.phone);
+    disabled(path.phone, { when: () => this.signalDisabled() });
     validate(path.phone, validPhoneNumber);
   });
   submittedSignalValue = signal<string>('');
@@ -238,5 +312,10 @@ export class E2eHarnessComponent {
 
   submitSignalForm(): void {
     this.submittedSignalValue.set(this.signalModel().phone);
+  }
+
+  /** Writes a value into the model signal the field is built from. */
+  applySignalValue(value: string): void {
+    this.signalModel.set({ phone: value });
   }
 }

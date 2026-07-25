@@ -946,6 +946,9 @@ describe('NgxMaterialIntlTelInputComponent', () => {
       expect(component.isLoading()).toBe(false);
     });
 
+    // An initial value that resolves no country leaves the selector unset
+    // unless the consumer configured one: the value could be a stored national
+    // number, and guessing a country would silently relabel it.
     it('should not set prefix when country has areaCodes but none match the phone number', () => {
       // Set up a country with areaCodes that don't match the phone number
       component.allCountries = [
@@ -988,6 +991,76 @@ describe('NgxMaterialIntlTelInputComponent', () => {
 
       // Should not call setValue because no country matches dial code 44
       expect(component.prefixCtrl.setValue).not.toHaveBeenCalled();
+      expect(component.isLoading()).toBe(false);
+    });
+
+    it('should not set prefix for an unparseable initial value', () => {
+      component.allCountries = [
+        { name: 'Spain', iso2: 'es', dialCode: '34', priority: 0 } as Country
+      ];
+      component.telForm = {
+        value: {},
+        get: vi.fn().mockReturnValue({ setValue: vi.fn() })
+      } as any;
+      Object.defineProperty(component, 'initialValue', {
+        value: vi.fn().mockReturnValue('675476745'),
+        writable: true
+      });
+
+      component['setInitialTelValue']();
+
+      expect(component.prefixCtrl.value).toBeNull();
+      expect(component.isLoading()).toBe(false);
+    });
+
+    it('should use autoSelectedCountry when an initial value resolves none', () => {
+      component.allCountries = [
+        { name: 'Spain', iso2: 'es', dialCode: '34', priority: 0 } as Country,
+        { name: 'France', iso2: 'fr', dialCode: '33', priority: 0 } as Country
+      ];
+      component.telForm = {
+        value: {},
+        get: vi.fn().mockReturnValue({ setValue: vi.fn() })
+      } as any;
+      Object.defineProperty(component, 'initialValue', {
+        value: vi.fn().mockReturnValue('675476745'),
+        writable: true
+      });
+      Object.defineProperty(component, 'autoSelectedCountry', {
+        value: vi.fn().mockReturnValue('fr'),
+        writable: true
+      });
+
+      component['setInitialTelValue']();
+
+      expect(component.prefixCtrl.value?.iso2).toBe('fr');
+      expect(component.isLoading()).toBe(false);
+    });
+
+    it('should not use autoSelectedCountry when autoSelectCountry is off', () => {
+      component.allCountries = [
+        { name: 'Spain', iso2: 'es', dialCode: '34', priority: 0 } as Country
+      ];
+      component.telForm = {
+        value: {},
+        get: vi.fn().mockReturnValue({ setValue: vi.fn() })
+      } as any;
+      Object.defineProperty(component, 'initialValue', {
+        value: vi.fn().mockReturnValue('675476745'),
+        writable: true
+      });
+      Object.defineProperty(component, 'autoSelectedCountry', {
+        value: vi.fn().mockReturnValue('es'),
+        writable: true
+      });
+      Object.defineProperty(component, 'autoSelectCountry', {
+        value: vi.fn().mockReturnValue(false),
+        writable: true
+      });
+
+      component['setInitialTelValue']();
+
+      expect(component.prefixCtrl.value).toBeNull();
       expect(component.isLoading()).toBe(false);
     });
   });

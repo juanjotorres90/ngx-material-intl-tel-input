@@ -575,6 +575,8 @@ export class NgxMaterialIntlTelInputComponent
         );
         if (country) {
           this.prefixCtrl.setValue(country);
+        } else {
+          this.selectFallbackCountry();
         }
         const formattedOnlyNumber = countryUtils.formatForNumberInput(
           parsedNumber,
@@ -587,12 +589,39 @@ export class NgxMaterialIntlTelInputComponent
           this.telForm.get('numberControl')?.setValue(formattedOnlyNumber);
         }
       } catch {
+        // before the value is written: selecting a country emits, and with
+        // includeDialCode that writes the dial code into the number input
+        this.selectFallbackCountry();
         this.telForm.get('numberControl')?.setValue(this.initialValue());
         this.fieldControl()?.setValue(this.initialValue());
         this.fieldControl()?.markAsDirty();
       } finally {
         this.isLoading.set(false);
       }
+    }
+  }
+
+  /**
+   * Selects `autoSelectedCountry` when an initial value could not resolve one
+   * of its own — an unparseable value, or a number whose country is not in the
+   * visible list.
+   *
+   * Only an explicitly configured country is used. A stored national number
+   * that lost its prefix (`675476745`) parses under whatever country is
+   * selected, so guessing one would silently relabel the record — and the
+   * field already recovers on its own once the user picks a country. The
+   * consumer setting `autoSelectedCountry` is what makes the assumption
+   * theirs to make.
+   */
+  private selectFallbackCountry(): void {
+    if (this.prefixCtrl.value || !this.autoSelectCountry()) {
+      return;
+    }
+    const fallback = this.allCountries?.find(
+      (country) => country?.iso2 === this.autoSelectedCountry()
+    );
+    if (fallback) {
+      this.prefixCtrl.setValue(fallback);
     }
   }
 

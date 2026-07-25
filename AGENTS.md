@@ -140,6 +140,12 @@ A `test.fail()` block marks a known product defect, not a broken test. It is
 expected to fail; if the product is fixed, Playwright reports "expected to fail
 but passed" and the marker should be removed. The suite currently has none.
 
+An `initialValue` that resolves no country of its own (unparseable, or a stored
+national number that lost its prefix) deliberately leaves the country selector
+empty unless `autoSelectedCountry` is set. Such a value parses under whichever
+country is selected, so guessing one would silently relabel the record; the
+user picks the country and the number resolves.
+
 ## Angular and TypeScript rules
 
 - Keep strict typing. Prefer inference; use `unknown` instead of `any`.
