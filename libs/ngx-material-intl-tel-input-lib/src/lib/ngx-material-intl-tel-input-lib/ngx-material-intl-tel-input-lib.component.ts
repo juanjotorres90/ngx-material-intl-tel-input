@@ -432,12 +432,14 @@ export class NgxMaterialIntlTelInputComponent
           const cursorPosition = inputElement?.selectionStart;
           const currentValue = data.numberControl;
           this.fieldControl()?.markAsDirty();
-          // a value already starting with '+' carries its own dial code
-          // (typed or pasted international number), so prefixing the selected
-          // country's code would build an unparseable '+34+41...'
-          const isInternationalEntry = data.numberControl
-            .trim()
-            .startsWith('+');
+          // a value that already carries its own dial code (typed or pasted
+          // international number) must not be prefixed with the selected
+          // country's code, which would build an unparseable '+34+41...'.
+          // RFC3966 is included because that is the shape the input is given
+          // for a number whose country is not the selected one.
+          const isInternationalEntry = /^(\+|tel:)/.test(
+            data.numberControl.trim()
+          );
           const value =
             data?.prefixCtrl?.dialCode &&
             !this.includeDialCode() &&

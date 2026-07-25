@@ -153,6 +153,25 @@ test.describe('initialValue', () => {
     await expect(page.getByTestId('status')).toHaveText('VALID');
   });
 
+  // the same scenario in RFC3966, where the number keeps its calling code
+  // behind a 'tel:' prefix rather than a leading '+'. Editing it must still not
+  // prepend the selected country's code, which produced '+34tel:+41-...'
+  test('keeps editing an RFC3966 number whose country is excluded', async ({
+    page
+  }) => {
+    await page.goto(
+      `/e2e?outputNumberFormat=RFC3966&excludedCountries=ch&autoSelectedCountry=es&initialValue=${encodeURIComponent(SWISS_NUMBER)}`
+    );
+
+    await expect(telInput(page)).toHaveValue('tel:+41-44-668-18-00');
+    await expect(page.getByTestId('value')).toHaveText('tel:+41-44-668-18-00');
+
+    await telInput(page).press('End');
+    await telInput(page).press('1');
+
+    await expect(page.getByTestId('value')).toHaveText(/^tel:\+41/);
+  });
+
   test('leaves an empty initial value on the default country', async ({
     page
   }) => {
