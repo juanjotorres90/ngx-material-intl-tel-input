@@ -1,5 +1,11 @@
 import { expect, test } from '@playwright/test';
-import { gotoHarness, pasteIntoInput, telInput, typeDigits } from './harness';
+import {
+  countrySelect,
+  gotoHarness,
+  pasteIntoInput,
+  telInput,
+  typeDigits
+} from './harness';
 
 const numberField = '.number-form-field';
 
@@ -82,6 +88,28 @@ test.describe('validation feedback', () => {
  * while the field is empty or holds a `+` number, otherwise a paste is
  * truncated before the component can read it — only observable in a browser.
  */
+/**
+ * The length budget comes from the number's own country. It used to come from
+ * the selected one, so a valid number whose country is not in the list was
+ * measured against whatever happened to be selected: a Chinese number (11
+ * national digits) reported "too long" while Saint Helena (5) was selected.
+ */
+test.describe('numberTooLong', () => {
+  test('measures a number against its own country, not the selected one', async ({
+    page
+  }) => {
+    await page.goto('/e2e?excludedCountries=cn&autoSelectedCountry=sh');
+    await expect(countrySelect(page)).toContainText('+290');
+
+    await page.getByTestId('set-value').fill('+8613800138000');
+    await page.getByTestId('apply-value').click();
+
+    await expect(page.getByTestId('value')).toHaveText('+86 138 0013 8000');
+    await expect(page.getByTestId('status')).toHaveText('VALID');
+    await expect(page.locator('mat-error')).toHaveCount(0);
+  });
+});
+
 // Well past Spain's 9 national digits, but short enough that
 // google-libphonenumber can still round-trip it: its JS port keeps the
 // national number in a double, so from 17 digits up the value comes back

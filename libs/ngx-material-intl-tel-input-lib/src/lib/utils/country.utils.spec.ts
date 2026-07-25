@@ -87,7 +87,8 @@ describe('formatForNumberInput', () => {
     expect(
       formatForNumberInput(parsed, {
         includeDialCode: false,
-        outputNumberFormat: PhoneNumberFormat.INTERNATIONAL
+        outputNumberFormat: PhoneNumberFormat.INTERNATIONAL,
+        selectedDialCode: '41'
       })
     ).toBe('044 668 18 00');
   });
@@ -96,14 +97,16 @@ describe('formatForNumberInput', () => {
     expect(
       formatForNumberInput(parsed, {
         includeDialCode: true,
-        outputNumberFormat: PhoneNumberFormat.INTERNATIONAL
+        outputNumberFormat: PhoneNumberFormat.INTERNATIONAL,
+        selectedDialCode: '41'
       })
     ).toBe('+41 44 668 18 00');
 
     expect(
       formatForNumberInput(parsed, {
         includeDialCode: true,
-        outputNumberFormat: PhoneNumberFormat.E164
+        outputNumberFormat: PhoneNumberFormat.E164,
+        selectedDialCode: '41'
       })
     ).toBe('+41446681800');
   });
@@ -114,9 +117,42 @@ describe('formatForNumberInput', () => {
     expect(
       formatForNumberInput(mpNumber, {
         includeDialCode: false,
-        outputNumberFormat: PhoneNumberFormat.INTERNATIONAL
+        outputNumberFormat: PhoneNumberFormat.INTERNATIONAL,
+        selectedDialCode: '1'
       })
     ).toBe('(670) 234-5678');
+  });
+
+  it('should keep the calling code when no country is selected', () => {
+    // the national format would leave the number with no way back to +41: the
+    // selected country is what puts the calling code back
+    expect(
+      formatForNumberInput(parsed, {
+        includeDialCode: false,
+        outputNumberFormat: PhoneNumberFormat.INTERNATIONAL,
+        selectedDialCode: undefined
+      })
+    ).toBe('+41 44 668 18 00');
+  });
+
+  it('should keep the calling code when the selected country is not the number own', () => {
+    expect(
+      formatForNumberInput(parsed, {
+        includeDialCode: false,
+        outputNumberFormat: PhoneNumberFormat.INTERNATIONAL,
+        selectedDialCode: '34'
+      })
+    ).toBe('+41 44 668 18 00');
+  });
+
+  it('should keep the calling code in the configured output format', () => {
+    expect(
+      formatForNumberInput(parsed, {
+        includeDialCode: false,
+        outputNumberFormat: PhoneNumberFormat.E164,
+        selectedDialCode: '34'
+      })
+    ).toBe('+41446681800');
   });
 });
 
@@ -137,7 +173,6 @@ describe('resolveCountrySequence', () => {
 
     expect(sequence.fromDialCode).toBeUndefined();
     expect(sequence.fromParsed?.iso2).toBe('ch');
-    expect(sequence.finalIso).toBe('ch');
   });
 
   it('should resolve from the selected dial code first, then from the number', () => {
@@ -149,14 +184,13 @@ describe('resolveCountrySequence', () => {
       currentDialCode: '34'
     });
 
-    // the two resolutions disagree: the number is formatted between them, so
-    // both are reported and the parsed one wins the final iso
+    // the two resolutions disagree: both are reported, and the caller applies
+    // them in order so the parsed one is where the selector lands
     expect(sequence.fromDialCode?.iso2).toBe('es');
     expect(sequence.fromParsed?.iso2).toBe('ch');
-    expect(sequence.finalIso).toBe('ch');
   });
 
-  it('should keep the current iso when the dial code matches no country', () => {
+  it('should resolve nothing when the dial code matches no country', () => {
     const parsed = phoneNumberUtil.parse('+41 44 668 18 00');
 
     const sequence = resolveCountrySequence(parsed, [], {
@@ -165,9 +199,9 @@ describe('resolveCountrySequence', () => {
       currentDialCode: '999'
     });
 
+    // an empty sequence leaves the selection alone
     expect(sequence.fromDialCode).toBeUndefined();
     expect(sequence.fromParsed).toBeUndefined();
-    expect(sequence.finalIso).toBe('es');
   });
 
   it('should fall back to the parsed country code when nothing is selected', () => {
@@ -178,6 +212,88 @@ describe('resolveCountrySequence', () => {
     });
 
     expect(sequence.fromDialCode?.iso2).toBe('es');
-    expect(sequence.finalIso).toBe('es');
+    expect(sequence.fromParsed?.iso2).toBe('es');
+  });
+
+  describe('a number still inside the selected area code', () => {
+    // the +1 family in country-code.ts order: area-code entries first, the
+    // priority-0 country last
+    const northAmerica: Country[] = [
+      country({
+        name: 'Jamaica',
+        iso2: 'jm',
+        dialCode: '1',
+        priority: 1,
+        areaCodes: ['876']
+      }),
+      country({ name: 'United States', iso2: 'us', dialCode: '1', priority: 0 })
+    ];
+
+    it('should keep the selected country while its area code is unfinished', () => {
+      // deleting a digit out of the prefilled '+1 876'
+      const parsed = phoneNumberUtil.parse('+1 87');
+
+      const sequence = resolveCountrySequence(parsed, northAmerica, {
+        includeDialCode: true,
+        currentIso: 'jm',
+        currentDialCode: '1'
+      });
+
+      // nothing to apply: the selection already holds the country
+      expect(sequence.fromDialCode).toBeUndefined();
+      expect(sequence.fromParsed).toBeUndefined();
+    });
+
+    it('should resolve again as soon as the area code is complete', () => {
+      const parsed = phoneNumberUtil.parse('+1 876');
+
+      const sequence = resolveCountrySequence(parsed, northAmerica, {
+        includeDialCode: true,
+        currentIso: 'jm',
+        currentDialCode: '1'
+      });
+
+      expect(sequence.fromParsed?.iso2).toBe('jm');
+    });
+
+    it('should hand the number over once it belongs to another area code', () => {
+      const parsed = phoneNumberUtil.parse('+1 202 555 0123');
+
+      const sequence = resolveCountrySequence(parsed, northAmerica, {
+        includeDialCode: true,
+        currentIso: 'jm',
+        currentDialCode: '1'
+      });
+
+      expect(sequence.fromParsed?.iso2).toBe('us');
+    });
+
+    it('should not hold a number from a different calling code', () => {
+      const parsed = phoneNumberUtil.parse('+34 61');
+      const withSpain = [
+        ...northAmerica,
+        country({ name: 'Spain', iso2: 'es', dialCode: '34', priority: 0 })
+      ];
+
+      const sequence = resolveCountrySequence(parsed, withSpain, {
+        includeDialCode: true,
+        currentIso: 'jm',
+        currentDialCode: '1'
+      });
+
+      expect(sequence.fromParsed?.iso2).toBe('es');
+    });
+
+    it('should not hold anything for a country without area codes', () => {
+      const parsed = phoneNumberUtil.parse('+34 61');
+
+      const sequence = resolveCountrySequence(parsed, countries, {
+        includeDialCode: true,
+        currentIso: 'es',
+        currentDialCode: '34'
+      });
+
+      expect(sequence.fromParsed?.iso2).toBe('es');
+    });
   });
 });

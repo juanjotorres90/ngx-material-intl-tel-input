@@ -111,6 +111,47 @@ test.describe('countries sharing a dial code', () => {
 
     await expect(telInput(page)).toHaveValue('+1');
   });
+
+  // With includeDialCode the area code is part of the editable text, so editing
+  // it reaches a number that identifies no country — and the selection must not
+  // be handed to the priority-0 country sharing the calling code (US for +1).
+  test('keeps the selected territory while its area code is edited', async ({
+    page
+  }) => {
+    await gotoHarness(page, { includeDialCode: true });
+    await selectCountry(page, 'Jamaica');
+    await expect(telInput(page)).toHaveValue('+1 876');
+
+    await telInput(page).click();
+    await page.keyboard.press('End');
+    for (let i = 0; i < 3; i++) {
+      await page.keyboard.press('Backspace');
+      await expect(countrySelect(page)).toContainText('JM');
+    }
+
+    // and the number still completes as Jamaican
+    await typeDigits(page, '8762101234');
+    await expect(page.getByTestId('value')).toHaveText('+1 876-210-1234');
+    await expect(page.getByTestId('status')).toHaveText('VALID');
+    await expect(countrySelect(page)).toContainText('JM');
+  });
+
+  test('still hands the selection over to a full foreign area code', async ({
+    page
+  }) => {
+    await gotoHarness(page, { includeDialCode: true });
+    await selectCountry(page, 'Jamaica');
+
+    await telInput(page).click();
+    await page.keyboard.press('End');
+    for (let i = 0; i < 3; i++) {
+      await page.keyboard.press('Backspace');
+    }
+    await typeDigits(page, '2025550123');
+
+    await expect(countrySelect(page)).toContainText('US');
+    await expect(page.getByTestId('value')).toHaveText('+1 202-555-0123');
+  });
 });
 
 /**

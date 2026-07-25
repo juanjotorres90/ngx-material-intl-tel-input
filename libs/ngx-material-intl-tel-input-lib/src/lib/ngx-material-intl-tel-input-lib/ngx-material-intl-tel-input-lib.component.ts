@@ -256,13 +256,7 @@ export class NgxMaterialIntlTelInputComponent
     this.setRequiredValidators();
     this.setDisabledState();
     if (this.numberValidation()) {
-      this.fieldControl()?.addValidators(
-        TelValidators.isValidNumber(
-          this.telForm,
-          this.includeDialCode(),
-          this.allCountries
-        )
-      );
+      this.fieldControl()?.addValidators(TelValidators.isValidNumber());
     }
   }
 
@@ -578,11 +572,14 @@ export class NgxMaterialIntlTelInputComponent
         } else {
           this.selectFallbackCountry();
         }
+        // after the selection above: an initial value whose country could not
+        // be selected keeps its calling code in the input, so nothing is lost
         const formattedOnlyNumber = countryUtils.formatForNumberInput(
           parsedNumber,
           {
             includeDialCode: this.includeDialCode(),
-            outputNumberFormat: this.outputNumberFormat()
+            outputNumberFormat: this.outputNumberFormat(),
+            selectedDialCode: this.prefixCtrl.value?.dialCode
           }
         );
         if (formattedOnlyNumber) {
@@ -695,9 +692,10 @@ export class NgxMaterialIntlTelInputComponent
    * Forms `setValue`, or a Signal Forms field write. Used to live inside the
    * validator, which meant it ran during change detection's validation pass.
    *
-   * Both resolutions are applied in order, dial code first, so the selector
-   * lands where the validator's `finalIso` says it will. All writes suppress
-   * events so they cannot echo back into fieldControl.
+   * Both resolutions are applied in order, dial code first, and the number is
+   * formatted after them, so it is rendered for the country the selector ends
+   * up on. All writes suppress events so they cannot echo back into
+   * fieldControl.
    */
   private applyValueToTelForm(
     parsedNumber: PhoneNumber,
@@ -719,9 +717,12 @@ export class NgxMaterialIntlTelInputComponent
     );
     this.setPrefixIfDifferent(sequence.fromDialCode);
     this.setPrefixIfDifferent(sequence.fromParsed);
+    // read after both writes, so the number is rendered for the country the
+    // selector actually ended up on
     const formattedNumber = countryUtils.formatForNumberInput(parsedNumber, {
       includeDialCode: this.includeDialCode(),
-      outputNumberFormat: this.outputNumberFormat()
+      outputNumberFormat: this.outputNumberFormat(),
+      selectedDialCode: this.prefixCtrl.value?.dialCode
     });
     this.telForm
       .get('numberControl')

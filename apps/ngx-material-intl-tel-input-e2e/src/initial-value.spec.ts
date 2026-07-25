@@ -115,8 +115,9 @@ test.describe('initialValue', () => {
   });
 
   // the same path by a different route: the value parses, but its country was
-  // excluded from the list, so nothing resolves — the number keeps its own
-  // formatting rather than being re-read under a guessed country
+  // excluded from the list, so nothing resolves. The national format would drop
+  // the calling code with no selected country to put it back, so the number
+  // keeps it and the stored value survives untouched.
   test('leaves the selector empty when the parsed country is excluded', async ({
     page
   }) => {
@@ -125,7 +126,24 @@ test.describe('initialValue', () => {
     );
 
     await expect(countrySelect(page)).toContainText('Code');
-    await expect(telInput(page)).toHaveValue('044 668 18 00');
+    await expect(telInput(page)).toHaveValue('+41 44 668 18 00');
+    await expect(page.getByTestId('value')).toHaveText('+41 44 668 18 00');
+    await expect(page.getByTestId('status')).toHaveText('VALID');
+  });
+
+  // and with a fallback country selected, which is where the calling code used
+  // to be dropped and the digits re-read as a Spanish number
+  test('keeps a preloaded number whose country is excluded under autoSelectedCountry', async ({
+    page
+  }) => {
+    await page.goto(
+      `/e2e?excludedCountries=ch&autoSelectedCountry=es&initialValue=${encodeURIComponent(SWISS_NUMBER)}`
+    );
+
+    await expect(countrySelect(page)).toContainText('+34');
+    await expect(telInput(page)).toHaveValue('+41 44 668 18 00');
+    await expect(page.getByTestId('value')).toHaveText('+41 44 668 18 00');
+    await expect(page.getByTestId('status')).toHaveText('VALID');
   });
 
   test('leaves an empty initial value on the default country', async ({

@@ -53,4 +53,19 @@ test.describe('pasting a number', () => {
     await expect(page.getByTestId('value')).toHaveText('+41 44 668 18 00');
     await expect(page.getByTestId('status')).toHaveText('VALID');
   });
+
+  // No country can be selected for the number, so its calling code has to stay
+  // in the input: dropping it left the digits to be re-read under the country
+  // that happened to be selected, which emitted a Spanish '+34 446681800'.
+  test('keeps the number intact when its country is not in the list', async ({
+    page
+  }) => {
+    await gotoHarness(page, { excludedCountries: 'ch' });
+
+    await pasteIntoInput(page, '+41 44 668 18 00');
+
+    await expect(telInput(page)).toHaveValue('+41 44 668 18 00');
+    await expect(page.getByTestId('value')).toHaveText('+41 44 668 18 00');
+    await expect(page.getByTestId('status')).toHaveText('VALID');
+  });
 });

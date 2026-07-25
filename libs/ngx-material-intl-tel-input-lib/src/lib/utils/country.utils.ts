@@ -49,11 +49,15 @@ export const findCountryByParsedNumber = (
  * output format when the dial code is part of the input, national format
  * otherwise.
  *
- * The selected country does not take part: the parsed number already carries
- * its own country, so the selection cannot change the rendering.
+ * The national format drops the calling code, and the selected country is what
+ * puts it back when the value is rebuilt. So it is only used while the
+ * selection is the number's own country. When it is not — the number's country
+ * is filtered out of the list, or none is selected — the calling code is kept,
+ * because dropping it would rebuild the number under an unrelated country or
+ * lose its country altogether.
  *
  * @param parsedNumber Parsed phone number
- * @param options Output configuration
+ * @param options Output configuration, plus the selected country's dial code
  * @returns The formatted number for the input field
  */
 export const formatForNumberInput = (
@@ -61,23 +65,59 @@ export const formatForNumberInput = (
   options: {
     includeDialCode: boolean;
     outputNumberFormat: PhoneNumberFormat;
+    /** dial code of the selected country, or undefined when none is selected */
+    selectedDialCode: string | undefined;
   }
-): string =>
-  PhoneNumberUtil.getInstance().format(
+): string => {
+  const nationalFormatRoundTrips =
+    options.selectedDialCode === parsedNumber.getCountryCode()?.toString();
+  return PhoneNumberUtil.getInstance().format(
     parsedNumber,
-    options.includeDialCode
+    options.includeDialCode || !nationalFormatRoundTrips
       ? options.outputNumberFormat
       : PhoneNumberFormat.NATIONAL
   );
+};
 
-/** Countries a value resolves to, and the ISO2 the form ends up on. */
+/**
+ * True while the parsed national number is still a strict prefix of one of the
+ * selected country's area codes, meaning the user is editing inside the area
+ * code itself. Such a number identifies no country yet, so the current
+ * selection has to survive: without this, deleting into a prefilled area code
+ * (`+1 876` to `+1 87`) resolves to the priority-0 country sharing the calling
+ * code and silently reassigns the country the user picked.
+ *
+ * The calling codes must match, otherwise a number from elsewhere would be
+ * held back by a selection it has nothing to do with.
+ *
+ * @param parsedNumber Parsed phone number
+ * @param country The currently selected country, when there is one
+ * @returns Whether the number is an unfinished form of the selected country's
+ */
+const isIncompleteAreaCode = (
+  parsedNumber: PhoneNumber,
+  country: Country | undefined
+): boolean => {
+  if (
+    !country ||
+    country.dialCode !== parsedNumber.getCountryCode()?.toString()
+  ) {
+    return false;
+  }
+  const nationalNumber = parsedNumber.getNationalNumber()?.toString() ?? '';
+  return !!country.areaCodes?.some(
+    (areaCode) =>
+      nationalNumber.length < areaCode.length &&
+      areaCode.startsWith(nationalNumber)
+  );
+};
+
+/** Countries a value resolves to, in the order the form applies them. */
 export interface CountrySequence {
   /** resolved from the selected dial code, only when includeDialCode is set */
   fromDialCode?: Country;
   /** resolved from the parsed number's own country code */
   fromParsed?: Country;
-  /** the iso2 the selector holds once both resolutions have been applied */
-  finalIso?: string;
 }
 
 /**
@@ -88,9 +128,8 @@ export interface CountrySequence {
  * and the number is formatted between them, so the order is part of the
  * behavior rather than an implementation detail.
  *
- * This is a pure replay: the caller decides what to write, and the validator
- * uses `finalIso` to reach the same verdict it would have reached after those
- * writes.
+ * This is a pure replay: nothing is written, the caller decides what to apply.
+ * An empty sequence means the selection stays where it is.
  */
 export const resolveCountrySequence = (
   parsedNumber: PhoneNumber,
@@ -101,7 +140,15 @@ export const resolveCountrySequence = (
     currentDialCode?: string;
   }
 ): CountrySequence => {
-  let finalIso = options.currentIso;
+  const currentCountry = options.currentIso
+    ? allCountries?.find((country) => country?.iso2 === options.currentIso)
+    : undefined;
+  if (isIncompleteAreaCode(parsedNumber, currentCountry)) {
+    // the selection already holds the only country this number can still
+    // become, so there is nothing to resolve or write
+    return {};
+  }
+
   let fromDialCode: Country | undefined;
 
   if (options.includeDialCode) {
@@ -113,18 +160,13 @@ export const resolveCountrySequence = (
         allCountries,
         countryDialCode
       );
-      if (fromDialCode) {
-        finalIso = fromDialCode.iso2;
-      }
     }
   }
 
-  const fromParsed = findCountryByParsedNumber(parsedNumber, allCountries);
-  if (fromParsed) {
-    finalIso = fromParsed.iso2;
-  }
-
-  return { fromDialCode, fromParsed, finalIso };
+  return {
+    fromDialCode,
+    fromParsed: findCountryByParsedNumber(parsedNumber, allCountries)
+  };
 };
 
 /**
