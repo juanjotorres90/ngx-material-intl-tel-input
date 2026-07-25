@@ -115,9 +115,7 @@ export class CountryDataService {
           countryCode,
           PhoneNumberType.MOBILE
         ),
-        includeDialCode || countryCode === 'MP'
-          ? outputNumberFormat
-          : PhoneNumberFormat.NATIONAL
+        includeDialCode ? outputNumberFormat : PhoneNumberFormat.NATIONAL
       );
     } catch {
       return '';

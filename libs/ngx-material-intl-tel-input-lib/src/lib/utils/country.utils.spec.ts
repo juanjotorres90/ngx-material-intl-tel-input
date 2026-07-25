@@ -2,7 +2,8 @@ import { PhoneNumberFormat, PhoneNumberUtil } from 'google-libphonenumber';
 import { Country } from '../types/country.model';
 import {
   findCountryByParsedNumber,
-  formatForNumberInput
+  formatForNumberInput,
+  resolveCountrySequence
 } from './country.utils';
 
 const phoneNumberUtil = PhoneNumberUtil.getInstance();
@@ -86,7 +87,6 @@ describe('formatForNumberInput', () => {
     expect(
       formatForNumberInput(parsed, {
         includeDialCode: false,
-        iso2: 'ch',
         outputNumberFormat: PhoneNumberFormat.INTERNATIONAL
       })
     ).toBe('044 668 18 00');
@@ -96,7 +96,6 @@ describe('formatForNumberInput', () => {
     expect(
       formatForNumberInput(parsed, {
         includeDialCode: true,
-        iso2: 'ch',
         outputNumberFormat: PhoneNumberFormat.INTERNATIONAL
       })
     ).toBe('+41 44 668 18 00');
@@ -104,30 +103,81 @@ describe('formatForNumberInput', () => {
     expect(
       formatForNumberInput(parsed, {
         includeDialCode: true,
-        iso2: 'ch',
         outputNumberFormat: PhoneNumberFormat.E164
       })
     ).toBe('+41446681800');
   });
 
-  it('should use the output format for Northern Mariana Islands even without the dial code', () => {
+  it('should use the national format for Northern Mariana Islands like any other country', () => {
     const mpNumber = phoneNumberUtil.parse('+1 670 234 5678');
 
     expect(
       formatForNumberInput(mpNumber, {
         includeDialCode: false,
-        iso2: 'mp',
         outputNumberFormat: PhoneNumberFormat.INTERNATIONAL
       })
-    ).toBe('+1 670-234-5678');
+    ).toBe('(670) 234-5678');
+  });
+});
+
+describe('resolveCountrySequence', () => {
+  const countries: Country[] = [
+    country({ name: 'Spain', iso2: 'es', dialCode: '34', priority: 0 }),
+    country({ name: 'Switzerland', iso2: 'ch', dialCode: '41', priority: 0 })
+  ];
+
+  it('should resolve only from the parsed number when includeDialCode is off', () => {
+    const parsed = phoneNumberUtil.parse('+41 44 668 18 00');
+
+    const sequence = resolveCountrySequence(parsed, countries, {
+      includeDialCode: false,
+      currentIso: 'es',
+      currentDialCode: '34'
+    });
+
+    expect(sequence.fromDialCode).toBeUndefined();
+    expect(sequence.fromParsed?.iso2).toBe('ch');
+    expect(sequence.finalIso).toBe('ch');
   });
 
-  it('should fall back to the national format when no country is selected', () => {
-    expect(
-      formatForNumberInput(parsed, {
-        includeDialCode: false,
-        outputNumberFormat: PhoneNumberFormat.INTERNATIONAL
-      })
-    ).toBe('044 668 18 00');
+  it('should resolve from the selected dial code first, then from the number', () => {
+    const parsed = phoneNumberUtil.parse('+41 44 668 18 00');
+
+    const sequence = resolveCountrySequence(parsed, countries, {
+      includeDialCode: true,
+      currentIso: 'es',
+      currentDialCode: '34'
+    });
+
+    // the two resolutions disagree: the number is formatted between them, so
+    // both are reported and the parsed one wins the final iso
+    expect(sequence.fromDialCode?.iso2).toBe('es');
+    expect(sequence.fromParsed?.iso2).toBe('ch');
+    expect(sequence.finalIso).toBe('ch');
+  });
+
+  it('should keep the current iso when the dial code matches no country', () => {
+    const parsed = phoneNumberUtil.parse('+41 44 668 18 00');
+
+    const sequence = resolveCountrySequence(parsed, [], {
+      includeDialCode: true,
+      currentIso: 'es',
+      currentDialCode: '999'
+    });
+
+    expect(sequence.fromDialCode).toBeUndefined();
+    expect(sequence.fromParsed).toBeUndefined();
+    expect(sequence.finalIso).toBe('es');
+  });
+
+  it('should fall back to the parsed country code when nothing is selected', () => {
+    const parsed = phoneNumberUtil.parse('+34 612 34 56 78');
+
+    const sequence = resolveCountrySequence(parsed, countries, {
+      includeDialCode: true
+    });
+
+    expect(sequence.fromDialCode?.iso2).toBe('es');
+    expect(sequence.finalIso).toBe('es');
   });
 });

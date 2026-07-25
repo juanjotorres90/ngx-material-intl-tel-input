@@ -121,9 +121,9 @@ export class NgxMaterialIntlTelInputComponent
   allCountries: Country[] = [];
   phoneNumberUtil = PhoneNumberUtil.getInstance();
 
-  /** true while fieldControl is being updated from telForm, so the
-   * fieldControl listener can tell internal echoes from external writes */
-  private isInternalValueUpdate = false;
+  /** where the value currently being applied came from: the number input
+   * itself, or a write from outside the component */
+  private valueUpdateSource: 'input' | 'external' = 'external';
 
   telForm = new FormGroup({
     prefixCtrl: this.prefixCtrl,
@@ -260,8 +260,7 @@ export class NgxMaterialIntlTelInputComponent
         TelValidators.isValidNumber(
           this.telForm,
           this.includeDialCode(),
-          this.allCountries,
-          this.outputNumberFormat()
+          this.allCountries
         )
       );
     }
@@ -442,8 +441,7 @@ export class NgxMaterialIntlTelInputComponent
           const value =
             data?.prefixCtrl?.dialCode &&
             !this.includeDialCode() &&
-            !isInternationalEntry &&
-            data?.prefixCtrl?.iso2 !== 'mp'
+            !isInternationalEntry
               ? '+' + data.prefixCtrl.dialCode + data.numberControl
               : data.numberControl;
           try {
@@ -472,17 +470,18 @@ export class NgxMaterialIntlTelInputComponent
   }
 
   /**
-   * Sets the fieldControl value from an internal telForm change, flagging the
-   * update so the fieldControl listener does not repaint telForm with it.
+   * Sets the fieldControl value from a number-input change, marking the source
+   * so the fieldControl listener knows the value is an echo of what the user
+   * typed rather than a write from outside.
    */
   private setFieldControlValue(value: string): void {
     const control = this.fieldControl();
     if (!control) {
       return;
     }
-    this.isInternalValueUpdate = true;
+    this.valueUpdateSource = 'input';
     control.setValue(value);
-    this.isInternalValueUpdate = false;
+    this.valueUpdateSource = 'external';
   }
 
   /**
@@ -494,7 +493,8 @@ export class NgxMaterialIntlTelInputComponent
     this.prefixCtrl.valueChanges
       .pipe(takeUntil(this._onDestroy))
       .subscribe((data) => {
-        if (this.includeDialCode() && data?.dialCode) {
+        const dialPrefix = data ? this.getCountryDialPrefix(data) : '';
+        if (this.includeDialCode() && dialPrefix) {
           if (this.useMask()) {
             // the mask renders the new dial code itself as fixed characters.
             // Clear synchronously (without events) so the telForm emission
@@ -528,7 +528,7 @@ export class NgxMaterialIntlTelInputComponent
           } else {
             this.telForm
               .get('numberControl')
-              ?.setValue('+' + data?.dialCode, { emitEvent: false });
+              ?.setValue(`+${dialPrefix}`, { emitEvent: false });
           }
         }
         if (!this.isLoading()) {
@@ -569,7 +569,6 @@ export class NgxMaterialIntlTelInputComponent
           parsedNumber,
           {
             includeDialCode: this.includeDialCode(),
-            iso2: this.telForm?.value?.prefixCtrl?.iso2,
             outputNumberFormat: this.outputNumberFormat()
           }
         );
@@ -618,7 +617,7 @@ export class NgxMaterialIntlTelInputComponent
     const valueChanges = this.fieldControl()
       ?.valueChanges as Observable<string>;
     valueChanges.pipe(takeUntil(this._onDestroy)).subscribe((data: string) => {
-      const isExternalUpdate = !this.isInternalValueUpdate;
+      const source = this.valueUpdateSource;
       if (data) {
         try {
           const parsed = this.phoneNumberUtil.parse(
@@ -630,16 +629,10 @@ export class NgxMaterialIntlTelInputComponent
             this.outputNumberFormat()
           );
           this.fieldControl()?.setValue(formatted, { emitEvent: false });
-          if (isExternalUpdate) {
-            this.applyExternalValueToTelForm(parsed);
-          }
+          this.applyValueToTelForm(parsed, source);
         } catch {
           this.fieldControl()?.setValue(data, { emitEvent: false });
-          if (isExternalUpdate) {
-            this.telForm
-              .get('numberControl')
-              ?.setValue(data, { emitEvent: false });
-          }
+          this.applyUnparseableValueToTelForm(data, source);
         }
       } else {
         this.telForm.get('numberControl')?.setValue('', { emitEvent: false });
@@ -657,28 +650,99 @@ export class NgxMaterialIntlTelInputComponent
   }
 
   /**
-   * Repaints the country selector and number input from a phone number that
-   * was set on the fieldControl from outside (Reactive Forms `setValue` or a
-   * Signal Forms field value change), mirroring the initial-value behavior.
-   * All telForm updates suppress events to avoid echoing back into
-   * fieldControl.
+   * The single place the country selector and the number input are repainted
+   * from a fieldControl value, whatever set it — the user typing, a Reactive
+   * Forms `setValue`, or a Signal Forms field write. Used to live inside the
+   * validator, which meant it ran during change detection's validation pass.
+   *
+   * Both resolutions are applied in order, dial code first, so the selector
+   * lands where the validator's `finalIso` says it will. All writes suppress
+   * events so they cannot echo back into fieldControl.
    */
-  private applyExternalValueToTelForm(parsedNumber: PhoneNumber): void {
-    const country = countryUtils.findCountryByParsedNumber(
-      parsedNumber,
-      this.allCountries
-    );
-    if (country && country.iso2 !== this.telForm?.value?.prefixCtrl?.iso2) {
-      this.prefixCtrl.setValue(country, { emitEvent: false });
+  private applyValueToTelForm(
+    parsedNumber: PhoneNumber,
+    source: 'input' | 'external'
+  ): void {
+    // With validation off the input is left exactly as typed; only a write
+    // from outside repaints it.
+    if (!this.numberValidation() && source === 'input') {
+      return;
     }
+    const sequence = countryUtils.resolveCountrySequence(
+      parsedNumber,
+      this.allCountries,
+      {
+        includeDialCode: this.includeDialCode(),
+        currentIso: this.telForm?.value?.prefixCtrl?.iso2,
+        currentDialCode: this.telForm?.value?.prefixCtrl?.dialCode
+      }
+    );
+    this.setPrefixIfDifferent(sequence.fromDialCode);
+    this.setPrefixIfDifferent(sequence.fromParsed);
     const formattedNumber = countryUtils.formatForNumberInput(parsedNumber, {
       includeDialCode: this.includeDialCode(),
-      iso2: this.telForm?.value?.prefixCtrl?.iso2,
       outputNumberFormat: this.outputNumberFormat()
     });
     this.telForm
       .get('numberControl')
       ?.setValue(formattedNumber, { emitEvent: false });
+    this.mirrorValidationToNumberControl();
+  }
+
+  /**
+   * Same path for a value the parser rejected: there is nothing to format or
+   * resolve, so only an outside write repaints the input, and the validation
+   * verdict is still mirrored onto it.
+   */
+  private applyUnparseableValueToTelForm(
+    value: string,
+    source: 'input' | 'external'
+  ): void {
+    if (source === 'external') {
+      this.telForm.get('numberControl')?.setValue(value, { emitEvent: false });
+    }
+    this.mirrorValidationToNumberControl();
+  }
+
+  /**
+   * Selects a country, skipping the write when it is already selected.
+   */
+  private setPrefixIfDifferent(country: Country | undefined): void {
+    if (country && country.iso2 !== this.telForm?.value?.prefixCtrl?.iso2) {
+      this.prefixCtrl.setValue(country, { emitEvent: false });
+    }
+  }
+
+  /**
+   * Returns the complete prefix needed to start an international number. A
+   * country with one area code under a shared calling code needs both parts,
+   * for example Northern Mariana Islands is +1 670 rather than only +1.
+   */
+  private getCountryDialPrefix(country: Country): string {
+    const areaCode =
+      country.areaCodes?.length === 1 ? country.areaCodes[0] : '';
+    return `${country.dialCode}${areaCode}`;
+  }
+
+  /**
+   * Mirrors the number errors from the fieldControl onto the number input, so
+   * the input renders as invalid alongside the field. Only the two number
+   * errors are mirrored, and only while number validation is on — without it
+   * the validator never ran and the input never carried these errors.
+   */
+  private mirrorValidationToNumberControl(): void {
+    if (!this.numberValidation()) {
+      return;
+    }
+    const numberControl = this.telForm.get('numberControl');
+    const errors = this.fieldControl()?.errors;
+    if (errors?.['invalidNumber']) {
+      numberControl?.setErrors({ invalidNumber: true });
+    } else if (errors?.['numberTooLong']) {
+      numberControl?.setErrors({ numberTooLong: true });
+    } else {
+      numberControl?.setErrors(null);
+    }
   }
 
   /**

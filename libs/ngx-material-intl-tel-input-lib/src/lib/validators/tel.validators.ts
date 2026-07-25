@@ -1,15 +1,26 @@
 import { AbstractControl, FormGroup, ValidatorFn } from '@angular/forms';
-import { PhoneNumberFormat, PhoneNumberUtil } from 'google-libphonenumber';
+import { PhoneNumberUtil } from 'google-libphonenumber';
 import { Country } from '../types/country.model';
 import { phoneNumberUtils } from '../utils/phone-number.utils';
 import { countryUtils } from '../utils/country.utils';
 
 export default class TelValidators {
+  /**
+   * Validates the number held by a control.
+   *
+   * This validator is pure: it reads the selected country from `telForm` but
+   * writes nothing. Repainting the country selector and the number input from
+   * a value belongs to the component (`applyValueToTelForm`), so those writes
+   * happen where the caller can see them instead of inside a validation pass.
+   *
+   * @param telForm Form holding the country selector and the number input
+   * @param includeDialCode Whether the dial code is part of the number input
+   * @param allCountries Country list to resolve the number against
+   */
   static isValidNumber(
     telForm: FormGroup,
     includeDialCode = false,
-    allCountries: Country[],
-    outputNumberFormat: PhoneNumberFormat = PhoneNumberFormat.INTERNATIONAL
+    allCountries: Country[]
   ): ValidatorFn {
     return (control: AbstractControl): { [key: string]: boolean } | null => {
       try {
@@ -19,72 +30,44 @@ export default class TelValidators {
           return null;
         }
 
-        // NOTE: the PhoneNumberUtil.parse() method does NOT appear to correctly parse phone numbers with
-        // country codes which include the 'area code' eg. Dominica (+1767), Grenada (+1473), etc.
-        // Instead, the returned phone number is for the US (+1) country code.
+        // NOTE: territories sharing a calling code (Dominica, Grenada, Northern
+        // Mariana Islands, ...) parse to that shared code with the area code
+        // kept in the national number, so the country is resolved from the area
+        // code afterwards rather than from getCountryCode() alone.
         const parsed = phoneNumberUtil.parse(control.value);
 
-        const setPrefixControlValue = (
-          countryCode: string | number | undefined,
-          allCountries: Country[],
-          telForm: FormGroup
-        ) => {
-          const country = countryUtils.findCountryByParsedNumber(
-            parsed,
-            allCountries,
-            countryCode
-          );
-          if (country && country.iso2 !== telForm?.value?.prefixCtrl?.iso2) {
-            telForm.get('prefixCtrl')?.setValue(country, { emitEvent: false });
+        // The length check runs against the country the selector ends up on,
+        // which is what resolveCountrySequence replays without writing.
+        const { finalIso } = countryUtils.resolveCountrySequence(
+          parsed,
+          allCountries,
+          {
+            includeDialCode,
+            currentIso: telForm?.value?.prefixCtrl?.iso2,
+            currentDialCode: telForm?.value?.prefixCtrl?.dialCode
           }
-        };
-        if (includeDialCode) {
-          const countryDialCode =
-            telForm?.value?.prefixCtrl?.dialCode || parsed.getCountryCode();
-          if (countryDialCode) {
-            setPrefixControlValue(countryDialCode, allCountries, telForm);
-          }
-        }
-
-        const formattedOnlyNumber = countryUtils.formatForNumberInput(parsed, {
-          includeDialCode,
-          iso2: telForm?.value?.prefixCtrl?.iso2,
-          outputNumberFormat
-        });
-        telForm
-          .get('numberControl')
-          ?.setValue(formattedOnlyNumber, { emitEvent: false });
+        );
 
         const isValidNumber = phoneNumberUtil.isValidNumber(parsed);
-        setPrefixControlValue(parsed.getCountryCode(), allCountries, telForm);
 
         // Check if the phone number length is valid for the country
-        const countryIso = telForm?.value?.prefixCtrl?.iso2;
-        const isValidLength = countryIso
-          ? phoneNumberUtils.isValidPhoneNumberLength(control.value, countryIso)
+        const isValidLength = finalIso
+          ? phoneNumberUtils.isValidPhoneNumberLength(control.value, finalIso)
           : true;
 
         if (!isValidNumber) {
-          control.setErrors({ invalidNumber: true });
-          telForm.get('numberControl')?.setErrors({ invalidNumber: true });
           return {
             invalidNumber: true
           };
         } else if (!isValidLength) {
           // If the number is valid according to libphonenumber but exceeds the maximum length
-          control.setErrors({ numberTooLong: true });
-          telForm.get('numberControl')?.setErrors({ numberTooLong: true });
           return {
             numberTooLong: true
           };
         } else {
-          control.setErrors(null);
-          telForm.get('numberControl')?.setErrors(null);
           return null;
         }
       } catch {
-        control.setErrors({ invalidNumber: true });
-        telForm.get('numberControl')?.setErrors({ invalidNumber: true });
         return {
           invalidNumber: true
         };

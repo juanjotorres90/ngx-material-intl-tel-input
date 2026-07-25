@@ -46,28 +46,86 @@ export const findCountryByParsedNumber = (
 
 /**
  * Formats a parsed number the way the number input displays it: the configured
- * output format when the dial code is part of the input (or for Northern
- * Mariana Islands, whose national format drops the +1 670 prefix), national
- * format otherwise.
+ * output format when the dial code is part of the input, national format
+ * otherwise.
+ *
+ * The selected country does not take part: the parsed number already carries
+ * its own country, so the selection cannot change the rendering.
  *
  * @param parsedNumber Parsed phone number
- * @param options Selected country ISO2 and output configuration
+ * @param options Output configuration
  * @returns The formatted number for the input field
  */
 export const formatForNumberInput = (
   parsedNumber: PhoneNumber,
   options: {
     includeDialCode: boolean;
-    iso2?: string;
     outputNumberFormat: PhoneNumberFormat;
   }
 ): string =>
   PhoneNumberUtil.getInstance().format(
     parsedNumber,
-    options.includeDialCode || options.iso2 === 'mp'
+    options.includeDialCode
       ? options.outputNumberFormat
       : PhoneNumberFormat.NATIONAL
   );
+
+/** Countries a value resolves to, and the ISO2 the form ends up on. */
+export interface CountrySequence {
+  /** resolved from the selected dial code, only when includeDialCode is set */
+  fromDialCode?: Country;
+  /** resolved from the parsed number's own country code */
+  fromParsed?: Country;
+  /** the iso2 the selector holds once both resolutions have been applied */
+  finalIso?: string;
+}
+
+/**
+ * Resolves the country twice, in the order the form applies it: first from the
+ * selected dial code (only with `includeDialCode`), then from the parsed
+ * number's country code. The two can disagree — a +1 number while a different
+ * +1 country is selected, or a country switch with the dial code in the input —
+ * and the number is formatted between them, so the order is part of the
+ * behavior rather than an implementation detail.
+ *
+ * This is a pure replay: the caller decides what to write, and the validator
+ * uses `finalIso` to reach the same verdict it would have reached after those
+ * writes.
+ */
+export const resolveCountrySequence = (
+  parsedNumber: PhoneNumber,
+  allCountries: Country[],
+  options: {
+    includeDialCode: boolean;
+    currentIso?: string;
+    currentDialCode?: string;
+  }
+): CountrySequence => {
+  let finalIso = options.currentIso;
+  let fromDialCode: Country | undefined;
+
+  if (options.includeDialCode) {
+    const countryDialCode =
+      options.currentDialCode || parsedNumber.getCountryCode();
+    if (countryDialCode) {
+      fromDialCode = findCountryByParsedNumber(
+        parsedNumber,
+        allCountries,
+        countryDialCode
+      );
+      if (fromDialCode) {
+        finalIso = fromDialCode.iso2;
+      }
+    }
+  }
+
+  const fromParsed = findCountryByParsedNumber(parsedNumber, allCountries);
+  if (fromParsed) {
+    finalIso = fromParsed.iso2;
+  }
+
+  return { fromDialCode, fromParsed, finalIso };
+};
 
 /**
  * Object wrapper so consumers call these as methods, which keeps them spyable
@@ -76,5 +134,6 @@ export const formatForNumberInput = (
  */
 export const countryUtils = {
   findCountryByParsedNumber,
-  formatForNumberInput
+  formatForNumberInput,
+  resolveCountrySequence
 };

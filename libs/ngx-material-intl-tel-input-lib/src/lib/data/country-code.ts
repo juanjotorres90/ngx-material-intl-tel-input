@@ -148,7 +148,7 @@ export class CountryCode {
     ['🇨🇿', 'Czech Republic (Česká republika)', CountryISO.CzechRepublic, '420'],
     ['🇩🇰', 'Denmark (Danmark)', CountryISO.Denmark, '45'],
     ['🇩🇯', 'Djibouti', CountryISO.Djibouti, '253'],
-    ['🇩🇲', 'Dominica', CountryISO.Dominica, '1767'],
+    ['🇩🇲', 'Dominica', CountryISO.Dominica, '1', 1, ['767']],
     [
       '🇩🇴',
       'Dominican Republic (República Dominicana)',
@@ -194,7 +194,7 @@ export class CountryCode {
     ['🇬🇮', 'Gibraltar', CountryISO.Gibraltar, '350'],
     ['🇬🇷', 'Greece (Ελλάδα)', CountryISO.Greece, '30'],
     ['🇬🇱', 'Greenland (Kalaallit Nunaat)', CountryISO.Greenland, '299'],
-    ['🇬🇩', 'Grenada', CountryISO.Grenada, '1473'],
+    ['🇬🇩', 'Grenada', CountryISO.Grenada, '1', 1, ['473']],
     ['🇬🇵', 'Guadeloupe', CountryISO.Guadeloupe, '590', 0],
     ['🇬🇺', 'Guam', 'gu', '1', 1, ['671']],
     ['🇬🇹', 'Guatemala', CountryISO.Guatemala, '502'],
@@ -283,7 +283,9 @@ export class CountryCode {
       '🇲🇵',
       'Northern Mariana Islands',
       CountryISO.NorthernMarianaIslands,
-      '1670'
+      '1',
+      1,
+      ['670']
     ],
     ['🇳🇴', 'Norway (Norge)', CountryISO.Norway, '47', 0],
     ['🇴🇲', 'Oman (‫عُمان‬‎)', CountryISO.Oman, '968'],
@@ -311,7 +313,14 @@ export class CountryCode {
       1
     ],
     ['🇸🇭', 'Saint Helena', CountryISO.SaintHelena, '290'],
-    ['🇰🇳', 'Saint Kitts and Nevis', CountryISO.SaintKittsAndNevis, '1869'],
+    [
+      '🇰🇳',
+      'Saint Kitts and Nevis',
+      CountryISO.SaintKittsAndNevis,
+      '1',
+      1,
+      ['869']
+    ],
     ['🇱🇨', 'Saint Lucia', 'lc', '1', 1, ['758']],
     [
       '🇲🇫',
@@ -379,7 +388,9 @@ export class CountryCode {
       '🇹🇨',
       'Turks and Caicos Islands',
       CountryISO.TurksAndCaicosIslands,
-      '1649'
+      '1',
+      1,
+      ['649']
     ],
     ['🇹🇻', 'Tuvalu', CountryISO.Tuvalu, '688'],
     ['🇻🇮', 'U.S. Virgin Islands', 'vi', '1', 1, ['340']],

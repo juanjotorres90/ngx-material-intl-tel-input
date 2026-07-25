@@ -207,10 +207,6 @@ describe('TelValidators', () => {
         const result = validator(control);
 
         expect(result).toEqual({ invalidNumber: true });
-        expect(control.errors).toEqual({ invalidNumber: true });
-        expect(telForm.get('numberControl')?.errors).toEqual({
-          invalidNumber: true
-        });
       });
 
       it('should return invalidNumber error for completely invalid format', () => {
@@ -224,7 +220,6 @@ describe('TelValidators', () => {
         const result = validator(control);
 
         expect(result).toEqual({ invalidNumber: true });
-        expect(control.errors).toEqual({ invalidNumber: true });
       });
 
       it('should return numberTooLong error when phone number exceeds maximum length', () => {
@@ -240,10 +235,6 @@ describe('TelValidators', () => {
         const result = validator(control);
 
         expect(result).toEqual({ numberTooLong: true });
-        expect(control.errors).toEqual({ numberTooLong: true });
-        expect(telForm.get('numberControl')?.errors).toEqual({
-          numberTooLong: true
-        });
         expect(mockIsValidPhoneNumberLength).toHaveBeenCalledWith(
           '+1 201 555 0123',
           'us'
@@ -444,9 +435,6 @@ describe('TelValidators', () => {
         const result = validator(control);
 
         expect(result).toBeNull();
-        expect(telForm.get('prefixCtrl')?.value.iso2).toBe(
-          CountryISO.UnitedStates
-        );
       });
 
       it('should handle countries with same dial code but different priorities', () => {
@@ -455,103 +443,6 @@ describe('TelValidators', () => {
           telForm,
           true,
           mockAllCountries
-        );
-
-        const result = validator(control);
-
-        expect(result).toBeNull();
-        expect(telForm.get('prefixCtrl')?.value.iso2).toBe('cw'); // Curaçao has priority 0
-      });
-
-      it('should not update prefix control if country is already correct', () => {
-        telForm.get('prefixCtrl')?.setValue(mockAllCountries[0]); // US
-        const prefixSetValueSpy = vi.spyOn(
-          telForm.get('prefixCtrl')!,
-          'setValue'
-        );
-        control.setValue('+1 201 555 0123');
-        const validator = TelValidators.isValidNumber(
-          telForm,
-          true,
-          mockAllCountries
-        );
-
-        validator(control);
-
-        // Should not call setValue since the country is already correct
-        expect(prefixSetValueSpy).not.toHaveBeenCalled();
-      });
-    });
-
-    describe('number formatting', () => {
-      it('should format number in NATIONAL format by default', () => {
-        control.setValue('+1 201 555 0123');
-        const numberControlSetValueSpy = vi.spyOn(
-          telForm.get('numberControl')!,
-          'setValue'
-        );
-        const validator = TelValidators.isValidNumber(
-          telForm,
-          false,
-          mockAllCountries
-        );
-
-        validator(control);
-
-        expect(numberControlSetValueSpy).toHaveBeenCalledWith(
-          expect.stringContaining('201'),
-          { emitEvent: false }
-        );
-      });
-
-      it('should format number in INTERNATIONAL format when includeDialCode is true', () => {
-        control.setValue('+1 201 555 0123');
-        const numberControlSetValueSpy = vi.spyOn(
-          telForm.get('numberControl')!,
-          'setValue'
-        );
-        const validator = TelValidators.isValidNumber(
-          telForm,
-          true,
-          mockAllCountries
-        );
-
-        validator(control);
-
-        expect(numberControlSetValueSpy).toHaveBeenCalledWith(
-          expect.stringContaining('+1'),
-          { emitEvent: false }
-        );
-      });
-
-      it('should format Northern Mariana Islands numbers in INTERNATIONAL format', () => {
-        telForm.get('prefixCtrl')?.setValue(mockAllCountries[5]); // Northern Mariana Islands
-        control.setValue('+1 670 234 5678');
-        const numberControlSetValueSpy = vi.spyOn(
-          telForm.get('numberControl')!,
-          'setValue'
-        );
-        const validator = TelValidators.isValidNumber(
-          telForm,
-          false,
-          mockAllCountries
-        );
-
-        validator(control);
-
-        expect(numberControlSetValueSpy).toHaveBeenCalledWith(
-          expect.stringContaining('+1'),
-          { emitEvent: false }
-        );
-      });
-
-      it('should use custom output number format when provided', () => {
-        control.setValue('+1 201 555 0123');
-        const validator = TelValidators.isValidNumber(
-          telForm,
-          true,
-          mockAllCountries,
-          PhoneNumberFormat.E164
         );
 
         const result = validator(control);
@@ -572,10 +463,6 @@ describe('TelValidators', () => {
         const result = validator(control);
 
         expect(result).toEqual({ invalidNumber: true });
-        expect(control.errors).toEqual({ invalidNumber: true });
-        expect(telForm.get('numberControl')?.errors).toEqual({
-          invalidNumber: true
-        });
       });
 
       it('should handle missing telForm gracefully', () => {
@@ -586,8 +473,9 @@ describe('TelValidators', () => {
           mockAllCountries
         );
 
-        // This should throw an error because the validator tries to access telForm.get()
-        expect(() => validator(control)).toThrow();
+        // the validator only reads the form, so a missing one is not fatal;
+        // it used to throw because it wrote to telForm.get('numberControl')
+        expect(validator(control)).toBeNull();
       });
 
       it('should handle missing allCountries array', () => {
@@ -685,9 +573,6 @@ describe('TelValidators', () => {
         const result = validator(control);
 
         expect(result).toBeNull();
-        expect(telForm.get('prefixCtrl')?.value?.iso2).toBe(
-          CountryISO.UnitedStates
-        );
       });
     });
 
@@ -737,58 +622,6 @@ describe('TelValidators', () => {
 
         // Should return invalidNumber (from libphonenumber) not numberTooLong
         expect(result).toEqual({ invalidNumber: true });
-      });
-    });
-
-    describe('form control state management', () => {
-      it('should clear errors when number becomes valid', () => {
-        // First set an invalid number
-        control.setValue('+1 123');
-        control.setErrors({ invalidNumber: true });
-        telForm.get('numberControl')?.setErrors({ invalidNumber: true });
-
-        // Then set a valid number
-        control.setValue('+1 201 555 0123');
-        const validator = TelValidators.isValidNumber(
-          telForm,
-          false,
-          mockAllCountries
-        );
-
-        const result = validator(control);
-
-        expect(result).toBeNull();
-        expect(control.errors).toBeNull();
-        expect(telForm.get('numberControl')?.errors).toBeNull();
-      });
-
-      it('should not emit events when setting form control values', () => {
-        const prefixEmitSpy = vi.spyOn(telForm.get('prefixCtrl')!, 'setValue');
-        const numberEmitSpy = vi.spyOn(
-          telForm.get('numberControl')!,
-          'setValue'
-        );
-
-        control.setValue('+1 201 555 0123'); // Use a standard US number
-        const validator = TelValidators.isValidNumber(
-          telForm,
-          true,
-          mockAllCountries
-        );
-
-        validator(control);
-
-        // Check that setValue was called with emitEvent: false for numberControl
-        expect(numberEmitSpy).toHaveBeenCalledWith(expect.any(String), {
-          emitEvent: false
-        });
-
-        // The prefix control may or may not be updated depending on country detection
-        if (prefixEmitSpy.mock.calls.length > 0) {
-          expect(prefixEmitSpy).toHaveBeenCalledWith(expect.any(Object), {
-            emitEvent: false
-          });
-        }
       });
     });
 

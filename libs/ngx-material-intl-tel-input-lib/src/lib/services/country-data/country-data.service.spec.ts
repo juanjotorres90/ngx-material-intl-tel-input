@@ -294,8 +294,8 @@ describe('CountryDataService', () => {
       );
     });
 
-    it('should always use international format for MP (Northern Mariana Islands)', () => {
-      mockPhoneNumberUtil.format.mockReturnValue('+1 670 123-4567');
+    it('should use the national format for MP (Northern Mariana Islands) like any other country', () => {
+      mockPhoneNumberUtil.format.mockReturnValue('(670) 123-4567');
 
       const result = (service as any).getPhoneNumberPlaceholder(
         'MP',
@@ -303,10 +303,10 @@ describe('CountryDataService', () => {
         PhoneNumberFormat.INTERNATIONAL
       );
 
-      expect(result).toBe('+1 670 123-4567');
+      expect(result).toBe('(670) 123-4567');
       expect(mockPhoneNumberUtil.format).toHaveBeenCalledWith(
         expect.anything(),
-        PhoneNumberFormat.INTERNATIONAL
+        PhoneNumberFormat.NATIONAL
       );
     });
 

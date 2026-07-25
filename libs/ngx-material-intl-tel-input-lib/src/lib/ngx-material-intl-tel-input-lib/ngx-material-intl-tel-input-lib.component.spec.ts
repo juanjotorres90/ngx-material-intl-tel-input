@@ -7,6 +7,7 @@ import { of, Subject } from 'rxjs';
 import { GeoData } from '../types/geo.type';
 import { GeoIpService } from '../services/geo-ip/geo-ip.service';
 import { caretUtils } from '../utils/caret.utils';
+import { phoneNumberUtils } from '../utils/phone-number.utils';
 
 describe('NgxMaterialIntlTelInputComponent', () => {
   let component: NgxMaterialIntlTelInputComponent;
@@ -742,6 +743,24 @@ describe('NgxMaterialIntlTelInputComponent', () => {
       ).toHaveBeenCalledWith('+34', { emitEvent: false });
     });
 
+    it('should include a unique area code in a shared dial prefix', () => {
+      Object.defineProperty(component, 'includeDialCode', {
+        value: vi.fn().mockReturnValue(true),
+        writable: true
+      });
+      const country: Country = {
+        dialCode: '1',
+        iso2: 'mp',
+        areaCodes: ['670']
+      } as Country;
+
+      prefixValueChangesSubject.next(country);
+
+      expect(
+        component.telForm.get('numberControl')?.setValue
+      ).toHaveBeenCalledWith('+1670', { emitEvent: false });
+    });
+
     it('should focus number input when not loading', async () => {
       const country: Country = { dialCode: '34', iso2: 'es' } as Country;
 
@@ -1094,6 +1113,188 @@ describe('NgxMaterialIntlTelInputComponent', () => {
     });
   });
 
+  // These cases moved here from tel.validators.spec.ts when the validator was
+  // made pure: the writes it used to perform now happen in applyValueToTelForm,
+  // so they are asserted against the real component instead of a bare
+  // validator call.
+  describe('value sync (was validator side effects)', () => {
+    const setExternalValue = (value: string) => {
+      component.fieldControl()?.setValue(value);
+      fixture.detectChanges();
+    };
+
+    it('should format the number into the input in NATIONAL format by default', () => {
+      setExternalValue('+1 201 555 0123');
+
+      expect(component.telForm.get('numberControl')?.value).toContain('201');
+      expect(component.telForm.get('numberControl')?.value).not.toContain('+1');
+    });
+
+    it('should format the number into the input in INTERNATIONAL format when includeDialCode is true', () => {
+      fixture.componentRef.setInput('includeDialCode', true);
+      fixture.detectChanges();
+
+      setExternalValue('+1 201 555 0123');
+
+      expect(component.telForm.get('numberControl')?.value).toContain('+1');
+    });
+
+    it('should format an MP number under the resolved country', () => {
+      setExternalValue('+1 670 234 5678');
+
+      expect(component.telForm.get('numberControl')?.value).toBe(
+        '(670) 234-5678'
+      );
+      expect(component.prefixCtrl.value?.iso2).toBe('mp');
+    });
+
+    it('should keep MP selected while typing a national number', () => {
+      const mp = component.allCountries.find(
+        (country) => country.iso2 === 'mp'
+      );
+      component.prefixCtrl.setValue(mp ?? null);
+
+      component.telForm.get('numberControl')?.setValue('(670) 234-5678');
+      fixture.detectChanges();
+
+      expect(component.prefixCtrl.value?.iso2).toBe('mp');
+      expect(component.telForm.get('numberControl')?.value).toBe(
+        '(670) 234-5678'
+      );
+      expect(component.fieldControl()?.value).toBe('+1 670-234-5678');
+    });
+
+    it('should format an external value under the country replacing an MP selection', () => {
+      const mp = component.allCountries.find(
+        (country) => country.iso2 === 'mp'
+      );
+      component.prefixCtrl.setValue(mp ?? null, { emitEvent: false });
+
+      setExternalValue('+41 44 668 18 00');
+
+      expect(component.prefixCtrl.value?.iso2).toBe('ch');
+      expect(component.telForm.get('numberControl')?.value).toBe(
+        '044 668 18 00'
+      );
+    });
+
+    it('should select the priority country when several share a dial code', () => {
+      fixture.componentRef.setInput('includeDialCode', true);
+      fixture.detectChanges();
+
+      setExternalValue('+599 9 518 1234'); // Curaçao
+
+      expect(component.prefixCtrl.value?.iso2).toBe('cw'); // Curaçao has priority 0
+    });
+
+    it('should fall back to the parsed country code when no country is selected and the dial code is included', () => {
+      fixture.componentRef.setInput('includeDialCode', true);
+      component.prefixCtrl.setValue(null);
+      fixture.detectChanges();
+
+      setExternalValue('+1 201 555 0123');
+
+      expect(component.prefixCtrl.value?.iso2).toBe('us');
+    });
+
+    it('should not rewrite the country when it is already selected', () => {
+      setExternalValue('+1 201 555 0123');
+      const prefixSetValueSpy = vi.spyOn(component.prefixCtrl, 'setValue');
+
+      setExternalValue('+1 202 555 0125');
+
+      expect(prefixSetValueSpy).not.toHaveBeenCalled();
+    });
+
+    it('should write to telForm without emitting events', () => {
+      const numberSetValueSpy = vi.spyOn(
+        component.telForm.get('numberControl')!,
+        'setValue'
+      );
+
+      setExternalValue('+1 201 555 0123');
+
+      expect(numberSetValueSpy).toHaveBeenCalledWith(expect.any(String), {
+        emitEvent: false
+      });
+    });
+
+    it('should mirror the number errors onto the number input', () => {
+      setExternalValue('+1 123');
+
+      expect(component.fieldControl()?.errors).toEqual({
+        invalidNumber: true
+      });
+      expect(component.telForm.get('numberControl')?.errors).toEqual({
+        invalidNumber: true
+      });
+    });
+
+    it('should clear the number input errors when the number becomes valid', () => {
+      setExternalValue('+1 123');
+      expect(component.telForm.get('numberControl')?.errors).toEqual({
+        invalidNumber: true
+      });
+
+      setExternalValue('+1 201 555 0123');
+
+      expect(component.fieldControl()?.errors).toBeNull();
+      expect(component.telForm.get('numberControl')?.errors).toBeNull();
+    });
+
+    it('should mirror numberTooLong onto the number input', () => {
+      const lengthSpy = vi
+        .spyOn(phoneNumberUtils, 'isValidPhoneNumberLength')
+        .mockReturnValue(false);
+
+      setExternalValue('+1 201 555 0123');
+
+      expect(component.fieldControl()?.errors).toEqual({
+        numberTooLong: true
+      });
+      expect(component.telForm.get('numberControl')?.errors).toEqual({
+        numberTooLong: true
+      });
+      lengthSpy.mockRestore();
+    });
+
+    it('should not mirror errors onto the number input when numberValidation is off', () => {
+      const localFixture = TestBed.createComponent(
+        NgxMaterialIntlTelInputComponent
+      );
+      localFixture.componentRef.setInput('numberValidation', false);
+      localFixture.detectChanges();
+      const localComponent = localFixture.componentInstance;
+
+      localComponent.fieldControl()?.setValue('+1 123');
+      localFixture.detectChanges();
+
+      expect(localComponent.telForm.get('numberControl')?.errors).toBeNull();
+      localFixture.destroy();
+    });
+
+    it('should leave the input untouched while typing when numberValidation is off', () => {
+      const localFixture = TestBed.createComponent(
+        NgxMaterialIntlTelInputComponent
+      );
+      localFixture.componentRef.setInput('numberValidation', false);
+      localFixture.detectChanges();
+      const localComponent = localFixture.componentInstance;
+      const spain = localComponent.allCountries.find((c) => c.iso2 === 'es');
+      localComponent.prefixCtrl.setValue(spain ?? null);
+
+      localComponent.telForm.get('numberControl')?.setValue('612345678');
+      localFixture.detectChanges();
+
+      // typed text stays raw; only an outside write repaints it
+      expect(localComponent.telForm.get('numberControl')?.value).toBe(
+        '612345678'
+      );
+      expect(localComponent.fieldControl()?.value).toBe('+34 612 34 56 78');
+      localFixture.destroy();
+    });
+  });
+
   describe('Edge Cases and Error Handling', () => {
     it('should handle null/undefined values gracefully', () => {
       component.allCountries = null as any;
@@ -1169,7 +1370,7 @@ describe('NgxMaterialIntlTelInputComponent', () => {
       expect(component.isLoading()).toBe(false);
     });
 
-    it('should format the initial value with the output format for Northern Mariana Islands', () => {
+    it('should format the initial value in national format for Northern Mariana Islands', () => {
       const numberControlSetValue = vi.fn();
       component.telForm = {
         value: { prefixCtrl: { iso2: 'mp' } },
@@ -1182,7 +1383,7 @@ describe('NgxMaterialIntlTelInputComponent', () => {
 
       component['setInitialTelValue']();
 
-      expect(numberControlSetValue).toHaveBeenCalledWith('+1 670-234-5678');
+      expect(numberControlSetValue).toHaveBeenCalledWith('(670) 234-5678');
     });
 
     it('should compute max input length when the number control is missing', () => {

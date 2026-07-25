@@ -262,6 +262,20 @@ describe('NgxMaterialIntlTelInputComponent rendering', () => {
       expect(trigger.textContent).toContain('ES');
     });
 
+    it('should show the dial code for MP when includeDialCode is disabled', () => {
+      const northernMarianaIslands = component.allCountries.find(
+        (country) => country.iso2 === 'mp'
+      );
+      component.prefixCtrl.setValue(northernMarianaIslands ?? null);
+      component.isLoading.set(false);
+      fixture.detectChanges();
+
+      const trigger: HTMLElement =
+        fixture.nativeElement.querySelector('.country-option');
+      expect(trigger.textContent).toContain('+1');
+      expect(trigger.textContent).not.toContain('MP');
+    });
+
     it('should render an empty trigger when the selected country has no ISO code', async () => {
       const noIsoCountry = { dialCode: '34', iso2: '' } as Country;
       component.filteredCountries.next([noIsoCountry]);

@@ -48,7 +48,7 @@
                 ></div>
               }
             </div>
-            @if (includeDialCode() || prefixCtrl.value?.iso2 === 'mp') {
+            @if (includeDialCode()) {
               <div>{{ prefixCtrl.value?.iso2?.toUpperCase() || '' }}</div>
             } @else {
               <div>+{{ prefixCtrl.value?.dialCode || '' }}</div>
