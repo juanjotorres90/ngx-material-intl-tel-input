@@ -1,20 +1,13 @@
-import { Component, signal, viewChild } from '@angular/core';
 import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { NgxMaterialIntlTelInputComponent } from './ngx-material-intl-tel-input-lib.component';
 import { PhoneNumberFormat, PhoneNumberUtil } from 'google-libphonenumber';
 import { Country } from '../types/country.model';
 import { ControlContainer, FormControl, Validators } from '@angular/forms';
-import {
-  disabled,
-  form,
-  FormField,
-  required,
-  validate
-} from '@angular/forms/signals';
 import { of, Subject } from 'rxjs';
 import { GeoData } from '../types/geo.type';
 import { GeoIpService } from '../services/geo-ip/geo-ip.service';
-import { validPhoneNumber } from '../validators/tel-signal.validators';
+import { caretUtils } from '../utils/caret.utils';
+import { phoneNumberUtils } from '../utils/phone-number.utils';
 
 describe('NgxMaterialIntlTelInputComponent', () => {
   let component: NgxMaterialIntlTelInputComponent;
@@ -148,13 +141,16 @@ describe('NgxMaterialIntlTelInputComponent', () => {
     expect(input.getAttribute('maxlength')).not.toBeNull();
   });
 
-  it('should clear the number and keep the selection when the country changes with useMask and includeDialCode', () => {
+  it('should clear the number and keep the selection when the country changes with useMask and includeDialCode', async () => {
     const localFixture = TestBed.createComponent(
       NgxMaterialIntlTelInputComponent
     );
     localFixture.componentRef.setInput('useMask', true);
     localFixture.componentRef.setInput('includeDialCode', true);
     localFixture.detectChanges();
+    // let setInitialTelValue settle: the clear only applies to a country the
+    // user changes, not to the selection made while the component is loading
+    await new Promise((resolve) => setTimeout(resolve));
     const localComponent = localFixture.componentInstance;
     localComponent.telForm
       .get('numberControl')
@@ -357,6 +353,24 @@ describe('NgxMaterialIntlTelInputComponent', () => {
     it('should set isFocused to false on input blur', () => {
       component.onInputBlur();
       expect(component.isFocused()).toBe(false);
+    });
+
+    it('should mark the field control as touched on input blur', () => {
+      const control = new FormControl('');
+      component.fieldControl.set(control);
+
+      component.onInputBlur();
+
+      expect(control.touched).toBe(true);
+    });
+
+    it('should emit touch on input blur for Signal Forms', () => {
+      const touchSpy = vi.fn();
+      component.touch.subscribe(touchSpy);
+
+      component.onInputBlur();
+
+      expect(touchSpy).toHaveBeenCalled();
     });
   });
 
@@ -750,6 +764,66 @@ describe('NgxMaterialIntlTelInputComponent', () => {
       ).toHaveBeenCalledWith('+34', { emitEvent: false });
     });
 
+    it('should include a unique area code in a shared dial prefix', () => {
+      Object.defineProperty(component, 'includeDialCode', {
+        value: vi.fn().mockReturnValue(true),
+        writable: true
+      });
+      const country: Country = {
+        dialCode: '1',
+        iso2: 'mp',
+        areaCodes: ['670']
+      } as Country;
+
+      prefixValueChangesSubject.next(country);
+
+      expect(
+        component.telForm.get('numberControl')?.setValue
+      ).toHaveBeenCalledWith('+1670', { emitEvent: false });
+    });
+
+    // the area code is folded into the prefix for every country that has
+    // exactly one, not only the entries whose data was rewritten for MP
+    it.each([
+      { iso2: 'jm', dialCode: '1', areaCodes: ['876'], expected: '+1876' },
+      { iso2: 'gg', dialCode: '44', areaCodes: ['1481'], expected: '+441481' }
+    ])(
+      'should include the area code for $iso2 in the dial prefix',
+      ({ iso2, dialCode, areaCodes, expected }) => {
+        Object.defineProperty(component, 'includeDialCode', {
+          value: vi.fn().mockReturnValue(true),
+          writable: true
+        });
+
+        prefixValueChangesSubject.next({
+          dialCode,
+          iso2,
+          areaCodes
+        } as Country);
+
+        expect(
+          component.telForm.get('numberControl')?.setValue
+        ).toHaveBeenCalledWith(expected, { emitEvent: false });
+      }
+    );
+
+    it('should use only the dial code when a country has several area codes', () => {
+      Object.defineProperty(component, 'includeDialCode', {
+        value: vi.fn().mockReturnValue(true),
+        writable: true
+      });
+
+      prefixValueChangesSubject.next({
+        dialCode: '1',
+        iso2: 'pr',
+        areaCodes: ['787', '939']
+      } as Country);
+
+      expect(
+        component.telForm.get('numberControl')?.setValue
+      ).toHaveBeenCalledWith('+1', { emitEvent: false });
+    });
+
     it('should focus number input when not loading', async () => {
       const country: Country = { dialCode: '34', iso2: 'es' } as Country;
 
@@ -875,6 +949,9 @@ describe('NgxMaterialIntlTelInputComponent', () => {
       expect(component.isLoading()).toBe(false);
     });
 
+    // An initial value that resolves no country leaves the selector unset
+    // unless the consumer configured one: the value could be a stored national
+    // number, and guessing a country would silently relabel it.
     it('should not set prefix when country has areaCodes but none match the phone number', () => {
       // Set up a country with areaCodes that don't match the phone number
       component.allCountries = [
@@ -917,6 +994,76 @@ describe('NgxMaterialIntlTelInputComponent', () => {
 
       // Should not call setValue because no country matches dial code 44
       expect(component.prefixCtrl.setValue).not.toHaveBeenCalled();
+      expect(component.isLoading()).toBe(false);
+    });
+
+    it('should not set prefix for an unparseable initial value', () => {
+      component.allCountries = [
+        { name: 'Spain', iso2: 'es', dialCode: '34', priority: 0 } as Country
+      ];
+      component.telForm = {
+        value: {},
+        get: vi.fn().mockReturnValue({ setValue: vi.fn() })
+      } as any;
+      Object.defineProperty(component, 'initialValue', {
+        value: vi.fn().mockReturnValue('675476745'),
+        writable: true
+      });
+
+      component['setInitialTelValue']();
+
+      expect(component.prefixCtrl.value).toBeNull();
+      expect(component.isLoading()).toBe(false);
+    });
+
+    it('should use autoSelectedCountry when an initial value resolves none', () => {
+      component.allCountries = [
+        { name: 'Spain', iso2: 'es', dialCode: '34', priority: 0 } as Country,
+        { name: 'France', iso2: 'fr', dialCode: '33', priority: 0 } as Country
+      ];
+      component.telForm = {
+        value: {},
+        get: vi.fn().mockReturnValue({ setValue: vi.fn() })
+      } as any;
+      Object.defineProperty(component, 'initialValue', {
+        value: vi.fn().mockReturnValue('675476745'),
+        writable: true
+      });
+      Object.defineProperty(component, 'autoSelectedCountry', {
+        value: vi.fn().mockReturnValue('fr'),
+        writable: true
+      });
+
+      component['setInitialTelValue']();
+
+      expect(component.prefixCtrl.value?.iso2).toBe('fr');
+      expect(component.isLoading()).toBe(false);
+    });
+
+    it('should not use autoSelectedCountry when autoSelectCountry is off', () => {
+      component.allCountries = [
+        { name: 'Spain', iso2: 'es', dialCode: '34', priority: 0 } as Country
+      ];
+      component.telForm = {
+        value: {},
+        get: vi.fn().mockReturnValue({ setValue: vi.fn() })
+      } as any;
+      Object.defineProperty(component, 'initialValue', {
+        value: vi.fn().mockReturnValue('675476745'),
+        writable: true
+      });
+      Object.defineProperty(component, 'autoSelectedCountry', {
+        value: vi.fn().mockReturnValue('es'),
+        writable: true
+      });
+      Object.defineProperty(component, 'autoSelectCountry', {
+        value: vi.fn().mockReturnValue(false),
+        writable: true
+      });
+
+      component['setInitialTelValue']();
+
+      expect(component.prefixCtrl.value).toBeNull();
       expect(component.isLoading()).toBe(false);
     });
   });
@@ -1063,7 +1210,7 @@ describe('NgxMaterialIntlTelInputComponent', () => {
         getPreferredDomesticCarrierCode: vi.fn().mockReturnValue(''),
         hasPreferredDomesticCarrierCode: vi.fn().mockReturnValue(false)
       };
-      vi.spyOn(component as any, 'adjustCursorPosition').mockReturnValue(10);
+      vi.spyOn(caretUtils, 'adjustCursorPosition').mockReturnValue(10);
       vi.useFakeTimers();
     });
 
@@ -1098,427 +1245,217 @@ describe('NgxMaterialIntlTelInputComponent', () => {
 
       vi.advanceTimersByTime(1);
       expect(mockInputElement.setSelectionRange).not.toHaveBeenCalled();
-      expect(component['adjustCursorPosition']).not.toHaveBeenCalled();
+      expect(caretUtils.adjustCursorPosition).not.toHaveBeenCalled();
     });
   });
 
-  describe('adjustCursorPosition', () => {
-    beforeEach(() => {
-      vi.spyOn(
-        component as any,
-        'countSpacesBeforePosition'
-      ).mockImplementation((...args: any[]) => {
-        const [value, position] = args as [string, number];
-        return value
-          .slice(0, position)
-          .split('')
-          .filter((char) => char === ' ').length;
-      });
-    });
-
-    it('should return new value length when original position is at end', () => {
-      const result = component['adjustCursorPosition'](
-        5,
-        '12345',
-        '123 456 789'
-      );
-      expect(result).toBe(11);
-    });
-
-    it('should adjust cursor position based on space count difference', () => {
-      const result = component['adjustCursorPosition'](3, '123456', '123 456');
-      expect(result).toBe(3); // Position 3 in '123456' maps to position 3 in '123 456' (before the space)
-    });
-
-    it('should ensure cursor position is within bounds', () => {
-      const result = component['adjustCursorPosition'](-5, '123', '123456');
-      expect(result).toBe(0);
-    });
-
-    it('should not exceed new value length', () => {
-      const result = component['adjustCursorPosition'](10, '123456789', '123');
-      expect(result).toBe(3);
-    });
-  });
-
-  describe('countSpacesBeforePosition', () => {
-    it('should count spaces before position', () => {
-      const result = component['countSpacesBeforePosition']('12 34 56', 5);
-      expect(result).toBe(1); // Only one space before position 5 ('12 34')
-    });
-
-    it('should return 0 when no spaces', () => {
-      const result = component['countSpacesBeforePosition']('123456', 3);
-      expect(result).toBe(0);
-    });
-
-    it('should handle position at start', () => {
-      const result = component['countSpacesBeforePosition'](' 123', 0);
-      expect(result).toBe(0);
-    });
-  });
-
-  describe('getMaxInputLength', () => {
-    beforeEach(() => {
-      component.telForm = {
-        get: vi.fn().mockReturnValue({ value: '1234567890' })
-      } as any;
-      vi.spyOn(
-        component as any,
-        'isCurrentNumberValidAndFormatted'
-      ).mockReturnValue(false);
-      vi.spyOn(component as any, 'calculateFormattingBuffer').mockReturnValue(
-        4
-      );
-      vi.spyOn(component as any, 'calculateSafetyMargin').mockReturnValue(2);
-      Object.defineProperty(component, 'includeDialCode', {
-        value: vi.fn().mockReturnValue(false),
-        writable: true
-      });
-      Object.defineProperty(component, 'outputNumberFormat', {
-        value: vi.fn().mockReturnValue(PhoneNumberFormat.INTERNATIONAL),
-        writable: true
-      });
-    });
-
-    it('should return default fallback when no country code provided', () => {
-      const result = component.getMaxInputLength();
-      expect(result).toBe(25);
-    });
-
-    it('should return extended length for valid formatted numbers', () => {
-      vi.spyOn(
-        component as any,
-        'isCurrentNumberValidAndFormatted'
-      ).mockReturnValue(true);
-      const result = component.getMaxInputLength('us');
-      expect(result).toBeGreaterThan(15); // Base length + formatting + safety margin
-    });
-
-    it('should return restricted length for invalid numbers', () => {
-      vi.spyOn(
-        component as any,
-        'isCurrentNumberValidAndFormatted'
-      ).mockReturnValue(false);
-      const result = component.getMaxInputLength('us');
-      expect(result).toBeLessThan(20); // Base length + minimal buffer
-    });
-
-    it('should handle RFC3966 format with includeDialCode', () => {
-      Object.defineProperty(component, 'includeDialCode', {
-        value: vi.fn().mockReturnValue(true),
-        writable: true
-      });
-      Object.defineProperty(component, 'outputNumberFormat', {
-        value: vi.fn().mockReturnValue(PhoneNumberFormat.RFC3966),
-        writable: true
-      });
-
-      const result = component.getMaxInputLength('us');
-      expect(result).toBeGreaterThan(15); // Should include extra buffer for RFC3966
-    });
-
-    it('should handle errors gracefully', () => {
-      vi.spyOn(
-        component as any,
-        'isCurrentNumberValidAndFormatted'
-      ).mockImplementation(() => {
-        throw new Error('Test error');
-      });
-
-      const result = component.getMaxInputLength('us');
-      expect(result).toBeGreaterThan(10); // Should return fallback
-    });
-  });
-
-  describe('isCurrentNumberValidAndFormatted', () => {
-    beforeEach(() => {
-      component.prefixCtrl = new FormControl({ dialCode: '1' } as Country);
-      Object.defineProperty(component, 'includeDialCode', {
-        value: vi.fn().mockReturnValue(false),
-        writable: true
-      });
-    });
-
-    it('should return false for short values', () => {
-      const result = component['isCurrentNumberValidAndFormatted']('12', 'us');
-      expect(result).toBe(false);
-    });
-
-    it('should return false for empty values', () => {
-      const result = component['isCurrentNumberValidAndFormatted']('', 'us');
-      expect(result).toBe(false);
-    });
-
-    it('should return true for valid formatted numbers', () => {
-      const result = component['isCurrentNumberValidAndFormatted'](
-        '555 123 4567',
-        'us'
-      );
-      expect(result).toBe(false); // This number is not valid without country code
-    });
-
-    it('should return false for invalid numbers', () => {
-      const result = component['isCurrentNumberValidAndFormatted'](
-        'invalid',
-        'us'
-      );
-      expect(result).toBe(false);
-    });
-
-    it('should handle includeDialCode scenario', () => {
-      Object.defineProperty(component, 'includeDialCode', {
-        value: vi.fn().mockReturnValue(true),
-        writable: true
-      });
-
-      const result = component['isCurrentNumberValidAndFormatted'](
-        '+1 555 123 4567',
-        'us'
-      );
-      expect(result).toBe(false); // Adjust expectation based on actual validation logic
-    });
-  });
-
-  describe('calculateSafetyMargin', () => {
-    beforeEach(() => {
-      Object.defineProperty(component, 'includeDialCode', {
-        value: vi.fn().mockReturnValue(false),
-        writable: true
-      });
-      Object.defineProperty(component, 'outputNumberFormat', {
-        value: vi.fn().mockReturnValue(PhoneNumberFormat.INTERNATIONAL),
-        writable: true
-      });
-    });
-
-    it('should return base margin for international format', () => {
-      const result = component['calculateSafetyMargin']();
-      expect(result).toBe(2); // 1 base + 1 for international
-    });
-
-    it('should add margin for includeDialCode', () => {
-      Object.defineProperty(component, 'includeDialCode', {
-        value: vi.fn().mockReturnValue(true),
-        writable: true
-      });
-
-      const result = component['calculateSafetyMargin']();
-      expect(result).toBe(3); // 1 base + 1 for includeDialCode + 1 for international
-    });
-
-    it('should handle RFC3966 format', () => {
-      Object.defineProperty(component, 'outputNumberFormat', {
-        value: vi.fn().mockReturnValue(PhoneNumberFormat.RFC3966),
-        writable: true
-      });
-
-      const result = component['calculateSafetyMargin']();
-      expect(result).toBe(3); // 1 base + 2 for RFC3966
-    });
-
-    it('should handle E164 format', () => {
-      Object.defineProperty(component, 'outputNumberFormat', {
-        value: vi.fn().mockReturnValue(PhoneNumberFormat.E164),
-        writable: true
-      });
-
-      const result = component['calculateSafetyMargin']();
-      expect(result).toBe(1); // 1 base + 0 for E164
-    });
-  });
-
-  describe('calculateFormattingBuffer', () => {
-    it('should calculate formatting buffer based on example numbers', () => {
-      const result = component['calculateFormattingBuffer']('us', 10);
-      expect(result).toBeGreaterThanOrEqual(0);
-    });
-
-    it('should return default buffer when no examples available', () => {
-      const result = component['calculateFormattingBuffer']('xx', 10);
-      expect(result).toBe(4); // Default fallback
-    });
-
-    it('should handle PhoneNumberUtil.getInstance() errors gracefully', () => {
-      // Mock PhoneNumberUtil.getInstance to throw an error
-      const originalGetInstance = PhoneNumberUtil.getInstance;
-      vi.spyOn(PhoneNumberUtil, 'getInstance').mockImplementation(() => {
-        throw new Error('PhoneNumberUtil error');
-      });
-
-      const result = component['calculateFormattingBuffer']('us', 10);
-      expect(result).toBe(4); // Fallback value from outer catch block
-
-      // Restore original implementation
-      PhoneNumberUtil.getInstance = originalGetInstance;
-    });
-  });
-
-  describe('main label rendering with appearance', () => {
-    const emptyTextLabels = {
-      mainLabel: '',
-      codePlaceholder: '',
-      searchPlaceholderLabel: '',
-      noEntriesFoundLabel: '',
-      nationalNumberLabel: '',
-      hintLabel: '',
-      invalidNumberError: '',
-      requiredError: '',
-      numberTooLongError: ''
+  // These cases moved here from tel.validators.spec.ts when the validator was
+  // made pure: the writes it used to perform now happen in applyValueToTelForm,
+  // so they are asserted against the real component instead of a bare
+  // validator call.
+  describe('value sync (was validator side effects)', () => {
+    const setExternalValue = (value: string) => {
+      component.fieldControl()?.setValue(value);
+      fixture.detectChanges();
     };
 
-    describe('resolvedMainLabel', () => {
-      it('should prefer mainLabel input over textLabels.mainLabel', () => {
-        fixture.componentRef.setInput('mainLabel', 'Custom label');
-        fixture.componentRef.setInput('textLabels', {
-          ...emptyTextLabels,
-          mainLabel: 'Fallback'
-        });
-        expect(component.resolvedMainLabel()).toBe('Custom label');
-      });
+    it('should format the number into the input in NATIONAL format by default', () => {
+      setExternalValue('+1 201 555 0123');
 
-      it('should fall back to textLabels.mainLabel when mainLabel is empty', () => {
-        fixture.componentRef.setInput('mainLabel', '');
-        fixture.componentRef.setInput('textLabels', {
-          ...emptyTextLabels,
-          mainLabel: 'Fallback label'
-        });
-        expect(component.resolvedMainLabel()).toBe('Fallback label');
-      });
+      expect(component.telForm.get('numberControl')?.value).toContain('201');
+      expect(component.telForm.get('numberControl')?.value).not.toContain('+1');
+    });
 
-      it('should be empty when neither mainLabel nor textLabels.mainLabel is set', () => {
-        fixture.componentRef.setInput('mainLabel', '');
-        fixture.componentRef.setInput('textLabels', emptyTextLabels);
-        expect(component.resolvedMainLabel()).toBe('');
+    it('should format the number into the input in INTERNATIONAL format when includeDialCode is true', () => {
+      fixture.componentRef.setInput('includeDialCode', true);
+      fixture.detectChanges();
+
+      setExternalValue('+1 201 555 0123');
+
+      expect(component.telForm.get('numberControl')?.value).toContain('+1');
+    });
+
+    it('should format an MP number under the resolved country', () => {
+      setExternalValue('+1 670 234 5678');
+
+      expect(component.telForm.get('numberControl')?.value).toBe(
+        '(670) 234-5678'
+      );
+      expect(component.prefixCtrl.value?.iso2).toBe('mp');
+    });
+
+    it('should keep MP selected while typing a national number', () => {
+      const mp = component.allCountries.find(
+        (country) => country.iso2 === 'mp'
+      );
+      component.prefixCtrl.setValue(mp ?? null);
+
+      component.telForm.get('numberControl')?.setValue('(670) 234-5678');
+      fixture.detectChanges();
+
+      expect(component.prefixCtrl.value?.iso2).toBe('mp');
+      expect(component.telForm.get('numberControl')?.value).toBe(
+        '(670) 234-5678'
+      );
+      expect(component.fieldControl()?.value).toBe('+1 670-234-5678');
+    });
+
+    it('should format an external value under the country replacing an MP selection', () => {
+      const mp = component.allCountries.find(
+        (country) => country.iso2 === 'mp'
+      );
+      component.prefixCtrl.setValue(mp ?? null, { emitEvent: false });
+
+      setExternalValue('+41 44 668 18 00');
+
+      expect(component.prefixCtrl.value?.iso2).toBe('ch');
+      expect(component.telForm.get('numberControl')?.value).toBe(
+        '044 668 18 00'
+      );
+    });
+
+    it('should select the priority country when several share a dial code', () => {
+      fixture.componentRef.setInput('includeDialCode', true);
+      fixture.detectChanges();
+
+      setExternalValue('+599 9 518 1234'); // Curaçao
+
+      expect(component.prefixCtrl.value?.iso2).toBe('cw'); // Curaçao has priority 0
+    });
+
+    it('should fall back to the parsed country code when no country is selected and the dial code is included', () => {
+      fixture.componentRef.setInput('includeDialCode', true);
+      component.prefixCtrl.setValue(null);
+      fixture.detectChanges();
+
+      setExternalValue('+1 201 555 0123');
+
+      expect(component.prefixCtrl.value?.iso2).toBe('us');
+    });
+
+    it('should not rewrite the country when it is already selected', () => {
+      setExternalValue('+1 201 555 0123');
+      const prefixSetValueSpy = vi.spyOn(component.prefixCtrl, 'setValue');
+
+      setExternalValue('+1 202 555 0125');
+
+      expect(prefixSetValueSpy).not.toHaveBeenCalled();
+    });
+
+    it('should write to telForm without emitting events', () => {
+      const numberSetValueSpy = vi.spyOn(
+        component.telForm.get('numberControl')!,
+        'setValue'
+      );
+
+      setExternalValue('+1 201 555 0123');
+
+      expect(numberSetValueSpy).toHaveBeenCalledWith(expect.any(String), {
+        emitEvent: false
       });
     });
 
-    describe('isOutlineWithLabel', () => {
-      it('should be true when appearance is outline and a label is resolved', () => {
-        fixture.componentRef.setInput('appearance', 'outline');
-        fixture.componentRef.setInput('mainLabel', 'Phone');
-        expect(component.isOutlineWithLabel()).toBe(true);
-      });
+    it('should mirror the number errors onto the number input', () => {
+      setExternalValue('+1 123');
 
-      it('should be false when appearance is fill even if a label is resolved', () => {
-        fixture.componentRef.setInput('appearance', 'fill');
-        fixture.componentRef.setInput('mainLabel', 'Phone');
-        expect(component.isOutlineWithLabel()).toBe(false);
+      expect(component.fieldControl()?.errors).toEqual({
+        invalidNumber: true
       });
-
-      it('should be false when appearance is outline but no label is resolved', () => {
-        fixture.componentRef.setInput('appearance', 'outline');
-        fixture.componentRef.setInput('mainLabel', '');
-        fixture.componentRef.setInput('textLabels', emptyTextLabels);
-        expect(component.isOutlineWithLabel()).toBe(false);
+      expect(component.telForm.get('numberControl')?.errors).toEqual({
+        invalidNumber: true
       });
     });
 
-    describe('template', () => {
-      it('should render the top-level .main-label for fill + label', () => {
-        fixture.componentRef.setInput('appearance', 'fill');
-        fixture.componentRef.setInput('mainLabel', 'Phone number');
-        fixture.detectChanges();
-
-        const topLabel: HTMLElement | null =
-          fixture.nativeElement.querySelector('section > .main-label');
-        expect(topLabel).toBeTruthy();
-        expect(topLabel?.textContent?.trim()).toBe('Phone number');
+    it('should clear the number input errors when the number becomes valid', () => {
+      setExternalValue('+1 123');
+      expect(component.telForm.get('numberControl')?.errors).toEqual({
+        invalidNumber: true
       });
 
-      it('should not render the top-level .main-label for outline + label', () => {
-        fixture.componentRef.setInput('appearance', 'outline');
-        fixture.componentRef.setInput('mainLabel', 'Phone number');
-        fixture.detectChanges();
+      setExternalValue('+1 201 555 0123');
 
-        const topLabel = fixture.nativeElement.querySelector(
-          'section > .main-label'
-        );
-        expect(topLabel).toBeFalsy();
+      expect(component.fieldControl()?.errors).toBeNull();
+      expect(component.telForm.get('numberControl')?.errors).toBeNull();
+    });
+
+    it('should mirror numberTooLong onto the number input', () => {
+      const lengthSpy = vi
+        .spyOn(phoneNumberUtils, 'isValidPhoneNumberLength')
+        .mockReturnValue(false);
+
+      setExternalValue('+1 201 555 0123');
+
+      expect(component.fieldControl()?.errors).toEqual({
+        numberTooLong: true
+      });
+      expect(component.telForm.get('numberControl')?.errors).toEqual({
+        numberTooLong: true
+      });
+      lengthSpy.mockRestore();
+    });
+
+    it('should not mirror errors onto the number input when numberValidation is off', () => {
+      const localFixture = TestBed.createComponent(
+        NgxMaterialIntlTelInputComponent
+      );
+      localFixture.componentRef.setInput('numberValidation', false);
+      localFixture.detectChanges();
+      const localComponent = localFixture.componentInstance;
+
+      localComponent.fieldControl()?.setValue('+1 123');
+      localFixture.detectChanges();
+
+      expect(localComponent.telForm.get('numberControl')?.errors).toBeNull();
+      localFixture.destroy();
+    });
+
+    it('should leave the input untouched while typing when numberValidation is off', () => {
+      const localFixture = TestBed.createComponent(
+        NgxMaterialIntlTelInputComponent
+      );
+      localFixture.componentRef.setInput('numberValidation', false);
+      localFixture.detectChanges();
+      const localComponent = localFixture.componentInstance;
+      const spain = localComponent.allCountries.find((c) => c.iso2 === 'es');
+      localComponent.prefixCtrl.setValue(spain ?? null);
+
+      localComponent.telForm.get('numberControl')?.setValue('612345678');
+      localFixture.detectChanges();
+
+      // typed text stays raw; only an outside write repaints it
+      expect(localComponent.telForm.get('numberControl')?.value).toBe(
+        '612345678'
+      );
+      expect(localComponent.fieldControl()?.value).toBe('+34 612 34 56 78');
+      localFixture.destroy();
+    });
+
+    // numberValidation off is the discriminating case: only an external write
+    // repaints the input, so a value-source flag left stuck on 'input' by a
+    // throwing write is visible as a missing repaint
+    it('should keep classifying writes after one throws', () => {
+      const localFixture = TestBed.createComponent(
+        NgxMaterialIntlTelInputComponent
+      );
+      localFixture.componentRef.setInput('numberValidation', false);
+      localFixture.detectChanges();
+      const localComponent = localFixture.componentInstance;
+      const control = localComponent.fieldControl()!;
+      vi.spyOn(control, 'setValue').mockImplementationOnce(() => {
+        throw new Error('consumer validator blew up');
       });
 
-      it('should add has-main-label class to the prefix form field for outline + label', () => {
-        fixture.componentRef.setInput('appearance', 'outline');
-        fixture.componentRef.setInput('mainLabel', 'Phone number');
-        fixture.detectChanges();
+      expect(() =>
+        localComponent['setFieldControlValue']('+34612345678')
+      ).toThrow();
 
-        const prefixField: HTMLElement =
-          fixture.nativeElement.querySelector('.prefix-form-field');
-        expect(prefixField.classList.contains('has-main-label')).toBe(true);
-      });
+      control.setValue('+41446681800');
+      localFixture.detectChanges();
 
-      it('should not add has-main-label class for fill + label', () => {
-        fixture.componentRef.setInput('appearance', 'fill');
-        fixture.componentRef.setInput('mainLabel', 'Phone number');
-        fixture.detectChanges();
-
-        const prefixField: HTMLElement =
-          fixture.nativeElement.querySelector('.prefix-form-field');
-        expect(prefixField.classList.contains('has-main-label')).toBe(false);
-      });
-
-      it('should not add has-main-label class for outline + no label', () => {
-        fixture.componentRef.setInput('appearance', 'outline');
-        fixture.componentRef.setInput('mainLabel', '');
-        fixture.componentRef.setInput('textLabels', emptyTextLabels);
-        fixture.detectChanges();
-
-        const prefixField: HTMLElement =
-          fixture.nativeElement.querySelector('.prefix-form-field');
-        expect(prefixField.classList.contains('has-main-label')).toBe(false);
-      });
-
-      it('should render the mat-label inside the prefix form field for outline + label', () => {
-        fixture.componentRef.setInput('appearance', 'outline');
-        fixture.componentRef.setInput('mainLabel', 'Phone number');
-        fixture.detectChanges();
-
-        const prefixLabel: HTMLElement | null =
-          fixture.nativeElement.querySelector('.prefix-form-field mat-label');
-        expect(prefixLabel).toBeTruthy();
-        expect(prefixLabel?.textContent?.trim()).toBe('Phone number');
-      });
-
-      it('should render the national number label for outline + mainLabel + nationalNumberLabel', () => {
-        fixture.componentRef.setInput('appearance', 'outline');
-        fixture.componentRef.setInput('mainLabel', 'Phone number');
-        fixture.componentRef.setInput('textLabels', {
-          ...emptyTextLabels,
-          nationalNumberLabel: 'Number'
-        });
-        fixture.detectChanges();
-
-        const numberLabel: HTMLElement | null =
-          fixture.nativeElement.querySelector('.number-form-field mat-label');
-        expect(numberLabel).toBeTruthy();
-        expect(numberLabel?.textContent?.trim()).toBe('Number');
-      });
-
-      it('should omit the national number label by default', () => {
-        fixture.componentRef.setInput('appearance', 'outline');
-        fixture.componentRef.setInput('mainLabel', 'Phone number');
-        fixture.detectChanges();
-
-        const numberLabel = fixture.nativeElement.querySelector(
-          '.number-form-field mat-label'
-        );
-        expect(numberLabel).toBeFalsy();
-      });
-
-      it('should render the national number label for fill + nationalNumberLabel', () => {
-        fixture.componentRef.setInput('appearance', 'fill');
-        fixture.componentRef.setInput('mainLabel', 'Phone number');
-        fixture.componentRef.setInput('textLabels', {
-          ...emptyTextLabels,
-          nationalNumberLabel: 'Number'
-        });
-        fixture.detectChanges();
-
-        const numberLabel: HTMLElement | null =
-          fixture.nativeElement.querySelector('.number-form-field mat-label');
-        expect(numberLabel).toBeTruthy();
-        expect(numberLabel?.textContent?.trim()).toBe('Number');
-      });
+      expect(localComponent.telForm.get('numberControl')?.value).toBe(
+        '044 668 18 00'
+      );
+      localFixture.destroy();
     });
   });
 
@@ -1597,7 +1534,7 @@ describe('NgxMaterialIntlTelInputComponent', () => {
       expect(component.isLoading()).toBe(false);
     });
 
-    it('should format the initial value with the output format for Northern Mariana Islands', () => {
+    it('should format the initial value in national format for Northern Mariana Islands', () => {
       const numberControlSetValue = vi.fn();
       component.telForm = {
         value: { prefixCtrl: { iso2: 'mp' } },
@@ -1610,7 +1547,7 @@ describe('NgxMaterialIntlTelInputComponent', () => {
 
       component['setInitialTelValue']();
 
-      expect(numberControlSetValue).toHaveBeenCalledWith('+1 670-234-5678');
+      expect(numberControlSetValue).toHaveBeenCalledWith('(670) 234-5678');
     });
 
     it('should compute max input length when the number control is missing', () => {
@@ -1618,388 +1555,5 @@ describe('NgxMaterialIntlTelInputComponent', () => {
 
       expect(component.getMaxInputLength('us')).toBeGreaterThan(0);
     });
-
-    it('should treat a valid but unformatted number as not formatted', () => {
-      component.prefixCtrl.setValue({ dialCode: '34' } as Country);
-
-      expect(
-        component['isCurrentNumberValidAndFormatted']('612345678', 'es')
-      ).toBe(false);
-    });
-
-    it('should treat a valid formatted number as formatted', () => {
-      component.prefixCtrl.setValue({ dialCode: '34' } as Country);
-
-      expect(
-        component['isCurrentNumberValidAndFormatted']('612 34 56 78', 'es')
-      ).toBe(true);
-    });
-
-    it('should handle example numbers without a national number when calculating formatting buffer', () => {
-      const exampleSpy = vi
-        .spyOn(PhoneNumberUtil.prototype, 'getExampleNumberForType')
-        .mockReturnValue({ getNationalNumber: () => null } as any);
-      const formatSpy = vi
-        .spyOn(PhoneNumberUtil.prototype, 'format')
-        .mockReturnValue('123 456');
-
-      expect(component['calculateFormattingBuffer']('us', 10)).toBe(7);
-
-      exampleSpy.mockRestore();
-      formatSpy.mockRestore();
-    });
-  });
-
-  describe('template branch rendering', () => {
-    const spain: Country = {
-      emojiFlag: '🇪🇸',
-      name: 'Spain (España)',
-      iso2: 'es',
-      dialCode: '34',
-      priority: 0,
-      htmlId: 'country-code__es',
-      flagClass: 'country-code__es',
-      placeHolder: '612 34 56 78'
-    } as Country;
-
-    it('should toggle the focused class on input focus and blur', () => {
-      const input: HTMLInputElement =
-        fixture.nativeElement.querySelector('input[type="tel"]');
-
-      input.dispatchEvent(new Event('focus'));
-      fixture.detectChanges();
-      expect(component.isFocused()).toBe(true);
-      expect(
-        fixture.nativeElement
-          .querySelector('.tel-form')
-          .classList.contains('is-focused')
-      ).toBe(true);
-
-      input.dispatchEvent(new Event('blur'));
-      fixture.detectChanges();
-      expect(component.isFocused()).toBe(false);
-    });
-
-    it('should render emoji flags in the trigger and options when emojiFlags is enabled', () => {
-      fixture.componentRef.setInput('emojiFlags', true);
-      component.prefixCtrl.setValue(spain);
-      component.isLoading.set(false);
-      fixture.detectChanges();
-
-      expect(fixture.nativeElement.querySelector('.flag-emoji')).toBeTruthy();
-
-      component.singleSelect()?.open();
-      fixture.detectChanges();
-
-      expect(document.querySelectorAll('.flag-emoji').length).toBeGreaterThan(
-        1
-      );
-    });
-
-    it('should show the ISO code in the trigger when includeDialCode is enabled', () => {
-      fixture.componentRef.setInput('includeDialCode', true);
-      component.prefixCtrl.setValue(spain);
-      component.isLoading.set(false);
-      fixture.detectChanges();
-
-      const trigger: HTMLElement =
-        fixture.nativeElement.querySelector('.country-option');
-      expect(trigger.textContent).toContain('ES');
-    });
-
-    it('should render an empty trigger when the selected country has no ISO code', async () => {
-      const noIsoCountry = { dialCode: '34', iso2: '' } as Country;
-      component.filteredCountries.next([noIsoCountry]);
-      fixture.componentRef.setInput('includeDialCode', true);
-      component.prefixCtrl.setValue(noIsoCountry);
-      component.isLoading.set(false);
-      fixture.detectChanges();
-      // mat-select re-initializes its selection in a microtask after the
-      // options list changes
-      await Promise.resolve();
-      fixture.detectChanges();
-
-      const trigger: HTMLElement =
-        fixture.nativeElement.querySelector('.country-option');
-      expect(trigger.textContent?.trim()).toBe('');
-    });
-
-    it('should resolve the number input element through the view child signal', () => {
-      expect(component.numberInput()?.nativeElement).toBeInstanceOf(
-        HTMLInputElement
-      );
-    });
-
-    it('should not render the country search when enableSearch is disabled', () => {
-      fixture.componentRef.setInput('enableSearch', false);
-      fixture.detectChanges();
-
-      component.singleSelect()?.open();
-      fixture.detectChanges();
-
-      expect(document.querySelector('ngx-mat-select-search')).toBeFalsy();
-    });
-
-    it('should hide the phone icon when hidePhoneIcon is enabled', () => {
-      fixture.componentRef.setInput('hidePhoneIcon', true);
-      fixture.detectChanges();
-
-      expect(
-        fixture.nativeElement.querySelector('.number-form-field mat-icon')
-      ).toBeFalsy();
-    });
-
-    it('should render a tel link when the field control holds a valid value', () => {
-      component.telForm.get('numberControl')?.setValue('+34678906543');
-      fixture.detectChanges();
-
-      const link: HTMLAnchorElement | null =
-        fixture.nativeElement.querySelector('a[href^="tel:"]');
-      expect(link).toBeTruthy();
-    });
-
-    it('should render the required error when the control is dirty', () => {
-      const fc = new FormControl('');
-      fc.markAsDirty();
-      component.fieldControl.set(fc);
-      component.required.set(true);
-      fixture.detectChanges();
-
-      const error: HTMLElement | null =
-        fixture.nativeElement.querySelector('mat-error');
-      expect(error?.textContent).toContain('This field is required');
-    });
-
-    it('should render the invalid number error', () => {
-      const fc = new FormControl('123', () => ({ invalidNumber: true }));
-      component.fieldControl.set(fc);
-      fixture.detectChanges();
-
-      const error: HTMLElement | null =
-        fixture.nativeElement.querySelector('mat-error');
-      expect(error?.textContent).toContain('Number is not valid');
-    });
-
-    it('should render the number too long error', () => {
-      const fc = new FormControl('123456789012345678', () => ({
-        numberTooLong: true
-      }));
-      component.fieldControl.set(fc);
-      fixture.detectChanges();
-
-      const error: HTMLElement | null =
-        fixture.nativeElement.querySelector('mat-error');
-      expect(error?.textContent).toContain('Phone number is too long');
-    });
-
-    it('should show the code placeholder once loading has finished', () => {
-      component.isLoading.set(false);
-      fixture.detectChanges();
-
-      const select: HTMLElement =
-        fixture.nativeElement.querySelector('mat-select');
-      expect(
-        select.getAttribute('aria-label') ?? select.textContent
-      ).toBeDefined();
-      expect(component.singleSelect()?.placeholder).toBe('Code');
-    });
-  });
-});
-
-@Component({
-  imports: [NgxMaterialIntlTelInputComponent, FormField],
-  template: `<ngx-material-intl-tel-input
-    [formField]="phoneForm.phone"
-    [autoSelectCountry]="false"
-  />`
-})
-class SignalFormsHostComponent {
-  telInput = viewChild.required(NgxMaterialIntlTelInputComponent);
-  model = signal({ phone: '' });
-  phoneForm = form(this.model, (path) => {
-    required(path.phone);
-    validate(path.phone, validPhoneNumber);
-  });
-}
-
-@Component({
-  imports: [NgxMaterialIntlTelInputComponent, FormField],
-  template: `<ngx-material-intl-tel-input
-    [formField]="phoneForm.phone"
-    [autoSelectCountry]="false"
-  />`
-})
-class PrepopulatedSignalFormsHostComponent {
-  telInput = viewChild.required(NgxMaterialIntlTelInputComponent);
-  model = signal({ phone: '+41446681800' });
-  phoneForm = form(this.model, (path) => {
-    validate(path.phone, validPhoneNumber);
-  });
-}
-
-@Component({
-  imports: [NgxMaterialIntlTelInputComponent, FormField],
-  template: `<ngx-material-intl-tel-input [formField]="phoneForm.phone" />`
-})
-class DisabledSignalFormsHostComponent {
-  telInput = viewChild.required(NgxMaterialIntlTelInputComponent);
-  model = signal({ phone: '' });
-  phoneForm = form(this.model, (path) => {
-    disabled(path.phone);
-  });
-}
-
-describe('NgxMaterialIntlTelInputComponent with Signal Forms', () => {
-  let hostFixture: ComponentFixture<SignalFormsHostComponent>;
-  let host: SignalFormsHostComponent;
-  const geoIpServiceMock = {
-    geoIpLookup: vi.fn().mockReturnValue(of({} as GeoData))
-  };
-
-  beforeEach(async () => {
-    await TestBed.configureTestingModule({
-      imports: [
-        SignalFormsHostComponent,
-        PrepopulatedSignalFormsHostComponent,
-        DisabledSignalFormsHostComponent
-      ],
-      providers: [{ provide: GeoIpService, useValue: geoIpServiceMock }]
-    }).compileComponents();
-
-    hostFixture = TestBed.createComponent(SignalFormsHostComponent);
-    host = hostFixture.componentInstance;
-    hostFixture.detectChanges();
-  });
-
-  afterEach(() => {
-    hostFixture?.destroy();
-    vi.clearAllMocks();
-  });
-
-  it('should create when bound via the formField directive without a ControlContainer', () => {
-    expect(host.telInput()).toBeTruthy();
-  });
-
-  it('should propagate a field value set on the form into the component', async () => {
-    host.phoneForm.phone().value.set('+34612345678');
-    hostFixture.detectChanges();
-    await hostFixture.whenStable();
-    hostFixture.detectChanges();
-
-    expect(host.telInput().fieldControl()?.value).toBe('+34 612 34 56 78');
-  });
-
-  it('should repaint the country selector and number input when the field value is set on the form', async () => {
-    host.phoneForm.phone().value.set('+34612345678');
-    hostFixture.detectChanges();
-    await hostFixture.whenStable();
-    hostFixture.detectChanges();
-
-    const telInput = host.telInput();
-    expect(telInput.prefixCtrl.value?.iso2).toBe('es');
-    expect(telInput.telForm.get('numberControl')?.value).toBe('612 34 56 78');
-  });
-
-  it('should populate the input and country from a pre-populated form model on init', async () => {
-    const prepopulatedFixture = TestBed.createComponent(
-      PrepopulatedSignalFormsHostComponent
-    );
-    prepopulatedFixture.detectChanges();
-    await prepopulatedFixture.whenStable();
-    await new Promise((resolve) => setTimeout(resolve));
-    prepopulatedFixture.detectChanges();
-
-    const telInput = prepopulatedFixture.componentInstance.telInput();
-    expect(telInput.prefixCtrl.value?.iso2).toBe('ch');
-    expect(telInput.telForm.get('numberControl')?.value).toBe('044 668 18 00');
-    expect(telInput.fieldControl()?.value).toBe('+41 44 668 18 00');
-    expect(
-      prepopulatedFixture.componentInstance.phoneForm.phone().valid()
-    ).toBe(true);
-    prepopulatedFixture.destroy();
-  });
-
-  it('should propagate typed input back into the form model', async () => {
-    const telInput = host.telInput();
-    const spain = telInput.allCountries.find((c) => c.iso2 === 'es');
-    telInput.prefixCtrl.setValue(spain ?? null);
-    telInput.telForm.get('numberControl')?.setValue('612345678');
-    hostFixture.detectChanges();
-    await hostFixture.whenStable();
-
-    expect(host.model().phone).toBe('+34 612 34 56 78');
-    expect(host.phoneForm.phone().valid()).toBe(true);
-  });
-
-  it('should mark the field as invalid for an invalid phone number', async () => {
-    host.phoneForm.phone().value.set('+34 123');
-    hostFixture.detectChanges();
-    await hostFixture.whenStable();
-
-    expect(host.phoneForm.phone().invalid()).toBe(true);
-    expect(
-      host.phoneForm
-        .phone()
-        .errors()
-        .some((error) => error.kind === 'invalidNumber')
-    ).toBe(true);
-  });
-
-  it('should mark the field as touched on input blur', async () => {
-    expect(host.phoneForm.phone().touched()).toBe(false);
-    host.telInput().onInputBlur();
-    hostFixture.detectChanges();
-    await hostFixture.whenStable();
-
-    expect(host.phoneForm.phone().touched()).toBe(true);
-  });
-
-  it('should mark the field as dirty when the user types a number', async () => {
-    expect(host.phoneForm.phone().dirty()).toBe(false);
-    const telInput = host.telInput();
-    const spain = telInput.allCountries.find((c) => c.iso2 === 'es');
-    telInput.prefixCtrl.setValue(spain ?? null);
-    telInput.telForm.get('numberControl')?.setValue('612345678');
-    hostFixture.detectChanges();
-    await hostFixture.whenStable();
-
-    expect(host.phoneForm.phone().dirty()).toBe(true);
-  });
-
-  it('should stay consistent through alternating external writes and typed input', async () => {
-    const telInput = host.telInput();
-
-    host.phoneForm.phone().value.set('+34612345678');
-    hostFixture.detectChanges();
-    await hostFixture.whenStable();
-
-    host.phoneForm.phone().value.set('+41446681800');
-    hostFixture.detectChanges();
-    await hostFixture.whenStable();
-    hostFixture.detectChanges();
-
-    expect(telInput.prefixCtrl.value?.iso2).toBe('ch');
-    expect(telInput.telForm.get('numberControl')?.value).toBe('044 668 18 00');
-
-    telInput.telForm.get('numberControl')?.setValue('446681801');
-    hostFixture.detectChanges();
-    await hostFixture.whenStable();
-
-    expect(host.model().phone).toBe('+41 44 668 18 01');
-    expect(telInput.fieldControl()?.value).toBe('+41 44 668 18 01');
-  });
-
-  it('should disable the component when the schema disables the field', async () => {
-    const disabledFixture = TestBed.createComponent(
-      DisabledSignalFormsHostComponent
-    );
-    disabledFixture.detectChanges();
-    await disabledFixture.whenStable();
-
-    expect(disabledFixture.componentInstance.telInput().disabled()).toBe(true);
-    expect(disabledFixture.componentInstance.telInput().telForm.disabled).toBe(
-      true
-    );
-    disabledFixture.destroy();
   });
 });

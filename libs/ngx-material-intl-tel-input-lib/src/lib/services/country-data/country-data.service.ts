@@ -49,7 +49,7 @@ export class CountryDataService {
       iso2: isoCode,
       dialCode: countryData[3].toString(),
       priority: (countryData?.[4] && +countryData[4]) || 0,
-      areaCodes: (countryData[5] as string[]) || undefined,
+      areaCodes: countryData[5] || undefined,
       htmlId: `country-code__${countryData[2].toString()}`,
       flagClass: `country-code__${countryData[2].toString().toLocaleLowerCase()}`,
       placeHolder: enablePlaceholder ? phoneNumberPlaceholder : ''
@@ -115,9 +115,7 @@ export class CountryDataService {
           countryCode,
           PhoneNumberType.MOBILE
         ),
-        includeDialCode || countryCode === 'MP'
-          ? outputNumberFormat
-          : PhoneNumberFormat.NATIONAL
+        includeDialCode ? outputNumberFormat : PhoneNumberFormat.NATIONAL
       );
     } catch {
       return '';

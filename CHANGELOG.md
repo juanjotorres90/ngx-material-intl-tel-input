@@ -6,26 +6,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [22.1.0] - 2026-??-??
+## [22.1.0] - 2026-08-01
 
 ### Added
 
-- Add initial Angular Signal Forms support: the component now implements the `FormValueControl<string>` contract, so it can be bound directly to a field with `[formField]="form.phone"` — no `fieldControl` or parent `[formGroup]` required. Schema `required(...)` and `disabled(...)` rules are reflected in the Material field, and the field is marked touched on input blur.
-- Add exported `validPhoneNumber` Signal Forms schema validator that checks the emitted international number with `google-libphonenumber` and reports an `invalidNumber` error kind (use with `validate(path.phone, validPhoneNumber)`).
+- Add initial Angular Signal Forms support: the component implements `FormValueControl<string>`, so it binds with `[formField]="form.phone"` without a `fieldControl` or parent `[formGroup]`. Schema `required` and `disabled` rules reach the Material field, and blur marks the field touched.
+- Add exported `validPhoneNumber` Signal Forms schema validator, reporting an `invalidNumber` error kind (use with `validate(path.phone, validPhoneNumber)`).
 
 ### Fixed
 
+- Fix the cursor jumping back one position while typing with `useMask` ([#80](https://github.com/juanjotorres90/ngx-material-intl-tel-input/issues/80)).
+- Fix typing being blocked with `useMask` when the masked value fills the input (e.g. `includeDialCode` with `showMaskPlaceholder`): `maxlength` is no longer set in mask mode, since the mask enforces the length itself.
+- Fix broken masks for dial codes containing a `0` or `9` (+380 Ukraine, +90 Turkey), which became editable slots instead of literals.
+- Fix changing the country with `useMask` and `includeDialCode` pushing the old number through the previous mask and reverting the selection.
+- Fix pasting or typing a full international number into the national input: it was truncated by `maxlength` and emitted as an unparseable `+34+41 44 668 18 00`. The country now switches to match the number.
+- Fix territories sharing a calling code being listed with their area code merged into the dial code (Dominica `1767`, Grenada `1473`, Saint Kitts and Nevis `1869`, Northern Mariana Islands `1670`, Turks and Caicos Islands `1649`). They now carry the calling code in `dialCode` and the rest in `areaCodes`, removing the per-country special cases.
+- Apply `autoSelectedCountry` to an `initialValue` that resolves no country of its own. Without it the selector is left empty on purpose: a stored national number that lost its prefix (`675476745`) parses under whichever country is selected, so it is shown as stored and resolves once the user picks a country.
+- Mark the Reactive Forms control as touched on blur; only the Signal Forms `touch` output fired before.
+- Repaint the country selector and number input on an external value write while `numberValidation` is disabled.
 - Allow using the component without a parent Reactive Forms directive: the `ControlContainer` dependency is now optional instead of throwing at creation.
-- Repaint the country selector and number input when the control value is set externally (Reactive Forms `setValue` or a Signal Forms field write) while `numberValidation` is disabled; previously only the validator's side effects updated the visible input.
-- Fix the `'outline'` appearance with a main label: long labels no longer overflow the country selector's notched outline and get struck through by the number field's border — the selector now grows to fit the label. Focus and error states are also mirrored across both outlined fields so the fused control no longer shows a mismatched seam.
-- Fix the cursor jumping back one position while typing with `useMask` enabled: the manual cursor restore now defers to the mask, which already manages the caret ([#80](https://github.com/juanjotorres90/ngx-material-intl-tel-input/issues/80)).
-- Fix typing being completely blocked with `useMask` when the masked value fills the input (e.g. `includeDialCode` with `showMaskPlaceholder`): the `maxlength` attribute is no longer set in mask mode — the mask itself enforces the exact length.
-- Fix broken masks for countries whose dial code contains a `0` or `9` (e.g. +380 Ukraine, +90 Turkey): those digits are imask definition characters and became editable slots — they are now escaped to stay literal.
-- Fix changing the country with `useMask` and `includeDialCode`: the old number was pushed through the previous country's mask (mangling the dial code) and the validator then reverted the country selection. The number input is now cleared on country change and the new mask renders its own dial code.
+- Fix long main labels overflowing the country selector's notched outline with `appearance="outline"`, and mirror focus and error states across both fused fields.
 
 ### Changed
 
+- **Breaking:** `currentCountryCode` now emits the shared calling code for territories whose area code used to be part of their dial code — `+1` instead of `+1767` for Dominica, and likewise Grenada, Saint Kitts and Nevis, Northern Mariana Islands and Turks and Caicos Islands. Use `currentCountryISO` to tell them apart.
+- With `includeDialCode`, selecting a country with exactly one area code now prefills the full prefix (`+1 876` Jamaica, `+44 1481` Guernsey) instead of only the calling code. Countries with several area codes (Puerto Rico, Dominican Republic) are unchanged.
 - Migrate project from Jest to Vitest for unit testing.
+- Add a Playwright end-to-end suite (`apps/ngx-material-intl-tel-input-e2e`) driving the component in a real browser through a query-param harness route in the demo app, covering caret handling, masks, country switching and search, pasting, undo and cut, validation feedback, input length bounds, form reset, initial values, Signal Forms, and the `'outline'` layout — behavior jsdom cannot observe. It runs on every pull request through `nx affected -t lint test build e2e`.
 
 ## [22.0.0] - 2026-07-14
 

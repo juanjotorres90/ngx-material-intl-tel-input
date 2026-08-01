@@ -59,11 +59,14 @@ npx nx test ngx-material-intl-tel-input-lib
 npx nx test ngx-material-intl-tel-input-lib --include='**/file.spec.ts'
 npx nx lint ngx-material-intl-tel-input-lib
 npx nx build ngx-material-intl-tel-input-lib
-npx nx affected -t lint test build
+npx nx e2e ngx-material-intl-tel-input-e2e
+npx nx affected -t lint test build e2e
 ```
 
-For Vitest migration-specific constraints, read
-`JEST_TO_VITEST_MIGRATION_GUIDE.md`.
+Caret, mask, and layout behavior belongs in the Playwright suite
+(`apps/ngx-material-intl-tel-input-e2e`), which drives the demo app's `/e2e`
+harness route — jsdom cannot observe it. See the "Browser tests" section of
+`AGENTS.md`.
 
 <!-- nx configuration start-->
 <!-- Leave the start & end comments to automatically receive updates. -->

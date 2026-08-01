@@ -1,15 +1,18 @@
-import { AbstractControl, FormGroup, ValidatorFn } from '@angular/forms';
-import { PhoneNumberFormat, PhoneNumberUtil } from 'google-libphonenumber';
-import { Country } from '../types/country.model';
+import { AbstractControl, ValidatorFn } from '@angular/forms';
+import { PhoneNumberUtil } from 'google-libphonenumber';
 import { phoneNumberUtils } from '../utils/phone-number.utils';
 
 export default class TelValidators {
-  static isValidNumber(
-    telForm: FormGroup,
-    includeDialCode = false,
-    allCountries: Country[],
-    outputNumberFormat: PhoneNumberFormat = PhoneNumberFormat.INTERNATIONAL
-  ): ValidatorFn {
+  /**
+   * Validates the international number held by a control.
+   *
+   * The verdict depends on the number alone, never on the selected country or
+   * on which countries are visible: both checks read the number's own country
+   * out of the value. Repainting the country selector and the number input
+   * belongs to the component (`applyValueToTelForm`), so those writes happen
+   * where the caller can see them instead of inside a validation pass.
+   */
+  static isValidNumber(): ValidatorFn {
     return (control: AbstractControl): { [key: string]: boolean } | null => {
       try {
         const phoneNumberUtil = PhoneNumberUtil.getInstance();
@@ -18,87 +21,36 @@ export default class TelValidators {
           return null;
         }
 
-        // NOTE: the PhoneNumberUtil.parse() method does NOT appear to correctly parse phone numbers with
-        // country codes which include the 'area code' eg. Dominica (+1767), Grenada (+1473), etc.
-        // Instead, the returned phone number is for the US (+1) country code.
+        // NOTE: territories sharing a calling code (Dominica, Grenada, Northern
+        // Mariana Islands, ...) parse to that shared code with the area code
+        // kept in the national number, which is why the region below comes from
+        // libphonenumber rather than from getCountryCode() alone.
         const parsed = phoneNumberUtil.parse(control.value);
 
-        const setPrefixControlValue = (
-          countryCode: string | number | undefined,
-          allCountries: Country[],
-          telForm: FormGroup
-        ) => {
-          const country = allCountries.find((c) => {
-            if (c.dialCode === countryCode?.toString()) {
-              if (c.areaCodes) {
-                // Checking the area codes only works because the countries using the same country code as the
-                // US (+1) and UK (+44) are ALL defined earlier in the list of all countries (country-code.ts)
-                // and are checked before defaulting to the US or UK (which are defined without area codes and
-                // have the highest priority (0)).
-                return c.areaCodes?.find((ac) =>
-                  parsed.getNationalNumber()?.toString().startsWith(ac)
-                );
-              } else if (c.priority === 0) {
-                // If a country does NOT have any area codes but shares a country code with another country,
-                // return the country with the highest priority (0), eg. country code '599' belongs to both
-                // 'Carribean Netherlands' (priority 1) and 'Curaçao' (priority 0).
-                return c;
-              }
-            }
-            return undefined;
-          });
-          if (country && country.iso2 !== telForm?.value?.prefixCtrl?.iso2) {
-            telForm.get('prefixCtrl')?.setValue(country, { emitEvent: false });
-          }
-        };
-        if (includeDialCode) {
-          const countryDialCode =
-            telForm?.value?.prefixCtrl?.dialCode || parsed.getCountryCode();
-          if (countryDialCode) {
-            setPrefixControlValue(countryDialCode, allCountries, telForm);
-          }
-        }
-
-        const formattedOnlyNumber = phoneNumberUtil.format(
-          parsed,
-          includeDialCode || telForm?.value?.prefixCtrl?.iso2 === 'mp'
-            ? outputNumberFormat
-            : PhoneNumberFormat.NATIONAL
-        );
-        telForm
-          .get('numberControl')
-          ?.setValue(formattedOnlyNumber, { emitEvent: false });
-
-        const isValidNumber = phoneNumberUtil.isValidNumber(parsed);
-        setPrefixControlValue(parsed.getCountryCode(), allCountries, telForm);
-
-        // Check if the phone number length is valid for the country
-        const countryIso = telForm?.value?.prefixCtrl?.iso2;
-        const isValidLength = countryIso
-          ? phoneNumberUtils.isValidPhoneNumberLength(control.value, countryIso)
-          : true;
-
-        if (!isValidNumber) {
-          control.setErrors({ invalidNumber: true });
-          telForm.get('numberControl')?.setErrors({ invalidNumber: true });
+        if (!phoneNumberUtil.isValidNumber(parsed)) {
           return {
             invalidNumber: true
           };
-        } else if (!isValidLength) {
-          // If the number is valid according to libphonenumber but exceeds the maximum length
-          control.setErrors({ numberTooLong: true });
-          telForm.get('numberControl')?.setErrors({ numberTooLong: true });
+        }
+
+        // The length budget belongs to the number's own country. Measuring it
+        // against the selected one reported a valid number as too long whenever
+        // the two disagreed — a number whose country is excluded from the list,
+        // for instance, was measured against whatever happened to be selected.
+        const region = phoneNumberUtil.getRegionCodeForNumber(parsed);
+        if (
+          region &&
+          !phoneNumberUtils.isValidPhoneNumberLength(control.value, region)
+        ) {
+          // Valid according to libphonenumber, but longer than the country's
+          // example number allows for.
           return {
             numberTooLong: true
           };
-        } else {
-          control.setErrors(null);
-          telForm.get('numberControl')?.setErrors(null);
-          return null;
         }
+
+        return null;
       } catch {
-        control.setErrors({ invalidNumber: true });
-        telForm.get('numberControl')?.setErrors({ invalidNumber: true });
         return {
           invalidNumber: true
         };

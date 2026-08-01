@@ -61,7 +61,6 @@ name alone.
 - `README.md`: public usage plus contributor workflow.
 - `libs/.../README.md`: npm package README; keep its public API sections in
   sync with the root README.
-- `JEST_TO_VITEST_MIGRATION_GUIDE.md`: migration record and reusable playbook.
 
 Current stack: Angular 22, Angular Material 22, Nx 23, TypeScript 6, RxJS 7,
 and Vitest 4 through Angular's `@angular/build:unit-test` builder.
@@ -102,11 +101,49 @@ npx nx test ngx-material-intl-tel-input-lib
 npx nx test ngx-material-intl-tel-input-lib --include='**/file.spec.ts'
 npx nx test ngx-material-intl-tel-input-lib --coverage
 npx nx build ngx-material-intl-tel-input-lib
-npx nx affected -t lint test build
+npx nx affected -t lint test build e2e
+
+npm run e2e:all
+npx nx e2e ngx-material-intl-tel-input-e2e --skip-nx-cache
 ```
 
 Run the smallest relevant target while iterating. Before handoff, run checks
 proportional to the change and report exactly what ran.
+
+## Browser tests
+
+`apps/ngx-material-intl-tel-input-e2e` holds the Playwright suite (chromium
+only). It drives the demo app's `/e2e` harness route, which renders one
+component instance configured from query params
+(`/e2e?useMask=true&includeDialCode=true&forceSelectedCountryCode=true`) with
+`autoIpLookup` off and country localization off, so Spain (+34) is always the
+default country.
+
+Caret position, mask rendering, Material layout, the overlay-hosted country
+search, and the rendered error state cannot be asserted in jsdom — put those
+regressions here, not in the component spec. Harness helpers live in
+`apps/ngx-material-intl-tel-input-e2e/src/harness.ts`.
+
+Caret assertions must poll (`expect.poll(() => caretPosition(page))`): the
+component restores the caret inside a `setTimeout`, so a direct read races it.
+
+The country search box sits inside a `mat-option[aria-disabled="true"]`, so
+Playwright reports it as disabled: drive it with `searchCountries()`, which
+types through the keyboard instead of `fill()`.
+
+Numbers longer than 16 digits cannot be round-tripped: google-libphonenumber's
+JS port holds the national number in a double, so it comes back corrupted.
+Keep length-bound specs below that cliff.
+
+A `test.fail()` block marks a known product defect, not a broken test. It is
+expected to fail; if the product is fixed, Playwright reports "expected to fail
+but passed" and the marker should be removed. The suite currently has none.
+
+An `initialValue` that resolves no country of its own (unparseable, or a stored
+national number that lost its prefix) deliberately leaves the country selector
+empty unless `autoSelectedCountry` is set. Such a value parses under whichever
+country is selected, so guessing one would silently relabel the record; the
+user picks the country and the number resolves.
 
 ## Angular and TypeScript rules
 

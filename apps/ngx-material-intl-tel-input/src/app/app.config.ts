@@ -1,5 +1,5 @@
 import { ApplicationConfig, LOCALE_ID } from '@angular/core';
-import { provideRouter } from '@angular/router';
+import { provideRouter, withComponentInputBinding } from '@angular/router';
 import { appRoutes } from './app.routes';
 import {
   COUNTRY_NAME_OVERRIDES,
@@ -13,7 +13,9 @@ const spanishCountryOverrides: CountryNameOverrides = {
 
 export const appConfig: ApplicationConfig = {
   providers: [
-    provideRouter(appRoutes),
+    // withComponentInputBinding lets the e2e harness read its configuration
+    // straight from query params as component inputs
+    provideRouter(appRoutes, withComponentInputBinding()),
     { provide: LOCALE_ID, useValue: 'es-ES' },
     {
       provide: COUNTRY_NAME_OVERRIDES,

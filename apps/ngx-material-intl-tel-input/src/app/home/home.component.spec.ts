@@ -1,19 +1,19 @@
 import { TestBed } from '@angular/core/testing';
-import { AppComponent } from './app.component';
+import { HomeComponent } from './home.component';
 import { ComponentFixture } from '@angular/core/testing';
 import { ReactiveFormsModule } from '@angular/forms';
 import { PhoneNumberFormat } from 'google-libphonenumber';
 
-describe('AppComponent', () => {
-  let component: AppComponent;
-  let fixture: ComponentFixture<AppComponent>;
+describe('HomeComponent', () => {
+  let component: HomeComponent;
+  let fixture: ComponentFixture<HomeComponent>;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
-      imports: [AppComponent, ReactiveFormsModule]
+      imports: [HomeComponent, ReactiveFormsModule]
     }).compileComponents();
 
-    fixture = TestBed.createComponent(AppComponent);
+    fixture = TestBed.createComponent(HomeComponent);
     component = fixture.componentInstance;
     fixture.detectChanges();
   });

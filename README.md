@@ -282,19 +282,23 @@ Common checks:
 npm run lint:all
 npm run unit-tests:all
 npm run build:all
+npm run e2e:all
 ```
 
 For affected projects only:
 
 ```bash
-npx nx affected -t lint test build
+npx nx affected -t lint test build e2e
 ```
+
+`e2e:all` runs the Playwright suite in `apps/ngx-material-intl-tel-input-e2e`
+against the demo app's `/e2e` harness route; it starts the dev server itself.
+Run `npx playwright install chromium` once before the first run.
 
 The library build is written to
 `dist/libs/ngx-material-intl-tel-input-lib`. Commits follow the Conventional
-Commits specification. See the
-[Jest-to-Vitest migration guide](JEST_TO_VITEST_MIGRATION_GUIDE.md) for test
-runner details and known Angular builder constraints.
+Commits specification. Test runner constraints are documented in the
+[Vitest rules](AGENTS.md#vitest-rules).
 
 ## Localization
 
