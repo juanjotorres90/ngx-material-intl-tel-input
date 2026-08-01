@@ -33,7 +33,11 @@ jobs:
       - run: npm ci
       - uses: nrwl/nx-set-shas@v4
 
+      # Only chromium: the e2e suite asserts caret, mask and layout behavior
+      # that is not engine-specific
+      - run: npx playwright install --with-deps chromium
+
       # Prepend any command with "nx-cloud record --" to record its logs to Nx Cloud
       # - run: npx nx-cloud record -- echo Hello World
       # Nx Affected runs only tasks affected by the changes in this PR/commit. Learn more: https://nx.dev/ci/features/affected
-      - run: npx nx affected -t lint test build
+      - run: npx nx affected -t lint test build e2e

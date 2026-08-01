@@ -1,0 +1,16 @@
+---
+description: Component-specific implementation rules.
+globs: **/*.component.ts,**/*.component.html,**/*.component.scss
+alwaysApply: false
+---
+
+# Component contract
+
+- Inspect neighboring source and specs before changing behavior.
+- Preserve public inputs, model inputs, outputs, defaults, and form semantics.
+- Keep component state signal-based and derived state in `computed()`.
+- Keep side effects explicit, lifecycle-safe, and cleaned up on destroy.
+- Preserve OnPush compatibility and avoid manual change detection workarounds.
+- Keep template logic shallow and move complex transformations to TypeScript.
+- Treat accessibility and error rendering as part of the public behavior.
+- Update both READMEs when a public component API changes.

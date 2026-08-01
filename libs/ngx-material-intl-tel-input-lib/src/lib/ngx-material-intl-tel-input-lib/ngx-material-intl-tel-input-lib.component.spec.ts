@@ -6,13 +6,15 @@ import { ControlContainer, FormControl, Validators } from '@angular/forms';
 import { of, Subject } from 'rxjs';
 import { GeoData } from '../types/geo.type';
 import { GeoIpService } from '../services/geo-ip/geo-ip.service';
+import { caretUtils } from '../utils/caret.utils';
+import { phoneNumberUtils } from '../utils/phone-number.utils';
 
 describe('NgxMaterialIntlTelInputComponent', () => {
   let component: NgxMaterialIntlTelInputComponent;
   let fixture: ComponentFixture<NgxMaterialIntlTelInputComponent>;
   let phoneNumberUtil: PhoneNumberUtil;
   const geoIpServiceMock = {
-    geoIpLookup: jest.fn().mockReturnValue(of({} as GeoData))
+    geoIpLookup: vi.fn().mockReturnValue(of({} as GeoData))
   };
 
   beforeEach(async () => {
@@ -37,7 +39,7 @@ describe('NgxMaterialIntlTelInputComponent', () => {
     }
     fixture?.destroy();
     // Reset mocks
-    jest.clearAllMocks();
+    vi.clearAllMocks();
   });
 
   it('should create', () => {
@@ -114,23 +116,134 @@ describe('NgxMaterialIntlTelInputComponent', () => {
     expect(component.prefixCtrl.value).toEqual(country);
   });
 
+  it('should repaint the country selector and number input when the fieldControl value is set externally', () => {
+    component.fieldControl()?.setValue('+41446681800');
+    expect(component.prefixCtrl.value?.iso2).toBe('ch');
+    expect(component.telForm.get('numberControl')?.value).toBe('044 668 18 00');
+    expect(component.fieldControl()?.value).toBe('+41 44 668 18 00');
+  });
+
+  it('should not set maxlength on the input when useMask is enabled, so mask placeholders cannot block typing', () => {
+    const localFixture = TestBed.createComponent(
+      NgxMaterialIntlTelInputComponent
+    );
+    localFixture.componentRef.setInput('useMask', true);
+    localFixture.detectChanges();
+    const input: HTMLInputElement =
+      localFixture.nativeElement.querySelector('input[matInput]');
+    expect(input.getAttribute('maxlength')).toBeNull();
+    localFixture.destroy();
+  });
+
+  it('should set maxlength on the input when useMask is disabled', () => {
+    const input: HTMLInputElement =
+      fixture.nativeElement.querySelector('input[matInput]');
+    expect(input.getAttribute('maxlength')).not.toBeNull();
+  });
+
+  it('should clear the number and keep the selection when the country changes with useMask and includeDialCode', async () => {
+    const localFixture = TestBed.createComponent(
+      NgxMaterialIntlTelInputComponent
+    );
+    localFixture.componentRef.setInput('useMask', true);
+    localFixture.componentRef.setInput('includeDialCode', true);
+    localFixture.detectChanges();
+    // let setInitialTelValue settle: the clear only applies to a country the
+    // user changes, not to the selection made while the component is loading
+    await new Promise((resolve) => setTimeout(resolve));
+    const localComponent = localFixture.componentInstance;
+    localComponent.telForm
+      .get('numberControl')
+      ?.setValue('+380 50 123 4567', { emitEvent: false });
+
+    const ukraine = localComponent.allCountries.find((c) => c.iso2 === 'ua');
+    localComponent.prefixCtrl.setValue(ukraine ?? null);
+
+    // the old number is cleared before the telForm emission, so the
+    // validator cannot parse it and revert the country selection
+    expect(localComponent.telForm.get('numberControl')?.value).toBe('');
+    expect(localComponent.prefixCtrl.value?.iso2).toBe('ua');
+    localFixture.destroy();
+  });
+
+  it('should not force the cursor position when useMask is enabled', () => {
+    vi.useFakeTimers();
+    const localFixture = TestBed.createComponent(
+      NgxMaterialIntlTelInputComponent
+    );
+    localFixture.componentRef.setInput('useMask', true);
+    localFixture.detectChanges();
+    const localComponent = localFixture.componentInstance;
+    const inputElement = {
+      setSelectionRange: vi.fn()
+    } as unknown as HTMLInputElement;
+    const parsed = PhoneNumberUtil.getInstance().parse('+34675432198');
+
+    localComponent['setCursorPosition'](inputElement, 4, parsed, '675 4');
+    vi.runAllTimers();
+
+    expect(inputElement.setSelectionRange).not.toHaveBeenCalled();
+    localFixture.destroy();
+    vi.useRealTimers();
+  });
+
+  it('should restore the cursor position when useMask is disabled', () => {
+    vi.useFakeTimers();
+    const inputElement = {
+      setSelectionRange: vi.fn()
+    } as unknown as HTMLInputElement;
+    const parsed = PhoneNumberUtil.getInstance().parse('+34675432198');
+
+    component['setCursorPosition'](inputElement, 4, parsed, '675 4');
+    vi.runAllTimers();
+
+    expect(inputElement.setSelectionRange).toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+
+  it('should repaint the country selector and number input on external set when numberValidation is disabled', () => {
+    const localFixture = TestBed.createComponent(
+      NgxMaterialIntlTelInputComponent
+    );
+    localFixture.componentRef.setInput('numberValidation', false);
+    localFixture.detectChanges();
+    const localComponent = localFixture.componentInstance;
+
+    localComponent.fieldControl()?.setValue('+41446681800');
+
+    expect(localComponent.prefixCtrl.value?.iso2).toBe('ch');
+    expect(localComponent.telForm.get('numberControl')?.value).toBe(
+      '044 668 18 00'
+    );
+    localFixture.destroy();
+  });
+
+  it('should format the typed number in the input when typing updates the fieldControl internally', () => {
+    const spain = component.allCountries.find((c) => c.iso2 === 'es');
+    component.prefixCtrl.setValue(spain ?? null);
+    component.telForm.get('numberControl')?.setValue('612345678');
+    // the validator reformats the input to national format while typing
+    expect(component.telForm.get('numberControl')?.value).toBe('612 34 56 78');
+    expect(component.fieldControl()?.value).toBe('+34 612 34 56 78');
+  });
+
   describe('startFieldControlValueChangesListener', () => {
     let valueChangesSubject: Subject<string>;
 
     beforeEach(() => {
       valueChangesSubject = new Subject<string>();
-      jest.spyOn(component, 'fieldControl').mockReturnValue({
+      vi.spyOn(component, 'fieldControl').mockReturnValue({
         valueChanges: valueChangesSubject.asObservable(),
-        setValue: jest.fn()
+        setValue: vi.fn()
       } as any);
       component.prefixCtrl = new FormControl({
         iso2: 'US',
         dialCode: '1'
       } as Country);
       component['_onDestroy'] = new Subject<void>();
-      component.currentValue = { emit: jest.fn() } as any;
-      component.currentCountryCode = { emit: jest.fn() } as any;
-      component.currentCountryISO = { emit: jest.fn() } as any;
+      component.currentValue = { emit: vi.fn() } as any;
+      component.currentCountryCode = { emit: vi.fn() } as any;
+      component.currentCountryISO = { emit: vi.fn() } as any;
       component['startFieldControlValueChangesListener']();
     });
 
@@ -174,11 +287,11 @@ describe('NgxMaterialIntlTelInputComponent', () => {
 
     beforeEach(() => {
       statusChangesSubject = new Subject<string>();
-      jest.spyOn(component, 'fieldControl').mockReturnValue({
+      vi.spyOn(component, 'fieldControl').mockReturnValue({
         statusChanges: statusChangesSubject.asObservable()
       } as any);
       component['_onDestroy'] = new Subject<void>();
-      component.disabled = { set: jest.fn() } as any;
+      component.disabled = { set: vi.fn() } as any;
       component['startFieldControlStatusChangesListener']();
     });
 
@@ -201,9 +314,9 @@ describe('NgxMaterialIntlTelInputComponent', () => {
 
   describe('ngOnInit', () => {
     beforeEach(() => {
-      jest.useFakeTimers();
+      vi.useFakeTimers();
       component.prefixFilterCtrl = new FormControl();
-      component.filteredCountries = { next: jest.fn() } as any;
+      component.filteredCountries = { next: vi.fn() } as any;
       component.allCountries = [
         { name: 'Spain', iso2: 'es' } as Country,
         { name: 'United States', iso2: 'us' } as Country
@@ -212,16 +325,16 @@ describe('NgxMaterialIntlTelInputComponent', () => {
     });
 
     afterEach(() => {
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
 
     it('should call setInitialTelValue', () => {
-      const setInitialTelValueSpy = jest.spyOn(
+      const setInitialTelValueSpy = vi.spyOn(
         component as any,
         'setInitialTelValue'
       );
       component.ngOnInit();
-      jest.advanceTimersByTime(0);
+      vi.advanceTimersByTime(0);
       expect(setInitialTelValueSpy).toHaveBeenCalled();
     });
 
@@ -240,6 +353,24 @@ describe('NgxMaterialIntlTelInputComponent', () => {
     it('should set isFocused to false on input blur', () => {
       component.onInputBlur();
       expect(component.isFocused()).toBe(false);
+    });
+
+    it('should mark the field control as touched on input blur', () => {
+      const control = new FormControl('');
+      component.fieldControl.set(control);
+
+      component.onInputBlur();
+
+      expect(control.touched).toBe(true);
+    });
+
+    it('should emit touch on input blur for Signal Forms', () => {
+      const touchSpy = vi.fn();
+      component.touch.subscribe(touchSpy);
+
+      component.onInputBlur();
+
+      expect(touchSpy).toHaveBeenCalled();
     });
   });
 
@@ -288,7 +419,7 @@ describe('NgxMaterialIntlTelInputComponent', () => {
   describe('fetchCountryData', () => {
     beforeEach(() => {
       (component as any).countryDataService = {
-        processCountries: jest
+        processCountries: vi
           .fn()
           .mockReturnValue([
             { name: 'Spain', iso2: 'es', dialCode: '34' } as Country,
@@ -321,8 +452,8 @@ describe('NgxMaterialIntlTelInputComponent', () => {
   describe('addValidations', () => {
     beforeEach(() => {
       component.fieldControl.set(new FormControl());
-      jest.spyOn(component, 'setRequiredValidators');
-      jest.spyOn(component, 'setDisabledState');
+      vi.spyOn(component, 'setRequiredValidators');
+      vi.spyOn(component, 'setDisabledState');
     });
 
     it('should call setRequiredValidators and setDisabledState', () => {
@@ -333,10 +464,10 @@ describe('NgxMaterialIntlTelInputComponent', () => {
 
     it('should add number validation when numberValidation is true', () => {
       Object.defineProperty(component, 'numberValidation', {
-        value: jest.fn().mockReturnValue(true),
+        value: vi.fn().mockReturnValue(true),
         writable: true
       });
-      const addValidatorsSpy = jest.spyOn(
+      const addValidatorsSpy = vi.spyOn(
         component.fieldControl()!,
         'addValidators'
       );
@@ -346,10 +477,10 @@ describe('NgxMaterialIntlTelInputComponent', () => {
 
     it('should not add number validation when numberValidation is false', () => {
       Object.defineProperty(component, 'numberValidation', {
-        value: jest.fn().mockReturnValue(false),
+        value: vi.fn().mockReturnValue(false),
         writable: true
       });
-      const addValidatorsSpy = jest.spyOn(
+      const addValidatorsSpy = vi.spyOn(
         component.fieldControl()!,
         'addValidators'
       );
@@ -360,7 +491,7 @@ describe('NgxMaterialIntlTelInputComponent', () => {
 
   describe('ngAfterViewInit', () => {
     it('should call setInitialPrefixValue', () => {
-      const setInitialPrefixValueSpy = jest.spyOn(
+      const setInitialPrefixValueSpy = vi.spyOn(
         component as any,
         'setInitialPrefixValue'
       );
@@ -371,8 +502,8 @@ describe('NgxMaterialIntlTelInputComponent', () => {
 
   describe('ngOnDestroy', () => {
     it('should emit and complete the _onDestroy subject', () => {
-      const nextSpy = jest.spyOn(component['_onDestroy'], 'next');
-      const completeSpy = jest.spyOn(component['_onDestroy'], 'complete');
+      const nextSpy = vi.spyOn(component['_onDestroy'], 'next');
+      const completeSpy = vi.spyOn(component['_onDestroy'], 'complete');
       component.ngOnDestroy();
       expect(nextSpy).toHaveBeenCalled();
       expect(completeSpy).toHaveBeenCalled();
@@ -385,7 +516,7 @@ describe('NgxMaterialIntlTelInputComponent', () => {
         { name: 'Spain', iso2: 'es', dialCode: '34' } as Country,
         { name: 'United States', iso2: 'us', dialCode: '1' } as Country
       ];
-      jest.spyOn(component as any, 'setAutoSelectedCountry');
+      vi.spyOn(component as any, 'setAutoSelectedCountry');
       (component as any).geoIpService = geoIpServiceMock;
     });
 
@@ -447,12 +578,12 @@ describe('NgxMaterialIntlTelInputComponent', () => {
 
   describe('setInitialPrefixValue', () => {
     beforeEach(() => {
-      component.singleSelect = jest.fn().mockReturnValue({
+      component.singleSelect = vi.fn().mockReturnValue({
         compareWith: null
       }) as any;
       component.filteredCountries = {
-        pipe: jest.fn().mockReturnValue({
-          subscribe: jest.fn().mockImplementation((callback) => callback())
+        pipe: vi.fn().mockReturnValue({
+          subscribe: vi.fn().mockImplementation((callback) => callback())
         })
       } as any;
     });
@@ -484,7 +615,7 @@ describe('NgxMaterialIntlTelInputComponent', () => {
         { name: 'United States', iso2: 'us' } as Country,
         { name: 'France', iso2: 'fr' } as Country
       ];
-      component.filteredCountries = { next: jest.fn() } as any;
+      component.filteredCountries = { next: vi.fn() } as any;
     });
 
     it('should return all countries when search is empty', () => {
@@ -523,16 +654,16 @@ describe('NgxMaterialIntlTelInputComponent', () => {
       telFormValueChangesSubject = new Subject<any>();
       component.telForm = {
         valueChanges: telFormValueChangesSubject.asObservable(),
-        get: jest.fn().mockReturnValue({ setValue: jest.fn() })
+        get: vi.fn().mockReturnValue({ setValue: vi.fn() })
       } as any;
-      component.numberInput = jest.fn().mockReturnValue({
-        nativeElement: { selectionStart: 5, setSelectionRange: jest.fn() }
+      component.numberInput = vi.fn().mockReturnValue({
+        nativeElement: { selectionStart: 5, setSelectionRange: vi.fn() }
       }) as any;
       component.fieldControl.set(new FormControl());
       component['_onDestroy'] = new Subject<void>();
-      jest.spyOn(component as any, 'setCursorPosition');
+      vi.spyOn(component as any, 'setCursorPosition');
       Object.defineProperty(component, 'includeDialCode', {
-        value: jest.fn().mockReturnValue(false),
+        value: vi.fn().mockReturnValue(false),
         writable: true
       });
       component['startTelFormValueChangesListener']();
@@ -576,7 +707,7 @@ describe('NgxMaterialIntlTelInputComponent', () => {
 
     it('should handle includeDialCode scenario', () => {
       Object.defineProperty(component, 'includeDialCode', {
-        value: jest.fn().mockReturnValue(true),
+        value: vi.fn().mockReturnValue(true),
         writable: true
       });
       const mockData = {
@@ -593,20 +724,22 @@ describe('NgxMaterialIntlTelInputComponent', () => {
     let prefixValueChangesSubject: Subject<Country>;
 
     beforeEach(() => {
+      // cancel the pending ngOnInit timer before replacing prefixCtrl with a mock
+      component.ngOnDestroy();
       prefixValueChangesSubject = new Subject<Country>();
       component.prefixCtrl = {
         valueChanges: prefixValueChangesSubject.asObservable()
       } as any;
       component.telForm = {
-        get: jest.fn().mockReturnValue({ setValue: jest.fn() })
+        get: vi.fn().mockReturnValue({ setValue: vi.fn() })
       } as any;
-      component.numberInput = jest.fn().mockReturnValue({
-        nativeElement: { focus: jest.fn() }
+      component.numberInput = vi.fn().mockReturnValue({
+        nativeElement: { focus: vi.fn() }
       }) as any;
       component['_onDestroy'] = new Subject<void>();
       component.isLoading.set(false);
       Object.defineProperty(component, 'includeDialCode', {
-        value: jest.fn().mockReturnValue(false),
+        value: vi.fn().mockReturnValue(false),
         writable: true
       });
       component['startPrefixValueChangesListener']();
@@ -620,7 +753,7 @@ describe('NgxMaterialIntlTelInputComponent', () => {
 
     it('should set dial code when includeDialCode is true', () => {
       Object.defineProperty(component, 'includeDialCode', {
-        value: jest.fn().mockReturnValue(true),
+        value: vi.fn().mockReturnValue(true),
         writable: true
       });
       const country: Country = { dialCode: '34', iso2: 'es' } as Country;
@@ -631,14 +764,72 @@ describe('NgxMaterialIntlTelInputComponent', () => {
       ).toHaveBeenCalledWith('+34', { emitEvent: false });
     });
 
-    it('should focus number input when not loading', (done) => {
+    it('should include a unique area code in a shared dial prefix', () => {
+      Object.defineProperty(component, 'includeDialCode', {
+        value: vi.fn().mockReturnValue(true),
+        writable: true
+      });
+      const country: Country = {
+        dialCode: '1',
+        iso2: 'mp',
+        areaCodes: ['670']
+      } as Country;
+
+      prefixValueChangesSubject.next(country);
+
+      expect(
+        component.telForm.get('numberControl')?.setValue
+      ).toHaveBeenCalledWith('+1670', { emitEvent: false });
+    });
+
+    // the area code is folded into the prefix for every country that has
+    // exactly one, not only the entries whose data was rewritten for MP
+    it.each([
+      { iso2: 'jm', dialCode: '1', areaCodes: ['876'], expected: '+1876' },
+      { iso2: 'gg', dialCode: '44', areaCodes: ['1481'], expected: '+441481' }
+    ])(
+      'should include the area code for $iso2 in the dial prefix',
+      ({ iso2, dialCode, areaCodes, expected }) => {
+        Object.defineProperty(component, 'includeDialCode', {
+          value: vi.fn().mockReturnValue(true),
+          writable: true
+        });
+
+        prefixValueChangesSubject.next({
+          dialCode,
+          iso2,
+          areaCodes
+        } as Country);
+
+        expect(
+          component.telForm.get('numberControl')?.setValue
+        ).toHaveBeenCalledWith(expected, { emitEvent: false });
+      }
+    );
+
+    it('should use only the dial code when a country has several area codes', () => {
+      Object.defineProperty(component, 'includeDialCode', {
+        value: vi.fn().mockReturnValue(true),
+        writable: true
+      });
+
+      prefixValueChangesSubject.next({
+        dialCode: '1',
+        iso2: 'pr',
+        areaCodes: ['787', '939']
+      } as Country);
+
+      expect(
+        component.telForm.get('numberControl')?.setValue
+      ).toHaveBeenCalledWith('+1', { emitEvent: false });
+    });
+
+    it('should focus number input when not loading', async () => {
       const country: Country = { dialCode: '34', iso2: 'es' } as Country;
 
       prefixValueChangesSubject.next(country);
-      setTimeout(() => {
-        expect(component.numberInput()?.nativeElement.focus).toHaveBeenCalled();
-        done();
-      }, 1);
+      await new Promise((resolve) => setTimeout(resolve, 1));
+      expect(component.numberInput()?.nativeElement.focus).toHaveBeenCalled();
     });
 
     it('should not focus when loading', () => {
@@ -664,24 +855,24 @@ describe('NgxMaterialIntlTelInputComponent', () => {
         } as Country
       ];
       component.telForm = {
-        get: jest.fn().mockReturnValue({ setValue: jest.fn() })
+        get: vi.fn().mockReturnValue({ setValue: vi.fn() })
       } as any;
       component.fieldControl.set(new FormControl());
-      jest.spyOn(component as any, 'geoIpLookup');
-      jest.spyOn(component as any, 'setAutoSelectedCountry');
+      vi.spyOn(component as any, 'geoIpLookup');
+      vi.spyOn(component as any, 'setAutoSelectedCountry');
     });
 
     it('should call geoIpLookup when autoIpLookup and autoSelectCountry are true and no initial value', () => {
       Object.defineProperty(component, 'initialValue', {
-        value: jest.fn().mockReturnValue(''),
+        value: vi.fn().mockReturnValue(''),
         writable: true
       });
       Object.defineProperty(component, 'autoSelectCountry', {
-        value: jest.fn().mockReturnValue(true),
+        value: vi.fn().mockReturnValue(true),
         writable: true
       });
       Object.defineProperty(component, 'autoIpLookup', {
-        value: jest.fn().mockReturnValue(true),
+        value: vi.fn().mockReturnValue(true),
         writable: true
       });
 
@@ -691,15 +882,15 @@ describe('NgxMaterialIntlTelInputComponent', () => {
 
     it('should call setAutoSelectedCountry when autoSelectCountry is true but autoIpLookup is false', () => {
       Object.defineProperty(component, 'initialValue', {
-        value: jest.fn().mockReturnValue(''),
+        value: vi.fn().mockReturnValue(''),
         writable: true
       });
       Object.defineProperty(component, 'autoSelectCountry', {
-        value: jest.fn().mockReturnValue(true),
+        value: vi.fn().mockReturnValue(true),
         writable: true
       });
       Object.defineProperty(component, 'autoIpLookup', {
-        value: jest.fn().mockReturnValue(false),
+        value: vi.fn().mockReturnValue(false),
         writable: true
       });
 
@@ -710,11 +901,11 @@ describe('NgxMaterialIntlTelInputComponent', () => {
 
     it('should set loading to false when autoSelectCountry is false', () => {
       Object.defineProperty(component, 'initialValue', {
-        value: jest.fn().mockReturnValue(''),
+        value: vi.fn().mockReturnValue(''),
         writable: true
       });
       Object.defineProperty(component, 'autoSelectCountry', {
-        value: jest.fn().mockReturnValue(false),
+        value: vi.fn().mockReturnValue(false),
         writable: true
       });
 
@@ -724,10 +915,10 @@ describe('NgxMaterialIntlTelInputComponent', () => {
 
     it('should parse and set initial value when provided', () => {
       Object.defineProperty(component, 'initialValue', {
-        value: jest.fn().mockReturnValue('+34678906543'),
+        value: vi.fn().mockReturnValue('+34678906543'),
         writable: true
       });
-      jest.spyOn(component.prefixCtrl, 'setValue');
+      vi.spyOn(component.prefixCtrl, 'setValue');
 
       component['setInitialTelValue']();
       expect(component.prefixCtrl.setValue).toHaveBeenCalledWith(
@@ -741,11 +932,11 @@ describe('NgxMaterialIntlTelInputComponent', () => {
 
     it('should handle invalid initial value', () => {
       Object.defineProperty(component, 'initialValue', {
-        value: jest.fn().mockReturnValue('invalid-number'),
+        value: vi.fn().mockReturnValue('invalid-number'),
         writable: true
       });
-      jest.spyOn(component.fieldControl()!, 'setValue');
-      jest.spyOn(component.fieldControl()!, 'markAsDirty');
+      vi.spyOn(component.fieldControl()!, 'setValue');
+      vi.spyOn(component.fieldControl()!, 'markAsDirty');
 
       component['setInitialTelValue']();
       expect(
@@ -758,6 +949,9 @@ describe('NgxMaterialIntlTelInputComponent', () => {
       expect(component.isLoading()).toBe(false);
     });
 
+    // An initial value that resolves no country leaves the selector unset
+    // unless the consumer configured one: the value could be a stored national
+    // number, and guessing a country would silently relabel it.
     it('should not set prefix when country has areaCodes but none match the phone number', () => {
       // Set up a country with areaCodes that don't match the phone number
       component.allCountries = [
@@ -771,10 +965,10 @@ describe('NgxMaterialIntlTelInputComponent', () => {
       ];
 
       Object.defineProperty(component, 'initialValue', {
-        value: jest.fn().mockReturnValue('+1555123456'), // 555 area code, not in the list
+        value: vi.fn().mockReturnValue('+1555123456'), // 555 area code, not in the list
         writable: true
       });
-      jest.spyOn(component.prefixCtrl, 'setValue');
+      vi.spyOn(component.prefixCtrl, 'setValue');
 
       component['setInitialTelValue']();
 
@@ -791,15 +985,85 @@ describe('NgxMaterialIntlTelInputComponent', () => {
       ];
 
       Object.defineProperty(component, 'initialValue', {
-        value: jest.fn().mockReturnValue('+44123456789'), // UK number, not in allCountries
+        value: vi.fn().mockReturnValue('+44123456789'), // UK number, not in allCountries
         writable: true
       });
-      jest.spyOn(component.prefixCtrl, 'setValue');
+      vi.spyOn(component.prefixCtrl, 'setValue');
 
       component['setInitialTelValue']();
 
       // Should not call setValue because no country matches dial code 44
       expect(component.prefixCtrl.setValue).not.toHaveBeenCalled();
+      expect(component.isLoading()).toBe(false);
+    });
+
+    it('should not set prefix for an unparseable initial value', () => {
+      component.allCountries = [
+        { name: 'Spain', iso2: 'es', dialCode: '34', priority: 0 } as Country
+      ];
+      component.telForm = {
+        value: {},
+        get: vi.fn().mockReturnValue({ setValue: vi.fn() })
+      } as any;
+      Object.defineProperty(component, 'initialValue', {
+        value: vi.fn().mockReturnValue('675476745'),
+        writable: true
+      });
+
+      component['setInitialTelValue']();
+
+      expect(component.prefixCtrl.value).toBeNull();
+      expect(component.isLoading()).toBe(false);
+    });
+
+    it('should use autoSelectedCountry when an initial value resolves none', () => {
+      component.allCountries = [
+        { name: 'Spain', iso2: 'es', dialCode: '34', priority: 0 } as Country,
+        { name: 'France', iso2: 'fr', dialCode: '33', priority: 0 } as Country
+      ];
+      component.telForm = {
+        value: {},
+        get: vi.fn().mockReturnValue({ setValue: vi.fn() })
+      } as any;
+      Object.defineProperty(component, 'initialValue', {
+        value: vi.fn().mockReturnValue('675476745'),
+        writable: true
+      });
+      Object.defineProperty(component, 'autoSelectedCountry', {
+        value: vi.fn().mockReturnValue('fr'),
+        writable: true
+      });
+
+      component['setInitialTelValue']();
+
+      expect(component.prefixCtrl.value?.iso2).toBe('fr');
+      expect(component.isLoading()).toBe(false);
+    });
+
+    it('should not use autoSelectedCountry when autoSelectCountry is off', () => {
+      component.allCountries = [
+        { name: 'Spain', iso2: 'es', dialCode: '34', priority: 0 } as Country
+      ];
+      component.telForm = {
+        value: {},
+        get: vi.fn().mockReturnValue({ setValue: vi.fn() })
+      } as any;
+      Object.defineProperty(component, 'initialValue', {
+        value: vi.fn().mockReturnValue('675476745'),
+        writable: true
+      });
+      Object.defineProperty(component, 'autoSelectedCountry', {
+        value: vi.fn().mockReturnValue('es'),
+        writable: true
+      });
+      Object.defineProperty(component, 'autoSelectCountry', {
+        value: vi.fn().mockReturnValue(false),
+        writable: true
+      });
+
+      component['setInitialTelValue']();
+
+      expect(component.prefixCtrl.value).toBeNull();
       expect(component.isLoading()).toBe(false);
     });
   });
@@ -815,7 +1079,7 @@ describe('NgxMaterialIntlTelInputComponent', () => {
 
     it('should set auto selected country when found', () => {
       Object.defineProperty(component, 'autoSelectedCountry', {
-        value: jest.fn().mockReturnValue('us'),
+        value: vi.fn().mockReturnValue('us'),
         writable: true
       });
 
@@ -825,7 +1089,7 @@ describe('NgxMaterialIntlTelInputComponent', () => {
 
     it('should set Spain as default when auto selected country not found', () => {
       Object.defineProperty(component, 'autoSelectedCountry', {
-        value: jest.fn().mockReturnValue('xx'),
+        value: vi.fn().mockReturnValue('xx'),
         writable: true
       });
 
@@ -835,7 +1099,7 @@ describe('NgxMaterialIntlTelInputComponent', () => {
 
     it('should set first country when Spain is not available', () => {
       Object.defineProperty(component, 'autoSelectedCountry', {
-        value: jest.fn().mockReturnValue('xx'),
+        value: vi.fn().mockReturnValue('xx'),
         writable: true
       });
       component.allCountries = [
@@ -858,7 +1122,7 @@ describe('NgxMaterialIntlTelInputComponent', () => {
     beforeEach(() => {
       (component as any).controlContainer = {
         control: {
-          get: jest.fn()
+          get: vi.fn()
         }
       };
     });
@@ -866,10 +1130,10 @@ describe('NgxMaterialIntlTelInputComponent', () => {
     it('should set field control from control container when field control name exists', () => {
       const mockControl = new FormControl('test-value');
       Object.defineProperty(component, 'fieldControlName', {
-        value: jest.fn().mockReturnValue('testField'),
+        value: vi.fn().mockReturnValue('testField'),
         writable: true
       });
-      (component as any).controlContainer.control.get = jest
+      (component as any).controlContainer.control.get = vi
         .fn()
         .mockReturnValue(mockControl);
 
@@ -881,10 +1145,10 @@ describe('NgxMaterialIntlTelInputComponent', () => {
     it('should set required to true when field control has required validator', () => {
       const mockControl = new FormControl('', Validators.required);
       Object.defineProperty(component, 'fieldControlName', {
-        value: jest.fn().mockReturnValue('testField'),
+        value: vi.fn().mockReturnValue('testField'),
         writable: true
       });
-      (component as any).controlContainer.control.get = jest
+      (component as any).controlContainer.control.get = vi
         .fn()
         .mockReturnValue(mockControl);
 
@@ -896,10 +1160,10 @@ describe('NgxMaterialIntlTelInputComponent', () => {
       const mockControl = new FormControl('');
       mockControl.disable();
       Object.defineProperty(component, 'fieldControlName', {
-        value: jest.fn().mockReturnValue('testField'),
+        value: vi.fn().mockReturnValue('testField'),
         writable: true
       });
-      (component as any).controlContainer.control.get = jest
+      (component as any).controlContainer.control.get = vi
         .fn()
         .mockReturnValue(mockControl);
 
@@ -909,7 +1173,7 @@ describe('NgxMaterialIntlTelInputComponent', () => {
 
     it('should not set field control when field control name does not exist', () => {
       Object.defineProperty(component, 'fieldControlName', {
-        value: jest.fn().mockReturnValue(''),
+        value: vi.fn().mockReturnValue(''),
         writable: true
       });
       const originalFieldControl = component.fieldControl();
@@ -925,33 +1189,33 @@ describe('NgxMaterialIntlTelInputComponent', () => {
 
     beforeEach(() => {
       mockInputElement = {
-        setSelectionRange: jest.fn()
+        setSelectionRange: vi.fn()
       } as any;
       // Create a proper mock PhoneNumber object with all required methods
       mockParsedNumber = {
-        getNationalNumber: jest.fn().mockReturnValue(1234567890),
-        hasNationalNumber: jest.fn().mockReturnValue(true),
-        getCountryCodeOrDefault: jest.fn().mockReturnValue(1),
-        getCountryCode: jest.fn().mockReturnValue(1),
-        getExtension: jest.fn().mockReturnValue(''),
-        hasExtension: jest.fn().mockReturnValue(false),
-        getItalianLeadingZero: jest.fn().mockReturnValue(false),
-        hasItalianLeadingZero: jest.fn().mockReturnValue(false),
-        getNumberOfLeadingZeros: jest.fn().mockReturnValue(1),
-        hasNumberOfLeadingZeros: jest.fn().mockReturnValue(false),
-        getRawInput: jest.fn().mockReturnValue(''),
-        hasRawInput: jest.fn().mockReturnValue(false),
-        getCountryCodeSource: jest.fn().mockReturnValue(0),
-        hasCountryCodeSource: jest.fn().mockReturnValue(false),
-        getPreferredDomesticCarrierCode: jest.fn().mockReturnValue(''),
-        hasPreferredDomesticCarrierCode: jest.fn().mockReturnValue(false)
+        getNationalNumber: vi.fn().mockReturnValue(1234567890),
+        hasNationalNumber: vi.fn().mockReturnValue(true),
+        getCountryCodeOrDefault: vi.fn().mockReturnValue(1),
+        getCountryCode: vi.fn().mockReturnValue(1),
+        getExtension: vi.fn().mockReturnValue(''),
+        hasExtension: vi.fn().mockReturnValue(false),
+        getItalianLeadingZero: vi.fn().mockReturnValue(false),
+        hasItalianLeadingZero: vi.fn().mockReturnValue(false),
+        getNumberOfLeadingZeros: vi.fn().mockReturnValue(1),
+        hasNumberOfLeadingZeros: vi.fn().mockReturnValue(false),
+        getRawInput: vi.fn().mockReturnValue(''),
+        hasRawInput: vi.fn().mockReturnValue(false),
+        getCountryCodeSource: vi.fn().mockReturnValue(0),
+        hasCountryCodeSource: vi.fn().mockReturnValue(false),
+        getPreferredDomesticCarrierCode: vi.fn().mockReturnValue(''),
+        hasPreferredDomesticCarrierCode: vi.fn().mockReturnValue(false)
       };
-      jest.spyOn(component as any, 'adjustCursorPosition').mockReturnValue(10);
-      jest.useFakeTimers();
+      vi.spyOn(caretUtils, 'adjustCursorPosition').mockReturnValue(10);
+      vi.useFakeTimers();
     });
 
     afterEach(() => {
-      jest.useRealTimers();
+      vi.useRealTimers();
     });
 
     it('should set cursor position after timeout', () => {
@@ -962,13 +1226,13 @@ describe('NgxMaterialIntlTelInputComponent', () => {
         '12345'
       );
 
-      jest.advanceTimersByTime(1);
+      vi.advanceTimersByTime(1);
       expect(mockInputElement.setSelectionRange).toHaveBeenCalledWith(10, 10);
     });
 
     it('should return early when numberValidation is false', () => {
       Object.defineProperty(component, 'numberValidation', {
-        value: jest.fn().mockReturnValue(false),
+        value: vi.fn().mockReturnValue(false),
         writable: true
       });
 
@@ -979,424 +1243,219 @@ describe('NgxMaterialIntlTelInputComponent', () => {
         '12345'
       );
 
-      jest.advanceTimersByTime(1);
+      vi.advanceTimersByTime(1);
       expect(mockInputElement.setSelectionRange).not.toHaveBeenCalled();
-      expect(component['adjustCursorPosition']).not.toHaveBeenCalled();
+      expect(caretUtils.adjustCursorPosition).not.toHaveBeenCalled();
     });
   });
 
-  describe('adjustCursorPosition', () => {
-    beforeEach(() => {
-      jest
-        .spyOn(component as any, 'countSpacesBeforePosition')
-        .mockImplementation((...args: any[]) => {
-          const [value, position] = args as [string, number];
-          return value
-            .slice(0, position)
-            .split('')
-            .filter((char) => char === ' ').length;
-        });
-    });
-
-    it('should return new value length when original position is at end', () => {
-      const result = component['adjustCursorPosition'](
-        5,
-        '12345',
-        '123 456 789'
-      );
-      expect(result).toBe(11);
-    });
-
-    it('should adjust cursor position based on space count difference', () => {
-      const result = component['adjustCursorPosition'](3, '123456', '123 456');
-      expect(result).toBe(3); // Position 3 in '123456' maps to position 3 in '123 456' (before the space)
-    });
-
-    it('should ensure cursor position is within bounds', () => {
-      const result = component['adjustCursorPosition'](-5, '123', '123456');
-      expect(result).toBe(0);
-    });
-
-    it('should not exceed new value length', () => {
-      const result = component['adjustCursorPosition'](10, '123456789', '123');
-      expect(result).toBe(3);
-    });
-  });
-
-  describe('countSpacesBeforePosition', () => {
-    it('should count spaces before position', () => {
-      const result = component['countSpacesBeforePosition']('12 34 56', 5);
-      expect(result).toBe(1); // Only one space before position 5 ('12 34')
-    });
-
-    it('should return 0 when no spaces', () => {
-      const result = component['countSpacesBeforePosition']('123456', 3);
-      expect(result).toBe(0);
-    });
-
-    it('should handle position at start', () => {
-      const result = component['countSpacesBeforePosition'](' 123', 0);
-      expect(result).toBe(0);
-    });
-  });
-
-  describe('getMaxInputLength', () => {
-    beforeEach(() => {
-      component.telForm = {
-        get: jest.fn().mockReturnValue({ value: '1234567890' })
-      } as any;
-      jest
-        .spyOn(component as any, 'isCurrentNumberValidAndFormatted')
-        .mockReturnValue(false);
-      jest
-        .spyOn(component as any, 'calculateFormattingBuffer')
-        .mockReturnValue(4);
-      jest.spyOn(component as any, 'calculateSafetyMargin').mockReturnValue(2);
-      Object.defineProperty(component, 'includeDialCode', {
-        value: jest.fn().mockReturnValue(false),
-        writable: true
-      });
-      Object.defineProperty(component, 'outputNumberFormat', {
-        value: jest.fn().mockReturnValue(PhoneNumberFormat.INTERNATIONAL),
-        writable: true
-      });
-    });
-
-    it('should return default fallback when no country code provided', () => {
-      const result = component.getMaxInputLength();
-      expect(result).toBe(25);
-    });
-
-    it('should return extended length for valid formatted numbers', () => {
-      jest
-        .spyOn(component as any, 'isCurrentNumberValidAndFormatted')
-        .mockReturnValue(true);
-      const result = component.getMaxInputLength('us');
-      expect(result).toBeGreaterThan(15); // Base length + formatting + safety margin
-    });
-
-    it('should return restricted length for invalid numbers', () => {
-      jest
-        .spyOn(component as any, 'isCurrentNumberValidAndFormatted')
-        .mockReturnValue(false);
-      const result = component.getMaxInputLength('us');
-      expect(result).toBeLessThan(20); // Base length + minimal buffer
-    });
-
-    it('should handle RFC3966 format with includeDialCode', () => {
-      Object.defineProperty(component, 'includeDialCode', {
-        value: jest.fn().mockReturnValue(true),
-        writable: true
-      });
-      Object.defineProperty(component, 'outputNumberFormat', {
-        value: jest.fn().mockReturnValue(PhoneNumberFormat.RFC3966),
-        writable: true
-      });
-
-      const result = component.getMaxInputLength('us');
-      expect(result).toBeGreaterThan(15); // Should include extra buffer for RFC3966
-    });
-
-    it('should handle errors gracefully', () => {
-      jest
-        .spyOn(component as any, 'isCurrentNumberValidAndFormatted')
-        .mockImplementation(() => {
-          throw new Error('Test error');
-        });
-
-      const result = component.getMaxInputLength('us');
-      expect(result).toBeGreaterThan(10); // Should return fallback
-    });
-  });
-
-  describe('isCurrentNumberValidAndFormatted', () => {
-    beforeEach(() => {
-      component.prefixCtrl = new FormControl({ dialCode: '1' } as Country);
-      Object.defineProperty(component, 'includeDialCode', {
-        value: jest.fn().mockReturnValue(false),
-        writable: true
-      });
-    });
-
-    it('should return false for short values', () => {
-      const result = component['isCurrentNumberValidAndFormatted']('12', 'us');
-      expect(result).toBe(false);
-    });
-
-    it('should return false for empty values', () => {
-      const result = component['isCurrentNumberValidAndFormatted']('', 'us');
-      expect(result).toBe(false);
-    });
-
-    it('should return true for valid formatted numbers', () => {
-      const result = component['isCurrentNumberValidAndFormatted'](
-        '555 123 4567',
-        'us'
-      );
-      expect(result).toBe(false); // This number is not valid without country code
-    });
-
-    it('should return false for invalid numbers', () => {
-      const result = component['isCurrentNumberValidAndFormatted'](
-        'invalid',
-        'us'
-      );
-      expect(result).toBe(false);
-    });
-
-    it('should handle includeDialCode scenario', () => {
-      Object.defineProperty(component, 'includeDialCode', {
-        value: jest.fn().mockReturnValue(true),
-        writable: true
-      });
-
-      const result = component['isCurrentNumberValidAndFormatted'](
-        '+1 555 123 4567',
-        'us'
-      );
-      expect(result).toBe(false); // Adjust expectation based on actual validation logic
-    });
-  });
-
-  describe('calculateSafetyMargin', () => {
-    beforeEach(() => {
-      Object.defineProperty(component, 'includeDialCode', {
-        value: jest.fn().mockReturnValue(false),
-        writable: true
-      });
-      Object.defineProperty(component, 'outputNumberFormat', {
-        value: jest.fn().mockReturnValue(PhoneNumberFormat.INTERNATIONAL),
-        writable: true
-      });
-    });
-
-    it('should return base margin for international format', () => {
-      const result = component['calculateSafetyMargin']();
-      expect(result).toBe(2); // 1 base + 1 for international
-    });
-
-    it('should add margin for includeDialCode', () => {
-      Object.defineProperty(component, 'includeDialCode', {
-        value: jest.fn().mockReturnValue(true),
-        writable: true
-      });
-
-      const result = component['calculateSafetyMargin']();
-      expect(result).toBe(3); // 1 base + 1 for includeDialCode + 1 for international
-    });
-
-    it('should handle RFC3966 format', () => {
-      Object.defineProperty(component, 'outputNumberFormat', {
-        value: jest.fn().mockReturnValue(PhoneNumberFormat.RFC3966),
-        writable: true
-      });
-
-      const result = component['calculateSafetyMargin']();
-      expect(result).toBe(3); // 1 base + 2 for RFC3966
-    });
-
-    it('should handle E164 format', () => {
-      Object.defineProperty(component, 'outputNumberFormat', {
-        value: jest.fn().mockReturnValue(PhoneNumberFormat.E164),
-        writable: true
-      });
-
-      const result = component['calculateSafetyMargin']();
-      expect(result).toBe(1); // 1 base + 0 for E164
-    });
-  });
-
-  describe('calculateFormattingBuffer', () => {
-    it('should calculate formatting buffer based on example numbers', () => {
-      const result = component['calculateFormattingBuffer']('us', 10);
-      expect(result).toBeGreaterThanOrEqual(0);
-    });
-
-    it('should return default buffer when no examples available', () => {
-      const result = component['calculateFormattingBuffer']('xx', 10);
-      expect(result).toBe(4); // Default fallback
-    });
-
-    it('should handle PhoneNumberUtil.getInstance() errors gracefully', () => {
-      // Mock PhoneNumberUtil.getInstance to throw an error
-      const originalGetInstance = PhoneNumberUtil.getInstance;
-      jest.spyOn(PhoneNumberUtil, 'getInstance').mockImplementation(() => {
-        throw new Error('PhoneNumberUtil error');
-      });
-
-      const result = component['calculateFormattingBuffer']('us', 10);
-      expect(result).toBe(4); // Fallback value from outer catch block
-
-      // Restore original implementation
-      PhoneNumberUtil.getInstance = originalGetInstance;
-    });
-  });
-
-  describe('main label rendering with appearance', () => {
-    const emptyTextLabels = {
-      mainLabel: '',
-      codePlaceholder: '',
-      searchPlaceholderLabel: '',
-      noEntriesFoundLabel: '',
-      nationalNumberLabel: '',
-      hintLabel: '',
-      invalidNumberError: '',
-      requiredError: '',
-      numberTooLongError: ''
+  // These cases moved here from tel.validators.spec.ts when the validator was
+  // made pure: the writes it used to perform now happen in applyValueToTelForm,
+  // so they are asserted against the real component instead of a bare
+  // validator call.
+  describe('value sync (was validator side effects)', () => {
+    const setExternalValue = (value: string) => {
+      component.fieldControl()?.setValue(value);
+      fixture.detectChanges();
     };
 
-    describe('resolvedMainLabel', () => {
-      it('should prefer mainLabel input over textLabels.mainLabel', () => {
-        fixture.componentRef.setInput('mainLabel', 'Custom label');
-        fixture.componentRef.setInput('textLabels', {
-          ...emptyTextLabels,
-          mainLabel: 'Fallback'
-        });
-        expect(component.resolvedMainLabel()).toBe('Custom label');
-      });
+    it('should format the number into the input in NATIONAL format by default', () => {
+      setExternalValue('+1 201 555 0123');
 
-      it('should fall back to textLabels.mainLabel when mainLabel is empty', () => {
-        fixture.componentRef.setInput('mainLabel', '');
-        fixture.componentRef.setInput('textLabels', {
-          ...emptyTextLabels,
-          mainLabel: 'Fallback label'
-        });
-        expect(component.resolvedMainLabel()).toBe('Fallback label');
-      });
+      expect(component.telForm.get('numberControl')?.value).toContain('201');
+      expect(component.telForm.get('numberControl')?.value).not.toContain('+1');
+    });
 
-      it('should be empty when neither mainLabel nor textLabels.mainLabel is set', () => {
-        fixture.componentRef.setInput('mainLabel', '');
-        fixture.componentRef.setInput('textLabels', emptyTextLabels);
-        expect(component.resolvedMainLabel()).toBe('');
+    it('should format the number into the input in INTERNATIONAL format when includeDialCode is true', () => {
+      fixture.componentRef.setInput('includeDialCode', true);
+      fixture.detectChanges();
+
+      setExternalValue('+1 201 555 0123');
+
+      expect(component.telForm.get('numberControl')?.value).toContain('+1');
+    });
+
+    it('should format an MP number under the resolved country', () => {
+      setExternalValue('+1 670 234 5678');
+
+      expect(component.telForm.get('numberControl')?.value).toBe(
+        '(670) 234-5678'
+      );
+      expect(component.prefixCtrl.value?.iso2).toBe('mp');
+    });
+
+    it('should keep MP selected while typing a national number', () => {
+      const mp = component.allCountries.find(
+        (country) => country.iso2 === 'mp'
+      );
+      component.prefixCtrl.setValue(mp ?? null);
+
+      component.telForm.get('numberControl')?.setValue('(670) 234-5678');
+      fixture.detectChanges();
+
+      expect(component.prefixCtrl.value?.iso2).toBe('mp');
+      expect(component.telForm.get('numberControl')?.value).toBe(
+        '(670) 234-5678'
+      );
+      expect(component.fieldControl()?.value).toBe('+1 670-234-5678');
+    });
+
+    it('should format an external value under the country replacing an MP selection', () => {
+      const mp = component.allCountries.find(
+        (country) => country.iso2 === 'mp'
+      );
+      component.prefixCtrl.setValue(mp ?? null, { emitEvent: false });
+
+      setExternalValue('+41 44 668 18 00');
+
+      expect(component.prefixCtrl.value?.iso2).toBe('ch');
+      expect(component.telForm.get('numberControl')?.value).toBe(
+        '044 668 18 00'
+      );
+    });
+
+    it('should select the priority country when several share a dial code', () => {
+      fixture.componentRef.setInput('includeDialCode', true);
+      fixture.detectChanges();
+
+      setExternalValue('+599 9 518 1234'); // Curaçao
+
+      expect(component.prefixCtrl.value?.iso2).toBe('cw'); // Curaçao has priority 0
+    });
+
+    it('should fall back to the parsed country code when no country is selected and the dial code is included', () => {
+      fixture.componentRef.setInput('includeDialCode', true);
+      component.prefixCtrl.setValue(null);
+      fixture.detectChanges();
+
+      setExternalValue('+1 201 555 0123');
+
+      expect(component.prefixCtrl.value?.iso2).toBe('us');
+    });
+
+    it('should not rewrite the country when it is already selected', () => {
+      setExternalValue('+1 201 555 0123');
+      const prefixSetValueSpy = vi.spyOn(component.prefixCtrl, 'setValue');
+
+      setExternalValue('+1 202 555 0125');
+
+      expect(prefixSetValueSpy).not.toHaveBeenCalled();
+    });
+
+    it('should write to telForm without emitting events', () => {
+      const numberSetValueSpy = vi.spyOn(
+        component.telForm.get('numberControl')!,
+        'setValue'
+      );
+
+      setExternalValue('+1 201 555 0123');
+
+      expect(numberSetValueSpy).toHaveBeenCalledWith(expect.any(String), {
+        emitEvent: false
       });
     });
 
-    describe('isOutlineWithLabel', () => {
-      it('should be true when appearance is outline and a label is resolved', () => {
-        fixture.componentRef.setInput('appearance', 'outline');
-        fixture.componentRef.setInput('mainLabel', 'Phone');
-        expect(component.isOutlineWithLabel()).toBe(true);
-      });
+    it('should mirror the number errors onto the number input', () => {
+      setExternalValue('+1 123');
 
-      it('should be false when appearance is fill even if a label is resolved', () => {
-        fixture.componentRef.setInput('appearance', 'fill');
-        fixture.componentRef.setInput('mainLabel', 'Phone');
-        expect(component.isOutlineWithLabel()).toBe(false);
+      expect(component.fieldControl()?.errors).toEqual({
+        invalidNumber: true
       });
-
-      it('should be false when appearance is outline but no label is resolved', () => {
-        fixture.componentRef.setInput('appearance', 'outline');
-        fixture.componentRef.setInput('mainLabel', '');
-        fixture.componentRef.setInput('textLabels', emptyTextLabels);
-        expect(component.isOutlineWithLabel()).toBe(false);
+      expect(component.telForm.get('numberControl')?.errors).toEqual({
+        invalidNumber: true
       });
     });
 
-    describe('template', () => {
-      it('should render the top-level .main-label for fill + label', () => {
-        fixture.componentRef.setInput('appearance', 'fill');
-        fixture.componentRef.setInput('mainLabel', 'Phone number');
-        fixture.detectChanges();
-
-        const topLabel: HTMLElement | null =
-          fixture.nativeElement.querySelector('section > .main-label');
-        expect(topLabel).toBeTruthy();
-        expect(topLabel?.textContent?.trim()).toBe('Phone number');
+    it('should clear the number input errors when the number becomes valid', () => {
+      setExternalValue('+1 123');
+      expect(component.telForm.get('numberControl')?.errors).toEqual({
+        invalidNumber: true
       });
 
-      it('should not render the top-level .main-label for outline + label', () => {
-        fixture.componentRef.setInput('appearance', 'outline');
-        fixture.componentRef.setInput('mainLabel', 'Phone number');
-        fixture.detectChanges();
+      setExternalValue('+1 201 555 0123');
 
-        const topLabel = fixture.nativeElement.querySelector(
-          'section > .main-label'
-        );
-        expect(topLabel).toBeFalsy();
+      expect(component.fieldControl()?.errors).toBeNull();
+      expect(component.telForm.get('numberControl')?.errors).toBeNull();
+    });
+
+    it('should mirror numberTooLong onto the number input', () => {
+      const lengthSpy = vi
+        .spyOn(phoneNumberUtils, 'isValidPhoneNumberLength')
+        .mockReturnValue(false);
+
+      setExternalValue('+1 201 555 0123');
+
+      expect(component.fieldControl()?.errors).toEqual({
+        numberTooLong: true
+      });
+      expect(component.telForm.get('numberControl')?.errors).toEqual({
+        numberTooLong: true
+      });
+      lengthSpy.mockRestore();
+    });
+
+    it('should not mirror errors onto the number input when numberValidation is off', () => {
+      const localFixture = TestBed.createComponent(
+        NgxMaterialIntlTelInputComponent
+      );
+      localFixture.componentRef.setInput('numberValidation', false);
+      localFixture.detectChanges();
+      const localComponent = localFixture.componentInstance;
+
+      localComponent.fieldControl()?.setValue('+1 123');
+      localFixture.detectChanges();
+
+      expect(localComponent.telForm.get('numberControl')?.errors).toBeNull();
+      localFixture.destroy();
+    });
+
+    it('should leave the input untouched while typing when numberValidation is off', () => {
+      const localFixture = TestBed.createComponent(
+        NgxMaterialIntlTelInputComponent
+      );
+      localFixture.componentRef.setInput('numberValidation', false);
+      localFixture.detectChanges();
+      const localComponent = localFixture.componentInstance;
+      const spain = localComponent.allCountries.find((c) => c.iso2 === 'es');
+      localComponent.prefixCtrl.setValue(spain ?? null);
+
+      localComponent.telForm.get('numberControl')?.setValue('612345678');
+      localFixture.detectChanges();
+
+      // typed text stays raw; only an outside write repaints it
+      expect(localComponent.telForm.get('numberControl')?.value).toBe(
+        '612345678'
+      );
+      expect(localComponent.fieldControl()?.value).toBe('+34 612 34 56 78');
+      localFixture.destroy();
+    });
+
+    // numberValidation off is the discriminating case: only an external write
+    // repaints the input, so a value-source flag left stuck on 'input' by a
+    // throwing write is visible as a missing repaint
+    it('should keep classifying writes after one throws', () => {
+      const localFixture = TestBed.createComponent(
+        NgxMaterialIntlTelInputComponent
+      );
+      localFixture.componentRef.setInput('numberValidation', false);
+      localFixture.detectChanges();
+      const localComponent = localFixture.componentInstance;
+      const control = localComponent.fieldControl()!;
+      vi.spyOn(control, 'setValue').mockImplementationOnce(() => {
+        throw new Error('consumer validator blew up');
       });
 
-      it('should add has-main-label class to the prefix form field for outline + label', () => {
-        fixture.componentRef.setInput('appearance', 'outline');
-        fixture.componentRef.setInput('mainLabel', 'Phone number');
-        fixture.detectChanges();
+      expect(() =>
+        localComponent['setFieldControlValue']('+34612345678')
+      ).toThrow();
 
-        const prefixField: HTMLElement =
-          fixture.nativeElement.querySelector('.prefix-form-field');
-        expect(prefixField.classList.contains('has-main-label')).toBe(true);
-      });
+      control.setValue('+41446681800');
+      localFixture.detectChanges();
 
-      it('should not add has-main-label class for fill + label', () => {
-        fixture.componentRef.setInput('appearance', 'fill');
-        fixture.componentRef.setInput('mainLabel', 'Phone number');
-        fixture.detectChanges();
-
-        const prefixField: HTMLElement =
-          fixture.nativeElement.querySelector('.prefix-form-field');
-        expect(prefixField.classList.contains('has-main-label')).toBe(false);
-      });
-
-      it('should not add has-main-label class for outline + no label', () => {
-        fixture.componentRef.setInput('appearance', 'outline');
-        fixture.componentRef.setInput('mainLabel', '');
-        fixture.componentRef.setInput('textLabels', emptyTextLabels);
-        fixture.detectChanges();
-
-        const prefixField: HTMLElement =
-          fixture.nativeElement.querySelector('.prefix-form-field');
-        expect(prefixField.classList.contains('has-main-label')).toBe(false);
-      });
-
-      it('should render the mat-label inside the prefix form field for outline + label', () => {
-        fixture.componentRef.setInput('appearance', 'outline');
-        fixture.componentRef.setInput('mainLabel', 'Phone number');
-        fixture.detectChanges();
-
-        const prefixLabel: HTMLElement | null =
-          fixture.nativeElement.querySelector('.prefix-form-field mat-label');
-        expect(prefixLabel).toBeTruthy();
-        expect(prefixLabel?.textContent?.trim()).toBe('Phone number');
-      });
-
-      it('should render the national number label for outline + mainLabel + nationalNumberLabel', () => {
-        fixture.componentRef.setInput('appearance', 'outline');
-        fixture.componentRef.setInput('mainLabel', 'Phone number');
-        fixture.componentRef.setInput('textLabels', {
-          ...emptyTextLabels,
-          nationalNumberLabel: 'Number'
-        });
-        fixture.detectChanges();
-
-        const numberLabel: HTMLElement | null =
-          fixture.nativeElement.querySelector('.number-form-field mat-label');
-        expect(numberLabel).toBeTruthy();
-        expect(numberLabel?.textContent?.trim()).toBe('Number');
-      });
-
-      it('should omit the national number label by default', () => {
-        fixture.componentRef.setInput('appearance', 'outline');
-        fixture.componentRef.setInput('mainLabel', 'Phone number');
-        fixture.detectChanges();
-
-        const numberLabel = fixture.nativeElement.querySelector(
-          '.number-form-field mat-label'
-        );
-        expect(numberLabel).toBeFalsy();
-      });
-
-      it('should render the national number label for fill + nationalNumberLabel', () => {
-        fixture.componentRef.setInput('appearance', 'fill');
-        fixture.componentRef.setInput('mainLabel', 'Phone number');
-        fixture.componentRef.setInput('textLabels', {
-          ...emptyTextLabels,
-          nationalNumberLabel: 'Number'
-        });
-        fixture.detectChanges();
-
-        const numberLabel: HTMLElement | null =
-          fixture.nativeElement.querySelector('.number-form-field mat-label');
-        expect(numberLabel).toBeTruthy();
-        expect(numberLabel?.textContent?.trim()).toBe('Number');
-      });
+      expect(localComponent.telForm.get('numberControl')?.value).toBe(
+        '044 668 18 00'
+      );
+      localFixture.destroy();
     });
   });
 
@@ -1407,12 +1466,12 @@ describe('NgxMaterialIntlTelInputComponent', () => {
     });
 
     it('should handle missing singleSelect element', () => {
-      component.singleSelect = jest.fn().mockReturnValue(null) as any;
+      component.singleSelect = vi.fn().mockReturnValue(null) as any;
       expect(() => component['setInitialPrefixValue']()).not.toThrow();
     });
 
     it('should handle missing numberInput element', () => {
-      component.numberInput = jest.fn().mockReturnValue(null) as any;
+      component.numberInput = vi.fn().mockReturnValue(null) as any;
       expect(() =>
         component['startPrefixValueChangesListener']()
       ).not.toThrow();
@@ -1426,17 +1485,75 @@ describe('NgxMaterialIntlTelInputComponent', () => {
 
     it('should handle phone number parsing errors', () => {
       component.telForm = {
-        get: jest.fn().mockReturnValue({ setValue: jest.fn() })
+        get: vi.fn().mockReturnValue({ setValue: vi.fn() })
       } as any;
       component.fieldControl.set(new FormControl());
 
       Object.defineProperty(component, 'initialValue', {
-        value: jest.fn().mockReturnValue('invalid-phone-number'),
+        value: vi.fn().mockReturnValue('invalid-phone-number'),
         writable: true
       });
 
       expect(() => component['setInitialTelValue']()).not.toThrow();
       expect(component.isLoading()).toBe(false);
+    });
+  });
+
+  describe('remaining branch coverage', () => {
+    beforeEach(() => {
+      // detach the fixture-scheduled init timer and listeners; these tests
+      // call private methods directly with mocked state
+      component.ngOnDestroy();
+    });
+
+    it('should not preselect a country without area codes and non-zero priority from initial value', () => {
+      component.allCountries = [
+        {
+          emojiFlag: '🏳️',
+          name: 'Fake Country',
+          iso2: 'xx',
+          dialCode: '44',
+          priority: 1,
+          htmlId: 'xx',
+          flagClass: 'xx',
+          placeHolder: ''
+        } as Country
+      ];
+      component.telForm = {
+        value: {},
+        get: vi.fn().mockReturnValue({ setValue: vi.fn() })
+      } as any;
+      Object.defineProperty(component, 'initialValue', {
+        value: vi.fn().mockReturnValue('+447911123456'),
+        writable: true
+      });
+
+      component['setInitialTelValue']();
+
+      expect(component.prefixCtrl.value).toBeNull();
+      expect(component.isLoading()).toBe(false);
+    });
+
+    it('should format the initial value in national format for Northern Mariana Islands', () => {
+      const numberControlSetValue = vi.fn();
+      component.telForm = {
+        value: { prefixCtrl: { iso2: 'mp' } },
+        get: vi.fn().mockReturnValue({ setValue: numberControlSetValue })
+      } as any;
+      Object.defineProperty(component, 'initialValue', {
+        value: vi.fn().mockReturnValue('+16702345678'),
+        writable: true
+      });
+
+      component['setInitialTelValue']();
+
+      expect(numberControlSetValue).toHaveBeenCalledWith('(670) 234-5678');
+    });
+
+    it('should compute max input length when the number control is missing', () => {
+      component.telForm = { get: vi.fn().mockReturnValue(null) } as any;
+
+      expect(component.getMaxInputLength('us')).toBeGreaterThan(0);
     });
   });
 });

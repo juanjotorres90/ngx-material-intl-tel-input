@@ -5,8 +5,6 @@
 .angular
 package.json
 package-lock.json
-bun.lockb
-yarn.lock
 dist
 
 /.nx/cache

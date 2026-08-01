@@ -1,14 +1,7 @@
 import { Injectable } from '@angular/core';
 import { CountryISO } from '../enums/country-iso.enum';
 
-export type CountryData = [
-  string,
-  string,
-  string,
-  string,
-  number?,
-  (string | number)[]?
-];
+export type CountryData = [string, string, string, string, number?, string[]?];
 
 @Injectable()
 export class CountryCode {
@@ -148,7 +141,7 @@ export class CountryCode {
     ['🇨🇿', 'Czech Republic (Česká republika)', CountryISO.CzechRepublic, '420'],
     ['🇩🇰', 'Denmark (Danmark)', CountryISO.Denmark, '45'],
     ['🇩🇯', 'Djibouti', CountryISO.Djibouti, '253'],
-    ['🇩🇲', 'Dominica', CountryISO.Dominica, '1767'],
+    ['🇩🇲', 'Dominica', CountryISO.Dominica, '1', 1, ['767']],
     [
       '🇩🇴',
       'Dominican Republic (República Dominicana)',
@@ -194,11 +187,11 @@ export class CountryCode {
     ['🇬🇮', 'Gibraltar', CountryISO.Gibraltar, '350'],
     ['🇬🇷', 'Greece (Ελλάδα)', CountryISO.Greece, '30'],
     ['🇬🇱', 'Greenland (Kalaallit Nunaat)', CountryISO.Greenland, '299'],
-    ['🇬🇩', 'Grenada', CountryISO.Grenada, '1473'],
+    ['🇬🇩', 'Grenada', CountryISO.Grenada, '1', 1, ['473']],
     ['🇬🇵', 'Guadeloupe', CountryISO.Guadeloupe, '590', 0],
     ['🇬🇺', 'Guam', 'gu', '1', 1, ['671']],
     ['🇬🇹', 'Guatemala', CountryISO.Guatemala, '502'],
-    ['🇬🇬', 'Guernsey', CountryISO.Guernsey, '44', 1, [1481]],
+    ['🇬🇬', 'Guernsey', CountryISO.Guernsey, '44', 1, ['1481']],
     ['🇬🇳', 'Guinea (Guinée)', CountryISO.Guinea, '224'],
     ['🇬🇼', 'Guinea-Bissau (Guiné Bissau)', CountryISO.GuineaBissau, '245'],
     ['🇬🇾', 'Guyana', CountryISO.Guyana, '592'],
@@ -212,12 +205,12 @@ export class CountryCode {
     ['🇮🇷', 'Iran (‫ایران‬‎)', CountryISO.Iran, '98'],
     ['🇮🇶', 'Iraq (‫العراق‬‎)', CountryISO.Iraq, '964'],
     ['🇮🇪', 'Ireland', CountryISO.Ireland, '353'],
-    ['🇮🇲', 'Isle of Man', CountryISO.IsleOfMan, '44', 2, [1624]],
+    ['🇮🇲', 'Isle of Man', CountryISO.IsleOfMan, '44', 2, ['1624']],
     ['🇮🇱', 'Israel (‫ישראל‬‎)', CountryISO.Israel, '972'],
     ['🇮🇹', 'Italy (Italia)', CountryISO.Italy, '39', 0],
     ['🇯🇲', 'Jamaica', 'jm', '1', 1, ['876']],
     ['🇯🇵', 'Japan (日本)', CountryISO.Japan, '81'],
-    ['🇯🇪', 'Jersey', CountryISO.Jersey, '44', 3, [1534]],
+    ['🇯🇪', 'Jersey', CountryISO.Jersey, '44', 3, ['1534']],
     ['🇯🇴', 'Jordan (‫الأردن‬‎)', CountryISO.Jordan, '962'],
     ['🇰🇿', 'Kazakhstan (Казахстан)', CountryISO.Kazakhstan, '7', 1],
     ['🇰🇪', 'Kenya', CountryISO.Kenya, '254'],
@@ -283,7 +276,9 @@ export class CountryCode {
       '🇲🇵',
       'Northern Mariana Islands',
       CountryISO.NorthernMarianaIslands,
-      '1670'
+      '1',
+      1,
+      ['670']
     ],
     ['🇳🇴', 'Norway (Norge)', CountryISO.Norway, '47', 0],
     ['🇴🇲', 'Oman (‫عُمان‬‎)', CountryISO.Oman, '968'],
@@ -311,7 +306,14 @@ export class CountryCode {
       1
     ],
     ['🇸🇭', 'Saint Helena', CountryISO.SaintHelena, '290'],
-    ['🇰🇳', 'Saint Kitts and Nevis', CountryISO.SaintKittsAndNevis, '1869'],
+    [
+      '🇰🇳',
+      'Saint Kitts and Nevis',
+      CountryISO.SaintKittsAndNevis,
+      '1',
+      1,
+      ['869']
+    ],
     ['🇱🇨', 'Saint Lucia', 'lc', '1', 1, ['758']],
     [
       '🇲🇫',
@@ -379,7 +381,9 @@ export class CountryCode {
       '🇹🇨',
       'Turks and Caicos Islands',
       CountryISO.TurksAndCaicosIslands,
-      '1649'
+      '1',
+      1,
+      ['649']
     ],
     ['🇹🇻', 'Tuvalu', CountryISO.Tuvalu, '688'],
     ['🇻🇮', 'U.S. Virgin Islands', 'vi', '1', 1, ['340']],

@@ -30,7 +30,6 @@ node_modules
 /coverage
 /libpeerconnection.log
 npm-debug.log
-yarn-error.log
 testem.log
 /typings
 
@@ -50,6 +49,12 @@ Thumbs.db
 .claude/settings.local.json
 
 .playwright-mcp
+
+# Playwright artifacts when running outside the Nx target
+test-results
+playwright-report
+blob-report
+playwright/.cache
 .nx/polygraph
 .nx/self-healing
 .nx/migrate-runs

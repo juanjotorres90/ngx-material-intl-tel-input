@@ -28,7 +28,7 @@ describe('CountryDisplayNameService', () => {
     } else {
       globalAny.Intl = originalIntl;
     }
-    jest.restoreAllMocks();
+    vi.restoreAllMocks();
     TestBed.resetTestingModule();
   });
 
@@ -71,11 +71,11 @@ describe('CountryDisplayNameService', () => {
 
   it('returns localized names when Intl.DisplayNames provides them', () => {
     const displayNamesInstance = {
-      of: jest.fn().mockReturnValue('Estados Unidos')
+      of: vi.fn().mockReturnValue('Estados Unidos')
     };
-    const displayNamesFactory = jest
-      .fn()
-      .mockReturnValue(displayNamesInstance as unknown as Intl.DisplayNames);
+    const displayNamesFactory = vi.fn(function () {
+      return displayNamesInstance as unknown as Intl.DisplayNames;
+    });
 
     if (!globalAny.Intl) {
       globalAny.Intl = {};
@@ -94,11 +94,11 @@ describe('CountryDisplayNameService', () => {
 
   it('falls back when DisplayNames returns an ISO code', () => {
     const displayNamesInstance = {
-      of: jest.fn().mockReturnValue('US')
+      of: vi.fn().mockReturnValue('US')
     };
-    const displayNamesFactory = jest
-      .fn()
-      .mockReturnValue(displayNamesInstance as unknown as Intl.DisplayNames);
+    const displayNamesFactory = vi.fn(function () {
+      return displayNamesInstance as unknown as Intl.DisplayNames;
+    });
 
     if (!globalAny.Intl) {
       globalAny.Intl = {};
@@ -114,11 +114,11 @@ describe('CountryDisplayNameService', () => {
 
   it('prefers overrides regardless of Intl.DisplayNames output', () => {
     const displayNamesInstance = {
-      of: jest.fn().mockReturnValue('Estados Unidos')
+      of: vi.fn().mockReturnValue('Estados Unidos')
     };
-    const displayNamesFactory = jest
-      .fn()
-      .mockReturnValue(displayNamesInstance as unknown as Intl.DisplayNames);
+    const displayNamesFactory = vi.fn(function () {
+      return displayNamesInstance as unknown as Intl.DisplayNames;
+    });
 
     if (!globalAny.Intl) {
       globalAny.Intl = {};
@@ -136,12 +136,12 @@ describe('CountryDisplayNameService', () => {
 
   it('falls back to Intl.DisplayNames when override does not match', () => {
     const displayNamesInstance = {
-      of: jest.fn().mockReturnValue('France'),
-      resolvedOptions: jest.fn()
+      of: vi.fn().mockReturnValue('France'),
+      resolvedOptions: vi.fn()
     };
-    const displayNamesFactory = jest
-      .fn()
-      .mockReturnValue(displayNamesInstance as unknown as Intl.DisplayNames);
+    const displayNamesFactory = vi.fn(function () {
+      return displayNamesInstance as unknown as Intl.DisplayNames;
+    });
 
     if (!globalAny.Intl) {
       globalAny.Intl = {};
@@ -158,11 +158,11 @@ describe('CountryDisplayNameService', () => {
   });
 
   it('ignores locale updates when the new locale is falsy or unchanged', () => {
-    const createSpy = jest
+    const createSpy = vi
       .spyOn(CountryDisplayNameService.prototype as any, 'createDisplayNames')
       .mockReturnValue({
-        of: jest.fn().mockReturnValue('Name'),
-        resolvedOptions: jest.fn()
+        of: vi.fn().mockReturnValue('Name'),
+        resolvedOptions: vi.fn()
       } as unknown as Intl.DisplayNames);
 
     const service = initService();
@@ -177,14 +177,14 @@ describe('CountryDisplayNameService', () => {
   });
 
   it('rebuilds display names when the locale changes', () => {
-    const createSpy = jest
+    const createSpy = vi
       .spyOn(CountryDisplayNameService.prototype as any, 'createDisplayNames')
       .mockImplementation((...args: unknown[]) => {
         const locale = args[0] as string;
         return {
           locale,
-          of: jest.fn().mockReturnValue(locale),
-          resolvedOptions: jest.fn()
+          of: vi.fn().mockReturnValue(locale),
+          resolvedOptions: vi.fn()
         } as unknown as Intl.DisplayNames;
       });
 
@@ -217,7 +217,7 @@ describe('CountryDisplayNameService', () => {
       globalAny.Intl = {};
     }
 
-    const throwingFactory = jest.fn(() => {
+    const throwingFactory = vi.fn(() => {
       throw new Error('boom');
     });
     globalAny.Intl.DisplayNames = throwingFactory;

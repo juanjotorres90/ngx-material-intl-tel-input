@@ -2,10 +2,11 @@
   "recommendations": [
     "nrwl.angular-console",
     "esbenp.prettier-vscode",
-    "firsttris.vscode-jest-runner",
+    "vitest.explorer",
     "Angular.ng-template",
     "aaron-bond.better-comments",
     "ChakrounAnas.turbo-console-log",
-    "vivaxy.vscode-conventional-commits"
+    "vivaxy.vscode-conventional-commits",
+    "ms-playwright.playwright"
   ]
 }
