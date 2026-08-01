@@ -6,11 +6,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/)
 and this project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [22.1.0] - 2026-??-??
+## [22.1.0] - 2026-08-01
 
 ### Added
 
-- Add Angular Signal Forms support: the component implements `FormValueControl<string>`, so it binds with `[formField]="form.phone"` without a `fieldControl` or parent `[formGroup]`. Schema `required` and `disabled` rules reach the Material field, and blur marks the field touched.
+- Add initial Angular Signal Forms support: the component implements `FormValueControl<string>`, so it binds with `[formField]="form.phone"` without a `fieldControl` or parent `[formGroup]`. Schema `required` and `disabled` rules reach the Material field, and blur marks the field touched.
 - Add exported `validPhoneNumber` Signal Forms schema validator, reporting an `invalidNumber` error kind (use with `validate(path.phone, validPhoneNumber)`).
 
 ### Fixed
